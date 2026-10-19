@@ -1,0 +1,222 @@
+# XcodeGen spec. Generate the Xcode project with:
+#   brew install xcodegen && xcodegen generate && open Earmark.xcodeproj
+#
+# Before building on a device, set DEVELOPMENT_TEAM below (or in Xcode › Signing & Capabilities)
+# and, if you change the bundle ID prefix, update RecordingPaths.containerIdentifier to match.
+
+name: Earmark
+options:
+  bundleIdPrefix: com.crstudios
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "26.0"
+    watchOS: "26.0"
+    macOS: "26.0"
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: ""
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.0"
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  # ───────────────────────────── iPhone ─────────────────────────────
+  Earmark:
+    type: application
+    platform: iOS
+    sources:
+      - iOS
+      - Shared/Core
+      - Shared/App
+      - Shared/Intents
+      - Resources/Assets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.crstudios.earmark
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1,2"
+    info:
+      path: iOS/Info.plist
+      properties:
+        CFBundleDisplayName: Earmark
+        LSApplicationCategoryType: public.app-category.productivity
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        NSMicrophoneUsageDescription: Earmark records audio when you tap the record button.
+        NSSpeechRecognitionUsageDescription: Earmark transcribes your recordings on this device.
+        NSLocationWhenInUseUsageDescription: If you turn on location naming, Earmark names recordings after where you made them.
+        UIBackgroundModes: [audio]
+        NSSupportsLiveActivities: true
+        NSUserActivityTypes: [com.apple.corespotlightitem]
+        CFBundleURLTypes:
+          - CFBundleURLName: com.crstudios.earmark
+            CFBundleURLSchemes: [earmark]
+        NSUbiquitousContainers:
+          iCloud.com.crstudios.earmark:
+            NSUbiquitousContainerIsDocumentScopePublic: true
+            NSUbiquitousContainerName: Earmark
+            NSUbiquitousContainerSupportedFolderLevels: Any
+    entitlements:
+      path: iOS/Earmark.entitlements
+      properties:
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.crstudios.earmark]
+        com.apple.developer.ubiquity-container-identifiers: [iCloud.com.crstudios.earmark]
+        com.apple.developer.icloud-services: [CloudDocuments, CloudKit]
+    dependencies:
+      - target: EarmarkWidgets
+      - target: EarmarkWatch
+
+  EarmarkWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - iOSWidgets
+      - Shared/Intents
+      - Shared/Core/Util
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.crstudios.earmark.widgets
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: "$(inherited) WIDGET_EXTENSION"
+        TARGETED_DEVICE_FAMILY: "1,2"
+    info:
+      path: iOSWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Earmark
+        NSSupportsLiveActivities: true
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+  # ───────────────────────────── Apple Watch ─────────────────────────────
+  EarmarkWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - Watch
+      - Shared/Core
+      - Resources/Assets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.crstudios.earmark.watchkitapp
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    info:
+      path: Watch/Info.plist
+      properties:
+        CFBundleDisplayName: Earmark
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: com.crstudios.earmark
+        WKBackgroundModes: [audio]
+        NSMicrophoneUsageDescription: Earmark records audio when you tap the record button.
+        CFBundleURLTypes:
+          - CFBundleURLName: com.crstudios.earmark.watch
+            CFBundleURLSchemes: [earmark]
+    entitlements:
+      path: Watch/EarmarkWatch.entitlements
+      properties:
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.crstudios.earmark]
+        com.apple.developer.icloud-services: [CloudKit]
+    dependencies:
+      - target: EarmarkWatchWidgets
+
+  EarmarkWatchWidgets:
+    type: app-extension
+    platform: watchOS
+    sources:
+      - WatchWidgets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.crstudios.earmark.watchkitapp.complications
+    info:
+      path: WatchWidgets/Info.plist
+      properties:
+        CFBundleDisplayName: Earmark
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+
+  # ───────────────────────────── Mac ─────────────────────────────
+  EarmarkMac:
+    type: application
+    platform: macOS
+    sources:
+      - Mac
+      - Shared/Core
+      - Shared/App
+      - Shared/Intents
+      - Resources/Assets.xcassets
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.crstudios.earmark.mac
+        PRODUCT_NAME: Earmark
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ENABLE_HARDENED_RUNTIME: YES
+    info:
+      path: Mac/Info.plist
+      properties:
+        CFBundleDisplayName: Earmark
+        LSApplicationCategoryType: public.app-category.productivity
+        NSMicrophoneUsageDescription: Earmark records audio when you start a recording.
+        NSSpeechRecognitionUsageDescription: Earmark transcribes your recordings on this Mac.
+        NSLocationUsageDescription: If you turn on location naming, Earmark names recordings after where you made them.
+        NSUserActivityTypes: [com.apple.corespotlightitem]
+        CFBundleURLTypes:
+          - CFBundleURLName: com.crstudios.earmark.mac
+            CFBundleURLSchemes: [earmark]
+        NSUbiquitousContainers:
+          iCloud.com.crstudios.earmark:
+            NSUbiquitousContainerIsDocumentScopePublic: true
+            NSUbiquitousContainerName: Earmark
+            NSUbiquitousContainerSupportedFolderLevels: Any
+    entitlements:
+      path: Mac/EarmarkMac.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.device.audio-input: true
+        com.apple.security.network.client: true
+        com.apple.security.files.user-selected.read-only: true
+        com.apple.security.personal-information.location: true
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.crstudios.earmark]
+        com.apple.developer.ubiquity-container-identifiers: [iCloud.com.crstudios.earmark]
+        com.apple.developer.icloud-services: [CloudDocuments, CloudKit]
+
+  # ───────────────────────────── Tests ─────────────────────────────
+  EarmarkCoreTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests
+      - Shared/Core/Model
+      - Shared/Core/Storage
+      - Shared/Core/Util
+      - Shared/App/Library/TranscriptExporter.swift
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.crstudios.earmark.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  Earmark:
+    build:
+      targets:
+        Earmark: all
+    run:
+      config: Debug
+  EarmarkCoreTests:
+    build:
+      targets:
+        EarmarkCoreTests: [test]
+    test:
+      targets:
+        - EarmarkCoreTests
+  EarmarkWatch:
+    build:
+      targets:
+        EarmarkWatch: all
+  EarmarkMac:
+    build:
+      targets:
+        EarmarkMac: all
