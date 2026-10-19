@@ -24,9 +24,12 @@ final class Recorder {
         }
     }
 
+    /// A finished (or recovered) capture: 16-bit PCM CAF in the in-progress folder, still to be encoded
+    /// into `quality`'s final format with `AudioFinalizer`.
     struct Finished: Sendable {
         var audioURL: URL
         var metadata: RecordingMetadata
+        var quality: RecordingQuality
     }
 
     private(set) var state: State = .idle
@@ -44,7 +47,9 @@ final class Recorder {
     @ObservationIgnored private var accumulated: TimeInterval = 0
     @ObservationIgnored private var segmentStart: Date?
     @ObservationIgnored private var fileURL: URL?
+    @ObservationIgnored private var quality: RecordingQuality = .standard
     @ObservationIgnored private var meterTimer: Timer?
+    @ObservationIgnored private var meterTicks = 0
     @ObservationIgnored private var observers: [NSObjectProtocol] = []
     @ObservationIgnored private var resumeAfterInterruption = false
 
@@ -73,12 +78,12 @@ final class Recorder {
         let now = Date.now
         let url = RecordingPaths.inProgressFolder
             .appendingPathComponent(RecordingPaths.baseFileName(for: now))
-            .appendingPathExtension(quality.fileExtension)
+            .appendingPathExtension(RecordingQuality.captureExtension)
         try? FileManager.default.removeItem(at: url)
 
         try configureSession()
         #if os(watchOS)
-        let recorder = try AVAudioRecorder(url: url, settings: quality.fileSettings)
+        let recorder = try AVAudioRecorder(url: url, settings: quality.captureSettings)
         recorder.isMeteringEnabled = true
         guard recorder.record() else { throw CocoaError(.fileWriteUnknown) }
         self.recorder = recorder
@@ -87,6 +92,7 @@ final class Recorder {
         #endif
 
         fileURL = url
+        self.quality = quality
         metadata = RecordingMetadata(createdAt: now)
         accumulated = 0
         segmentStart = now
@@ -95,6 +101,7 @@ final class Recorder {
         startMetering()
         observeInterruptions()
         setState(.recording)
+        checkpoint()
     }
 
     func pause() {
@@ -108,6 +115,8 @@ final class Recorder {
         segmentStart = nil
         level = 0
         setState(.paused)
+        checkpoint()
+        PauseReminder.schedule()
     }
 
     func resume() {
@@ -121,6 +130,7 @@ final class Recorder {
             #endif
             segmentStart = .now
             setState(.recording)
+            PauseReminder.cancel()
         } catch {
             lastError = error
         }
@@ -136,12 +146,14 @@ final class Recorder {
         guard isActive else { return nil }
         let bookmark = Bookmark(time: elapsed, note: note)
         metadata?.bookmarks.append(bookmark)
+        checkpoint()
         return bookmark
     }
 
     func updateMetadata(_ change: (inout RecordingMetadata) -> Void) {
         guard metadata != nil else { return }
         change(&metadata!)
+        checkpoint()
     }
 
     @discardableResult
@@ -162,20 +174,74 @@ final class Recorder {
         observers.forEach(NotificationCenter.default.removeObserver)
         observers = []
         deactivateSession()
+        PauseReminder.cancel()
 
         metadata.duration = duration
+        // Keep the final checkpoint until the caller has saved the recording: if the app dies while
+        // encoding, recovery still has the bookmarks and notes.
+        Self.writeCheckpoint(metadata, quality: quality, for: fileURL)
         self.fileURL = nil
         self.metadata = nil
         accumulated = 0
         segmentStart = nil
         level = 0
         setState(.idle)
-        return Finished(audioURL: fileURL, metadata: metadata)
+        return Finished(audioURL: fileURL, metadata: metadata, quality: quality)
     }
 
     /// Stop and throw the audio away.
     func discard() {
-        if let finished = stop() { try? FileManager.default.removeItem(at: finished.audioURL) }
+        if let finished = stop() { Self.removeCapture(finished.audioURL) }
+    }
+
+    // MARK: - Crash safety
+
+    private struct Checkpoint: Codable {
+        var metadata: RecordingMetadata
+        var quality: String
+    }
+
+    private func checkpoint() {
+        guard let fileURL, var metadata else { return }
+        metadata.duration = elapsed
+        Self.writeCheckpoint(metadata, quality: quality, for: fileURL)
+    }
+
+    nonisolated private static func writeCheckpoint(_ metadata: RecordingMetadata, quality: RecordingQuality, for audioURL: URL) {
+        let checkpoint = Checkpoint(metadata: metadata, quality: quality.rawValue)
+        guard let data = try? MetadataIO.encoder.encode(checkpoint) else { return }
+        try? data.write(to: RecordingPaths.checkpointURL(forCapture: audioURL), options: .atomic)
+    }
+
+    /// Delete a capture and its checkpoint once the recording is safely saved (or deliberately discarded).
+    nonisolated static func removeCapture(_ audioURL: URL) {
+        try? FileManager.default.removeItem(at: audioURL)
+        try? FileManager.default.removeItem(at: RecordingPaths.checkpointURL(forCapture: audioURL))
+    }
+
+    /// Captures left behind by a crash, force quit or dead battery. Excludes the one being recorded right now.
+    func orphanedCaptures() -> [Finished] {
+        let folder = RecordingPaths.inProgressFolder
+        let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.fileSizeKey])) ?? []
+        var orphans: [Finished] = []
+        for file in files where RecordingPaths.isAudioFile(file) && file != fileURL {
+            let size = (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+            guard size > 4096 else { Self.removeCapture(file); continue } // nothing usable was recorded
+            let checkpointURL = RecordingPaths.checkpointURL(forCapture: file)
+            let saved = (try? Data(contentsOf: checkpointURL)).flatMap { try? MetadataIO.decoder.decode(Checkpoint.self, from: $0) }
+            var metadata = saved?.metadata
+                ?? RecordingMetadata(createdAt: RecordingPaths.date(fromFileName: file.deletingPathExtension().lastPathComponent) ?? .now)
+            if !metadata.tags.contains("recovered") { metadata.tags.append("recovered") }
+            metadata.duration = 0 // measured again from the repaired file
+            let quality = saved.flatMap { RecordingQuality(rawValue: $0.quality) } ?? AppSettings.quality
+            orphans.append(Finished(audioURL: file, metadata: metadata, quality: quality))
+        }
+        // Checkpoints whose audio is already gone.
+        for file in files where file.lastPathComponent.hasSuffix(".checkpoint.json") {
+            let audio = file.deletingPathExtension().deletingPathExtension().appendingPathExtension(RecordingQuality.captureExtension)
+            if !FileManager.default.fileExists(atPath: audio.path) { try? FileManager.default.removeItem(at: file) }
+        }
+        return orphans
     }
 
     private func setState(_ newState: State) {
@@ -261,6 +327,8 @@ final class Recorder {
 
     private func sampleLevel() {
         guard state == .recording else { return }
+        meterTicks += 1
+        if meterTicks % 200 == 0 { checkpoint() } // every 10 seconds
         #if os(watchOS)
         guard let recorder else { return }
         recorder.updateMeters()
@@ -288,7 +356,7 @@ final class Recorder {
             try? input.setVoiceProcessingEnabled(enhancedVoice)
         }
         let inputFormat = input.outputFormat(forBus: 0)
-        let writer = try CaptureWriter(url: url, settings: quality.fileSettings, inputFormat: inputFormat)
+        let writer = try CaptureWriter(url: url, settings: quality.captureSettings, inputFormat: inputFormat)
         writer.bufferHandler = { [weak self] buffer in self?.bufferHandler?(buffer) }
         input.installTap(onBus: 0, bufferSize: 4096, format: inputFormat) { buffer, _ in
             writer.write(buffer)

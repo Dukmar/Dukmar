@@ -80,11 +80,13 @@ private struct ActivityButtons: View {
                 Image(systemName: state.isPaused ? "record.circle" : "pause.fill")
             }
             .accessibilityLabel(state.isPaused ? "Resume" : "Pause")
-            Button(intent: StopRecordingIntent()) {
-                Image(systemName: "stop.fill")
+            if state.allowsStop {
+                Button(intent: StopRecordingIntent()) {
+                    Image(systemName: "stop.fill")
+                }
+                .tint(.red)
+                .accessibilityLabel("Stop")
             }
-            .tint(.red)
-            .accessibilityLabel("Stop")
         }
         .buttonStyle(.bordered)
         .labelStyle(.titleAndIcon)

@@ -23,7 +23,7 @@ _Research date: October 2026. Purpose: decide what a replacement for **Just Pres
 - **Watch recordings go to the iPhone automatically**, which then transcribes them and puts them in iCloud. There's a separate tab for watch recordings.
 - **iCloud Drive storage** – recordings are plain audio files in iCloud Drive, so they show up on the Mac in Finder and in the Mac app. Transcripts are embedded in the audio file.
 - **Transcript search** – search covers transcript text as well as file names.
-- **Limitations:** transcription quality drops a lot in noisy rooms; no bookmarks while recording; no summaries; the watch can't record from AirPods; it doesn't do much after the transcript (no titles, no action items).
+- **Limitations:** it's easy to **stop a recording by accident** (one tap on the phone, Watch or complication ends it); transcription quality drops a lot in noisy rooms; no bookmarks while recording; no summaries; the watch can't record from AirPods; it doesn't do much after the transcript (no titles, no action items).
 
 ### Apple Voice Memos
 - **Automatic transcripts** (iPhone 12 and later, English locales), searchable.
@@ -96,6 +96,8 @@ _Research date: October 2026. Purpose: decide what a replacement for **Just Pres
 | Export transcript as TXT / Markdown / SRT / VTT | Voice Record Pro, Otter | ✅ |
 | **Import existing Just Press Record library** | _new_ | ✅ keeps dates, reuses embedded transcripts |
 | Private and no subscription | Just Press Record | ✅ nothing leaves your iCloud |
+| **Protection against accidental stops** | _new (Just Press Record's biggest pain point)_ | ✅ hold-to-stop, no Lock Screen stop, shortcuts bookmark instead of stopping, pause reminders |
+| **Crash / force-quit recovery** | _new_ | ✅ crash-safe capture file + checkpointed bookmarks, recovered on next launch |
 
 ### Deliberately left out (for now)
 - **Multi-track editing / layered recording** (Ferrite, Voice Memos Pro): a different product; Earmark's edits stop at trimming.

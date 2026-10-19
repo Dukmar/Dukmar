@@ -57,17 +57,24 @@ struct WatchRecordingView: View {
             }
             WatchLevels(levels: model.recorder.levelHistory)
                 .frame(height: 30)
-            HStack {
+            HStack(spacing: 14) {
+                // Double tap (Series 9 / Ultra 2 and later) bookmarks; it can never stop the recording.
                 Button { model.bookmark() } label: {
                     Image(systemName: "bookmark.fill")
                 }
                 .tint(.orange)
+                .handGestureShortcut(.primaryAction)
                 .accessibilityLabel("Bookmark")
-                Button { model.stop() } label: {
+                // Wrist-down taps from a sleeve are the classic accidental stop, so stopping takes a deliberate hold.
+                ProtectedStopButton(holdDuration: 1.2) {
+                    Task { await model.stop() }
+                } label: {
                     Image(systemName: "stop.fill")
+                        .font(.title3)
+                        .foregroundStyle(.white)
+                        .frame(width: 50, height: 50)
+                        .background(.red, in: Circle())
                 }
-                .tint(.red)
-                .accessibilityLabel("Stop and save")
                 Button { model.recorder.togglePause() } label: {
                     Image(systemName: model.recorder.state == .paused ? "record.circle" : "pause.fill")
                 }
@@ -79,6 +86,7 @@ struct WatchRecordingView: View {
             }
         }
         .navigationTitle(model.recorder.state == .paused ? "Paused" : "Recording")
+        .navigationBarBackButtonHidden()
     }
 }
 

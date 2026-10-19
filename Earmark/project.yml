@@ -192,6 +192,8 @@ targets:
       - Shared/Core/Model
       - Shared/Core/Storage
       - Shared/Core/Util
+      - Shared/Core/Audio/AudioFinalizer.swift
+      - Shared/Core/Audio/RecordingQuality.swift
       - Shared/App/Library/TranscriptExporter.swift
     settings:
       base:

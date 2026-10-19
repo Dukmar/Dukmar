@@ -28,13 +28,13 @@ struct StartRecordingIntent: EarmarkRecordingIntent {
 }
 
 struct ToggleRecordingIntent: EarmarkRecordingIntent {
-    static let title: LocalizedStringResource = "Start or Stop Recording"
-    static let description = IntentDescription("Starts a recording, or stops the one in progress. Great on the Action Button.")
+    static let title: LocalizedStringResource = "Record or Bookmark"
+    static let description = IntentDescription("Starts a recording. While recording, adds a bookmark (or stops, if you chose that in Settings). Made for the Action Button.")
     static let openAppWhenRun = true
 
     func perform() async throws -> some IntentResult {
         #if !WIDGET_EXTENSION
-        await AppModel.shared.toggleRecording()
+        await AppModel.shared.handleShortcutPress()
         #endif
         return .result()
     }
@@ -97,7 +97,7 @@ struct EarmarkShortcuts: AppShortcutsProvider {
                     shortTitle: "Bookmark", systemImageName: "bookmark")
         AppShortcut(intent: ToggleRecordingIntent(),
                     phrases: ["Toggle \(.applicationName) recording"],
-                    shortTitle: "Start/Stop", systemImageName: "record.circle.fill")
+                    shortTitle: "Record or Bookmark", systemImageName: "record.circle.fill")
     }
 }
 #endif

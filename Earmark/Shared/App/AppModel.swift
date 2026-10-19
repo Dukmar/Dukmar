@@ -22,6 +22,10 @@ final class AppModel {
     /// The recording that just finished, briefly highlighted in the list.
     private(set) var lastFinishedID: UUID?
     private(set) var isWatchReachable = false
+    /// Recordings being encoded and saved after stopping.
+    private(set) var savingCount = 0
+    /// Set when a stop needs confirming (protection mode "Tap, then confirm" from a menu or shortcut).
+    var stopConfirmationPending = false
 
     /// iPhone hooks this up to the Live Activity.
     @ObservationIgnored var onRecorderStateChange: ((Recorder.State) -> Void)?
@@ -53,6 +57,7 @@ final class AppModel {
         #endif
 
         await library.prepare()
+        await recoverInterruptedRecordings()
         #if os(iOS)
         await drainWatchInbox()
         #endif
@@ -64,6 +69,7 @@ final class AppModel {
     func refresh() async {
         guard library.isLoaded else { return }
         library.scheduleReload()
+        await recoverInterruptedRecordings()
         #if os(iOS)
         await drainWatchInbox()
         #endif
@@ -99,23 +105,79 @@ final class AppModel {
         }
     }
 
-    func toggleRecording() async {
-        if recorder.isActive { await stopRecording() } else { await startRecording() }
+    /// The Action Button, a Shortcut toggle or the Mac hotkey. While recording, it adds a bookmark by default
+    /// so a second press can't end a recording by accident.
+    func handleShortcutPress() async {
+        guard recorder.isActive else { return await startRecording() }
+        switch AppSettings.shortcutWhileRecording {
+        case .bookmark: addBookmark()
+        case .stop: await stopRecording()
+        }
+    }
+
+    /// A stop that came from a menu command or keyboard shortcut. Honors the stop-protection setting;
+    /// on-screen stop buttons use `ProtectedStopButton` and call `stopRecording()` directly.
+    func requestStop() async {
+        guard recorder.isActive else { return }
+        if AppSettings.stopProtection == .tap {
+            await stopRecording()
+        } else {
+            stopConfirmationPending = true
+        }
     }
 
     @discardableResult
     func stopRecording() async -> RecordingItem? {
+        stopConfirmationPending = false
         recorder.bufferHandler = nil
         guard let finished = recorder.stop() else { return nil }
         await liveTranscriber.stop()
-        do {
-            let item = try await library.add(audioAt: finished.audioURL, metadata: finished.metadata)
+        let item = await save(finished)
+        if let item {
             lastFinishedID = item.id
             processing.enqueue(item.id, front: true)
+        }
+        return item
+    }
+
+    /// Encodes a capture into its final format and moves it into the library. The capture (and its
+    /// checkpoint) is deleted only after that succeeds, so a failure here never loses audio.
+    private func save(_ finished: Recorder.Finished) async -> RecordingItem? {
+        savingCount += 1
+        defer { savingCount -= 1 }
+        do {
+            let encoded: URL
+            do {
+                encoded = try await AudioFinalizer.encode(finished.audioURL, quality: finished.quality)
+            } catch {
+                // Couldn't encode: keep the raw capture rather than nothing.
+                let copy = FileManager.default.temporaryDirectory.appendingPathComponent(finished.audioURL.lastPathComponent)
+                try? FileManager.default.removeItem(at: copy)
+                try FileManager.default.copyItem(at: finished.audioURL, to: copy)
+                encoded = copy
+            }
+            let item = try await library.add(audioAt: encoded, metadata: finished.metadata)
+            Recorder.removeCapture(finished.audioURL)
             return item
         } catch {
-            errorMessage = "Couldn't save the recording: \(error.localizedDescription)"
+            errorMessage = "Couldn't save the recording yet: \(error.localizedDescription). It's kept safe and will be retried next time Earmark opens."
             return nil
+        }
+    }
+
+    /// Recordings cut short by a crash, force quit or dead battery are saved on the next launch.
+    func recoverInterruptedRecordings() async {
+        guard !recorder.isActive else { return }
+        let orphans = recorder.orphanedCaptures()
+        guard !orphans.isEmpty else { return }
+        var recovered = 0
+        for orphan in orphans {
+            if await save(orphan) != nil { recovered += 1 }
+        }
+        if recovered > 0 {
+            errorMessage = recovered == 1
+                ? "Earmark recovered a recording that was interrupted. It's in your library, tagged #recovered."
+                : "Earmark recovered \(recovered) recordings that were interrupted. They're in your library, tagged #recovered."
         }
     }
 
@@ -182,8 +244,8 @@ final class AppModel {
         guard url.scheme == "earmark" else { return }
         switch url.host {
         case "record": await startRecording()
-        case "stop": await stopRecording()
-        case "toggle": await toggleRecording()
+        case "stop": await requestStop()
+        case "toggle": await handleShortcutPress()
         case "open":
             if let id = URLComponents(url: url, resolvingAgainstBaseURL: false)?
                 .queryItems?.first(where: { $0.name == "id" })?.value.flatMap(UUID.init) {

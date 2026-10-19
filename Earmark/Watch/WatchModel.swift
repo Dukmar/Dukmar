@@ -18,6 +18,7 @@ final class WatchModel {
     let recorder = Recorder()
     private(set) var recordings: [LocalRecording] = []
     private(set) var isPhoneReachable = false
+    private(set) var isSaving = false
     var errorMessage: String?
 
     private var delivered: [String: Date] {
@@ -37,6 +38,7 @@ final class WatchModel {
         WatchSync.shared.activate()
         reload()
         cleanUpDelivered()
+        Task { await recoverInterruptedRecordings() }
     }
 
     // MARK: Recording
@@ -51,24 +53,52 @@ final class WatchModel {
         }
     }
 
-    func stop() {
+    func stop() async {
         guard let finished = recorder.stop() else { return }
         WKInterfaceDevice.current().play(.stop)
-        let destination = RecordingPaths.newAudioURL(in: root, date: finished.metadata.createdAt, fileExtension: finished.audioURL.pathExtension)
+        await save(finished)
+    }
+
+    /// Encode to AAC (small enough to send quickly), keep a local copy, and queue delivery.
+    /// The raw capture is only deleted once the encoded copy is safely stored.
+    private func save(_ finished: Recorder.Finished) async {
+        isSaving = true
+        defer { isSaving = false }
+        let encoded = (try? await AudioFinalizer.encode(finished.audioURL, quality: finished.quality)) ?? finished.audioURL
+        let destination = RecordingPaths.newAudioURL(in: root, date: finished.metadata.createdAt, fileExtension: encoded.pathExtension)
         do {
             try FileManager.default.createDirectory(at: destination.deletingLastPathComponent(), withIntermediateDirectories: true)
-            try FileManager.default.moveItem(at: finished.audioURL, to: destination)
+            if encoded == finished.audioURL {
+                try FileManager.default.copyItem(at: encoded, to: destination)
+            } else {
+                try FileManager.default.moveItem(at: encoded, to: destination)
+            }
             try MetadataIO.encoder.encode(finished.metadata).write(to: RecordingPaths.metadataURL(forAudio: destination))
+            Recorder.removeCapture(finished.audioURL)
         } catch {
-            errorMessage = "Couldn't save: \(error.localizedDescription)"
+            errorMessage = "Couldn't save yet: \(error.localizedDescription). It will be retried."
             return
         }
         reload()
         deliver(LocalRecording(audioURL: destination, metadata: finished.metadata))
     }
 
-    func toggle() async {
-        if recorder.isActive { stop() } else { await start() }
+    private func recoverInterruptedRecordings() async {
+        guard !recorder.isActive else { return }
+        let orphans = recorder.orphanedCaptures()
+        for orphan in orphans { await save(orphan) }
+        if !orphans.isEmpty {
+            errorMessage = "Recovered \(orphans.count) interrupted recording\(orphans.count == 1 ? "" : "s")."
+        }
+    }
+
+    /// Action Button / double tap / Shortcut: start, or (while recording) bookmark unless set to stop.
+    func handleShortcutPress() async {
+        guard recorder.isActive else { return await start() }
+        switch AppSettings.shortcutWhileRecording {
+        case .bookmark: bookmark()
+        case .stop: await stop()
+        }
     }
 
     func bookmark() {

@@ -5,6 +5,7 @@ struct RecordingSessionView: View {
     @Environment(AppModel.self) private var model
     @State private var note = ""
     @State private var bookmarkTick = 0
+    @State private var confirmDiscard = false
     @FocusState private var noteFocused: Bool
 
     private var recorder: Recorder { model.recorder }
@@ -18,8 +19,14 @@ struct RecordingSessionView: View {
                     .font(.headline)
                     .symbolEffect(.pulse, isActive: recorder.state == .recording)
                 Spacer()
-                Button("Discard", role: .destructive) { recorder.discard() }
+                Button("Discard", role: .destructive) { confirmDiscard = true }
                     .font(.callout)
+                    .confirmationDialog("Delete this recording?", isPresented: $confirmDiscard, titleVisibility: .visible) {
+                        Button("Delete Recording", role: .destructive) { recorder.discard() }
+                        Button("Keep Recording", role: .cancel) {}
+                    } message: {
+                        Text("The audio recorded so far will be thrown away.")
+                    }
             }
 
             TimelineView(.periodic(from: .now, by: 0.1)) { _ in
@@ -56,14 +63,13 @@ struct RecordingSessionView: View {
                 }
                 .accessibilityLabel("Bookmark this moment")
 
-                Button {
+                ProtectedStopButton(ringColor: .red) {
                     Task { await model.stopRecording() }
                 } label: {
                     RoundedRectangle(cornerRadius: 8).fill(.red).frame(width: 34, height: 34)
                         .frame(width: 84, height: 84)
-                        .overlay(Circle().stroke(.primary.opacity(0.8), lineWidth: 4))
+                        .overlay(Circle().stroke(.primary.opacity(0.3), lineWidth: 4))
                 }
-                .accessibilityLabel("Stop and save")
 
                 Button {
                     recorder.togglePause()
@@ -78,6 +84,12 @@ struct RecordingSessionView: View {
             .sensoryFeedback(.success, trigger: bookmarkTick)
         }
         .padding()
+        .confirmationDialog("Stop recording?", isPresented: Binding(get: { model.stopConfirmationPending },
+                                                                    set: { model.stopConfirmationPending = $0 }),
+                            titleVisibility: .visible) {
+            Button("Stop and Save", role: .destructive) { Task { await model.stopRecording() } }
+            Button("Keep Recording", role: .cancel) {}
+        }
         .interactiveDismissDisabled()
         .persistentSystemOverlays(.hidden)
     }

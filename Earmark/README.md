@@ -13,6 +13,14 @@ Everything runs on your devices. There's no server and no subscription.
 
 ## Features
 
+**Never lose a recording by accident**
+- **Press and hold to stop** (about a second, with a filling ring) on iPhone, Watch and Mac. A quick tap just shows "Hold to stop". You can switch to tap-then-confirm, or a single tap.
+- **No Stop button on the Lock Screen / Dynamic Island** unless you turn it on, so a phone in a pocket can't end a recording. Bookmark and Pause stay available.
+- **Action Button, Watch double tap and the Mac hotkey bookmark while recording** instead of stopping (configurable). Tapping the Watch complication again never stops a recording.
+- **Crash-proof:** audio goes to a crash-safe file while recording, and bookmarks are saved every few seconds. If the app is force-quit, crashes or the battery dies, the recording is repaired and added to your library the next time Earmark opens (tagged `#recovered`).
+- Discard asks first, and a recording is never deleted until its final copy is safely saved.
+- **"Still paused" reminders** at 2 and 10 minutes, so an accidental pause doesn't quietly lose audio.
+
 **Recording**
 - One tap to record: the big red button on iPhone, the complication on Apple Watch, the menu bar or **⌃⌥⌘R** from any app on Mac.
 - Start from Siri ("Record with Earmark"), Shortcuts, the iPhone/Watch Ultra **Action Button**, the **Control Center** button or the Lock Screen widget.

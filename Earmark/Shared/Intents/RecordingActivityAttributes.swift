@@ -11,6 +11,8 @@ struct RecordingActivityAttributes: ActivityAttributes {
         /// Elapsed time at the moment of pausing (shown frozen while paused).
         var pausedElapsed: TimeInterval
         var bookmarkCount: Int
+        /// Off by default: a Stop button on the Lock Screen is too easy to hit in a pocket.
+        var allowsStop: Bool
     }
 
     var startedAt: Date

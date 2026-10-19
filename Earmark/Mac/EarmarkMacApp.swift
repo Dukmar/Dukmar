@@ -13,7 +13,7 @@ struct EarmarkMacApp: App {
                 .frame(minWidth: 820, minHeight: 520)
                 .task {
                     await model.start()
-                    hotKey.onPress = { Task { await AppModel.shared.toggleRecording() } }
+                    hotKey.onPress = { Task { await AppModel.shared.handleShortcutPress() } }
                     hotKey.setEnabled(UserDefaults.standard.bool(forKey: AppSettings.Key.macHotKeyEnabled))
                 }
                 .onOpenURL { url in Task { await model.handle(url: url) } }
@@ -34,8 +34,8 @@ struct EarmarkMacApp: App {
         }
         .commands {
             CommandMenu("Recording") {
-                Button(model.recorder.isActive ? "Stop Recording" : "Start Recording") {
-                    Task { await model.toggleRecording() }
+                Button(model.recorder.isActive ? "Stop Recording…" : "Start Recording") {
+                    Task { model.recorder.isActive ? await model.requestStop() : await model.startRecording() }
                 }
                 .keyboardShortcut("r", modifiers: .command)
                 Button(model.recorder.state == .paused ? "Resume" : "Pause") { model.recorder.togglePause() }
@@ -94,7 +94,7 @@ struct MacRootView: View {
                 .toolbar {
                     ToolbarItem {
                         Button {
-                            Task { await model.toggleRecording() }
+                            Task { model.recorder.isActive ? await model.requestStop() : await model.startRecording() }
                         } label: {
                             Label(model.recorder.isActive ? "Stop" : "Record",
                                   systemImage: model.recorder.isActive ? "stop.circle.fill" : "record.circle")
@@ -107,14 +107,22 @@ struct MacRootView: View {
                     }
                 }
         } detail: {
-            if model.recorder.isActive {
-                MacRecordingPanel()
-            } else if let id = model.selectedID {
-                RecordingDetailView(recordingID: id).id(id)
-            } else {
-                ContentUnavailableView("Select a Recording", systemImage: "waveform",
-                                       description: Text("Press ⌘R to record, or ⌃⌥⌘R from any app."))
-            }
+            detail
+        }
+        .confirmationDialog("Stop recording?", isPresented: $model.stopConfirmationPending, titleVisibility: .visible) {
+            Button("Stop and Save", role: .destructive) { Task { await model.stopRecording() } }
+            Button("Keep Recording", role: .cancel) {}
+        }
+    }
+
+    @ViewBuilder private var detail: some View {
+        if model.recorder.isActive {
+            MacRecordingPanel()
+        } else if let id = model.selectedID {
+            RecordingDetailView(recordingID: id).id(id)
+        } else {
+            ContentUnavailableView("Select a Recording", systemImage: "waveform",
+                                   description: Text("Press ⌘R to record, or ⌃⌥⌘R from any app."))
         }
     }
 }
@@ -146,9 +154,15 @@ struct MacRecordingPanel: View {
                     }
                 Button("Bookmark") { model.addBookmark() }
                 Button(model.recorder.state == .paused ? "Resume" : "Pause") { model.recorder.togglePause() }
-                Button("Stop") { Task { await model.stopRecording() } }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.red)
+                ProtectedStopButton {
+                    Task { await model.stopRecording() }
+                } label: {
+                    Image(systemName: "stop.fill")
+                        .foregroundStyle(.white)
+                        .frame(width: 36, height: 36)
+                        .background(.red, in: Circle())
+                }
+                .help(AppSettings.stopProtection == .hold ? "Press and hold to stop" : "Stop")
             }
         }
         .padding(24)

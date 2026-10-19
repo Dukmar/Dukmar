@@ -13,6 +13,10 @@ struct SettingsView: View {
     @AppStorage(AppSettings.Key.autoInsights) private var autoInsights = true
     @AppStorage(AppSettings.Key.tagLocation) private var tagLocation = false
     @AppStorage(AppSettings.Key.transcriptionLocale) private var transcriptionLocale = ""
+    @AppStorage(AppSettings.Key.stopProtection) private var stopProtection = StopProtection.hold.rawValue
+    @AppStorage(AppSettings.Key.lockScreenStop) private var lockScreenStop = false
+    @AppStorage(AppSettings.Key.shortcutWhileRecording) private var shortcutWhileRecording = ShortcutWhileRecording.bookmark.rawValue
+    @AppStorage(AppSettings.Key.pauseReminders) private var pauseReminders = true
     #if os(macOS)
     @AppStorage(AppSettings.Key.macHotKeyEnabled) private var hotKeyEnabled = true
     #endif
@@ -48,6 +52,23 @@ struct SettingsView: View {
                 #if os(macOS)
                 Toggle("Global shortcut ⌃⌥⌘R starts/stops recording", isOn: $hotKeyEnabled)
                 #endif
+            }
+
+            Section {
+                Picker("To stop a recording", selection: $stopProtection) {
+                    ForEach(StopProtection.allCases) { Text($0.label).tag($0.rawValue) }
+                }
+                Picker(shortcutLabel, selection: $shortcutWhileRecording) {
+                    ForEach(ShortcutWhileRecording.allCases) { Text($0.label).tag($0.rawValue) }
+                }
+                #if os(iOS)
+                Toggle("Stop button on Lock Screen", isOn: $lockScreenStop)
+                #endif
+                Toggle("Remind me if a recording stays paused", isOn: $pauseReminders)
+            } header: {
+                Text("Accidental Stop Protection")
+            } footer: {
+                Text("Earmark also saves recordings that are cut short by a crash, force quit or dead battery, and adds them to your library next time it opens.")
             }
 
             Section {
@@ -99,6 +120,14 @@ struct SettingsView: View {
             guard case .success(let folder) = result else { return }
             Task { await runImport(folder) }
         }
+    }
+
+    private var shortcutLabel: String {
+        #if os(macOS)
+        return "⌃⌥⌘R while recording"
+        #else
+        return "Action Button while recording"
+        #endif
     }
 
     private var storageDescription: String {

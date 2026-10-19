@@ -74,9 +74,15 @@ struct MenuBarRecorderView: View {
                 Button(model.recorder.state == .paused ? "Resume" : "Pause",
                        systemImage: model.recorder.state == .paused ? "record.circle" : "pause") { model.recorder.togglePause() }
                 Spacer()
-                Button("Stop", systemImage: "stop.fill") { Task { await model.stopRecording() } }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.red)
+                ProtectedStopButton {
+                    Task { await model.stopRecording() }
+                } label: {
+                    Image(systemName: "stop.fill")
+                        .foregroundStyle(.white)
+                        .frame(width: 30, height: 30)
+                        .background(.red, in: Circle())
+                }
+                .help(AppSettings.stopProtection == .hold ? "Press and hold to stop" : "Stop")
             }
         }
     }

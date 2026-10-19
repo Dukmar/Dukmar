@@ -37,7 +37,24 @@ enum RecordingQuality: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// Settings for `AVAudioFile(forWriting:settings:)` and `AVAudioRecorder`.
+    /// While recording, audio goes to 16-bit PCM in a CAF file. PCM has no index that needs writing at the end,
+    /// so if the app is killed mid-recording the file can be repaired and nothing is lost.
+    /// It's encoded to `fileSettings` when the recording stops.
+    var captureSettings: [String: Any] {
+        [
+            AVFormatIDKey: kAudioFormatLinearPCM,
+            AVSampleRateKey: sampleRate,
+            AVNumberOfChannelsKey: channels,
+            AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsFloatKey: false,
+            AVLinearPCMIsBigEndianKey: false,
+            AVLinearPCMIsNonInterleaved: false,
+        ]
+    }
+
+    static let captureExtension = "caf"
+
+    /// Settings for the final file.
     var fileSettings: [String: Any] {
         var settings: [String: Any] = [
             AVSampleRateKey: sampleRate,

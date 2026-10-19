@@ -35,8 +35,29 @@ iCloud Drive/Earmark/                        (ubiquity container iCloud.com.crst
 | Why | Live audio can also feed the live transcriber; voice processing ("Enhanced voice") | Most reliable for long background recording |
 | Background | `UIBackgroundModes: audio` + Live Activity | `WKBackgroundModes: audio` |
 
-Recordings are written to a temp folder and moved into the library when they stop, so iCloud never
-uploads a half-written file. Interruptions (calls, Siri) pause and resume automatically. Bookmarks and
+### Crash-safe capture
+
+While recording, audio is written as **16-bit PCM in a CAF file** in `Application Support/InProgress`
+(never purged by the system), and a `.checkpoint.json` with bookmarks, notes and elapsed time is
+rewritten every 10 seconds and on every bookmark or pause. PCM needs no index written at the end, so if
+the app is killed mid-recording every byte that reached the disk is usable: `CAFRepair` fixes the data
+chunk length and `Recorder.orphanedCaptures()` finds the leftovers on next launch.
+
+When a recording stops, `AudioFinalizer` encodes the capture into the chosen format (AAC / ALAC `.m4a`
+or `.wav`), the result is moved into the library, and **only then** is the capture deleted. If encoding
+fails, the raw CAF is saved instead. Recording to a local file first also means iCloud never uploads a
+half-written file.
+
+### Stop protection
+
+| Where | What protects it |
+|---|---|
+| On-screen stop buttons (iPhone, Watch, Mac) | `ProtectedStopButton`: hold ~1 s (default), or tap + confirm, or single tap |
+| Menu command, toolbar, `earmark://stop` | `AppModel.requestStop()` → confirmation unless set to single tap |
+| Action Button, Shortcut toggle, Watch double tap, Mac hotkey | `handleShortcutPress()` → bookmark while recording (default) |
+| Lock Screen / Dynamic Island | Stop button hidden unless "Stop button on Lock Screen" is on |
+| Complication / widget / "Start Recording" while recording | Start is a no-op if already recording |
+| Accidental pause | `PauseReminder` notifications at 2 and 10 minutes | Interruptions (calls, Siri) pause and resume automatically. Bookmarks and
 notes are timestamped with the recorder's elapsed time (pauses excluded).
 
 ## Watch → iPhone → iCloud

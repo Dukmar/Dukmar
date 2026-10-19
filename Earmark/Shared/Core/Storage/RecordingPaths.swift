@@ -67,11 +67,23 @@ enum RecordingPaths {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
     }
 
-    /// Scratch space for in-progress recordings. Recording to a local file and moving it into
-    /// iCloud when done avoids iCloud uploading a file that is still being written.
+    /// In-progress recordings. Recording to a local file and moving it into iCloud when done avoids iCloud
+    /// uploading a file that is still being written. It's in Application Support rather than tmp so the system
+    /// never purges it: anything left here after a crash is recovered on the next launch.
     static var inProgressFolder: URL {
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("InProgress", isDirectory: true)
-        try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+        var url = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+            .appendingPathComponent("InProgress", isDirectory: true)
+        if !FileManager.default.fileExists(atPath: url.path) {
+            try? FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+            var values = URLResourceValues()
+            values.isExcludedFromBackup = true
+            try? url.setResourceValues(values)
+        }
         return url
+    }
+
+    /// Bookmarks, notes and timing saved every few seconds while recording, for crash recovery.
+    static func checkpointURL(forCapture audioURL: URL) -> URL {
+        audioURL.deletingPathExtension().appendingPathExtension("checkpoint.json")
     }
 }

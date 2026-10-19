@@ -77,4 +77,37 @@ struct EarmarkCoreTests {
         #expect(srt.hasPrefix("1\n00:00:00,000 --> 00:00:02,500\nFirst line."))
         #expect(srt.contains("2\n00:00:02,500 --> 00:00:05,000\nSecond line."))
     }
+
+    @Test func cafRepairMarksStaleDataChunkAsRunningToEndOfFile() throws {
+        // 'caff' header, a 'desc' chunk, then a 'data' chunk whose size says 4 bytes but 1000 follow
+        // (what a crash mid-recording leaves behind).
+        var bytes = Data("caff".utf8) + Data([0, 1, 0, 0])
+        bytes += Data("desc".utf8) + bigEndian(32) + Data(repeating: 0, count: 32)
+        let dataSizeOffset = bytes.count + 4
+        bytes += Data("data".utf8) + bigEndian(4) + Data(repeating: 7, count: 1000)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).caf")
+        try bytes.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        CAFRepair.repairIfNeeded(url)
+
+        let repaired = try Data(contentsOf: url)
+        #expect(repaired[dataSizeOffset..<(dataSizeOffset + 8)].allSatisfy { $0 == 0xFF })
+        #expect(repaired.count == bytes.count)
+    }
+
+    @Test func cafRepairLeavesCompleteFilesAlone() throws {
+        var bytes = Data("caff".utf8) + Data([0, 1, 0, 0])
+        bytes += Data("data".utf8) + bigEndian(16) + Data(repeating: 7, count: 16)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("\(UUID().uuidString).caf")
+        try bytes.write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+
+        CAFRepair.repairIfNeeded(url)
+        #expect(try Data(contentsOf: url) == bytes)
+    }
+
+    private func bigEndian(_ value: UInt64) -> Data {
+        withUnsafeBytes(of: value.bigEndian) { Data($0) }
+    }
 }

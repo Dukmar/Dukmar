@@ -44,7 +44,8 @@ final class RecordingActivityController {
             isPaused: recorder.state == .paused,
             effectiveStart: Date.now.addingTimeInterval(-recorder.elapsed),
             pausedElapsed: recorder.elapsed,
-            bookmarkCount: recorder.bookmarks.count
+            bookmarkCount: recorder.bookmarks.count,
+            allowsStop: UserDefaults.standard.bool(forKey: AppSettings.Key.lockScreenStop)
         )
     }
 

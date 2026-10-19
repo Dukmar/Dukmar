@@ -31,11 +31,12 @@ struct WatchStartRecordingIntent: AppIntent {
 }
 
 struct WatchToggleRecordingIntent: AppIntent {
-    static let title: LocalizedStringResource = "Start or Stop Recording"
+    static let title: LocalizedStringResource = "Record or Bookmark"
+    static let description = IntentDescription("Starts a recording. While recording, adds a bookmark instead of stopping.")
     static let openAppWhenRun = true
 
     func perform() async throws -> some IntentResult {
-        await WatchModel.shared.toggle()
+        await WatchModel.shared.handleShortcutPress()
         return .result()
     }
 }
@@ -47,6 +48,6 @@ struct WatchShortcuts: AppShortcutsProvider {
                     shortTitle: "Record", systemImageName: "record.circle")
         AppShortcut(intent: WatchToggleRecordingIntent(),
                     phrases: ["Toggle \(.applicationName) recording"],
-                    shortTitle: "Start/Stop", systemImageName: "record.circle.fill")
+                    shortTitle: "Record or Bookmark", systemImageName: "record.circle.fill")
     }
 }
