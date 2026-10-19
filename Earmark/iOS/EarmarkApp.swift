@@ -7,14 +7,16 @@ struct EarmarkApp: App {
     @Environment(\.scenePhase) private var scenePhase
     private let activityController = RecordingActivityController()
 
+    init() {
+        // Hook up the Live Activity before any intent can start a recording on a cold launch.
+        activityController.attach(to: AppModel.shared)
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(model)
-                .task {
-                    activityController.attach(to: model)
-                    await model.start()
-                }
+                .task { await model.start() }
                 .onOpenURL { url in Task { await model.handle(url: url) } }
                 .onContinueUserActivity(CSSearchableItemActionType) { activity in
                     model.selectedID = SpotlightIndexer.recordingID(from: activity)

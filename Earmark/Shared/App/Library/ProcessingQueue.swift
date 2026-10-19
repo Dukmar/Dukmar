@@ -26,14 +26,32 @@ final class ProcessingQueue {
         let autoInsights = defaults.bool(forKey: AppSettings.Key.autoInsights) && InsightsGenerator.isAvailable
         for item in library.items {
             let m = item.metadata
-            let needsTranscript = autoTranscribe && (m.transcriptionState == .pending || m.transcriptionState == .inProgress)
+            let needsTranscript = autoTranscribe
+                && (m.transcriptionState == .pending || m.transcriptionState == .inProgress)
+                && isOurs(m)
             let needsInsights = autoInsights && m.transcript != nil && m.insights == nil && !(m.transcript?.fullText.isEmpty ?? true)
             if needsTranscript || needsInsights { enqueue(item.id) }
         }
     }
 
+    /// iPhone and Mac share one library, so avoid both transcribing the same recording (wasted work and
+    /// iCloud conflicts on the sidecar). The device that made it does it; the iPhone takes Watch recordings;
+    /// anyone takes imports. If the owner hasn't done it within 15 minutes (Mac asleep, phone off), anyone may.
+    private func isOurs(_ m: RecordingMetadata) -> Bool {
+        if m.source == .current || m.source == .imported { return true }
+        #if os(iOS)
+        if m.source == .watch { return true }
+        #endif
+        return Date.now.timeIntervalSince(m.createdAt) > 15 * 60
+    }
+
     func enqueue(_ id: UUID, front: Bool = false) {
-        guard id != currentID, !queue.contains(id) else { return }
+        guard id != currentID else { return }
+        if let existing = queue.firstIndex(of: id) {
+            // Already waiting: a new recording the user just made should still jump the line.
+            guard front, existing != 0 else { return }
+            queue.remove(at: existing)
+        }
         front ? queue.insert(id, at: 0) : queue.append(id)
         pendingCount = queue.count
         startIfNeeded()

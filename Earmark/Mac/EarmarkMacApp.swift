@@ -109,10 +109,6 @@ struct MacRootView: View {
         } detail: {
             detail
         }
-        .confirmationDialog("Stop recording?", isPresented: $model.stopConfirmationPending, titleVisibility: .visible) {
-            Button("Stop and Save", role: .destructive) { Task { await model.stopRecording() } }
-            Button("Keep Recording", role: .cancel) {}
-        }
     }
 
     @ViewBuilder private var detail: some View {

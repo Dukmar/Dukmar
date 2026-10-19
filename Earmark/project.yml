@@ -162,6 +162,7 @@ targets:
         NSMicrophoneUsageDescription: Earmark records audio when you start a recording.
         NSSpeechRecognitionUsageDescription: Earmark transcribes your recordings on this Mac.
         NSLocationUsageDescription: If you turn on location naming, Earmark names recordings after where you made them.
+        NSLocationWhenInUseUsageDescription: If you turn on location naming, Earmark names recordings after where you made them.
         NSUserActivityTypes: [com.apple.corespotlightitem]
         CFBundleURLTypes:
           - CFBundleURLName: com.crstudios.earmark.mac

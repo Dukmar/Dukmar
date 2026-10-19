@@ -22,7 +22,7 @@ struct RecordingSessionView: View {
                 Button("Discard", role: .destructive) { confirmDiscard = true }
                     .font(.callout)
                     .confirmationDialog("Delete this recording?", isPresented: $confirmDiscard, titleVisibility: .visible) {
-                        Button("Delete Recording", role: .destructive) { recorder.discard() }
+                        Button("Delete Recording", role: .destructive) { Task { await model.discardRecording() } }
                         Button("Keep Recording", role: .cancel) {}
                     } message: {
                         Text("The audio recorded so far will be thrown away.")

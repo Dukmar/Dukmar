@@ -18,12 +18,7 @@ final class GlobalHotKey {
         guard hotKeyRef == nil else { return }
         var eventType = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
         let context = Unmanaged.passUnretained(self).toOpaque()
-        InstallEventHandler(GetApplicationEventTarget(), { _, _, userData in
-            guard let userData else { return noErr }
-            let hotKey = Unmanaged<GlobalHotKey>.fromOpaque(userData).takeUnretainedValue()
-            DispatchQueue.main.async { MainActor.assumeIsolated { hotKey.onPress?() } }
-            return noErr
-        }, 1, &eventType, context, &handlerRef)
+        InstallEventHandler(GetApplicationEventTarget(), earmarkHotKeyHandler, 1, &eventType, context, &handlerRef)
 
         let id = EventHotKeyID(signature: OSType(0x45524D4B), id: 1) // "ERMK"
         RegisterEventHotKey(UInt32(kVK_ANSI_R), UInt32(cmdKey | optionKey | controlKey), id,
@@ -36,4 +31,12 @@ final class GlobalHotKey {
         hotKeyRef = nil
         handlerRef = nil
     }
+}
+
+/// C callback for the hot key. Lives at file scope so it isn't inferred as main-actor isolated.
+private func earmarkHotKeyHandler(_: EventHandlerCallRef?, _: EventRef?, _ userData: UnsafeMutableRawPointer?) -> OSStatus {
+    guard let userData else { return noErr }
+    let hotKey = Unmanaged<GlobalHotKey>.fromOpaque(userData).takeUnretainedValue()
+    DispatchQueue.main.async { MainActor.assumeIsolated { hotKey.onPress?() } }
+    return noErr
 }

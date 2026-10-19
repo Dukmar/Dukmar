@@ -139,9 +139,11 @@ final class RecordingLibrary {
         }
 
         let previousIDs = Set(items.map(\.id))
+        let previouslyDownloaded = Set(items.filter(\.isDownloaded).map(\.id))
         items = scanned.0.items.sorted { $0.metadata.createdAt > $1.metadata.createdAt }
         deletedItems = scanned.1.items.sorted { ($0.metadata.deletedAt ?? .distantPast) > ($1.metadata.deletedAt ?? .distantPast) }
-        if Set(items.map(\.id)) != previousIDs || !isLoaded {
+        // A finished iCloud download also counts as a change: it may be waiting to be transcribed.
+        if Set(items.map(\.id)) != previousIDs || Set(items.filter(\.isDownloaded).map(\.id)) != previouslyDownloaded || !isLoaded {
             onItemsChanged?(items)
         }
     }
@@ -183,6 +185,12 @@ final class RecordingLibrary {
                 metadata = cached.metadata
             } else if let loaded = try? MetadataIO.read(metadataURL) {
                 metadata = loaded
+            } else if sidecarExists(metadataURL) {
+                // The sidecar is there but couldn't be read yet (still in iCloud, or offline). Never invent
+                // replacement metadata for it: that would overwrite the title, transcript and notes.
+                // The recording appears once its sidecar arrives.
+                try? FileManager.default.startDownloadingUbiquitousItem(at: metadataURL)
+                continue
             } else {
                 metadata = defaultMetadata(for: audioURL, relativeTo: folder)
             }
@@ -192,6 +200,13 @@ final class RecordingLibrary {
             result.items.append(RecordingItem(audioURL: audioURL, metadata: metadata, isDownloaded: downloaded))
         }
         return result
+    }
+
+    /// True if the sidecar exists locally or as an iCloud placeholder (".name.earmark.json.icloud").
+    nonisolated private static func sidecarExists(_ url: URL) -> Bool {
+        if FileManager.default.fileExists(atPath: url.path) { return true }
+        let placeholder = url.deletingLastPathComponent().appendingPathComponent("." + url.lastPathComponent + ".icloud")
+        return FileManager.default.fileExists(atPath: placeholder.path)
     }
 
     nonisolated private static func defaultMetadata(for audioURL: URL, relativeTo folder: URL) -> RecordingMetadata {
@@ -254,10 +269,13 @@ final class RecordingLibrary {
         return nil
     }
 
+    /// One serial queue for sidecar writes, so quick successive edits land in order.
+    @ObservationIgnored private let writeQueue = DispatchQueue(label: "com.crstudios.earmark.metadata-writes", qos: .utility)
+
     private func persist(_ item: RecordingItem) {
         let metadata = item.metadata
         let url = item.metadataURL
-        Task.detached(priority: .utility) {
+        writeQueue.async {
             try? MetadataIO.write(metadata, to: url)
         }
     }

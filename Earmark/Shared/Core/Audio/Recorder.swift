@@ -220,11 +220,12 @@ final class Recorder {
     }
 
     /// Captures left behind by a crash, force quit or dead battery. Excludes the one being recorded right now.
-    func orphanedCaptures() -> [Finished] {
+    func orphanedCaptures(excluding inFlight: Set<String> = []) -> [Finished] {
         let folder = RecordingPaths.inProgressFolder
         let files = (try? FileManager.default.contentsOfDirectory(at: folder, includingPropertiesForKeys: [.fileSizeKey])) ?? []
         var orphans: [Finished] = []
-        for file in files where RecordingPaths.isAudioFile(file) && file != fileURL {
+        let skip = inFlight.union([fileURL?.standardizedFileURL.path].compactMap { $0 })
+        for file in files where RecordingPaths.isAudioFile(file) && !skip.contains(file.standardizedFileURL.path) {
             let size = (try? file.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
             guard size > 4096 else { Self.removeCapture(file); continue } // nothing usable was recorded
             let checkpointURL = RecordingPaths.checkpointURL(forCapture: file)

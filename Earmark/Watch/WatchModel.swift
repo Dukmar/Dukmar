@@ -46,7 +46,8 @@ final class WatchModel {
     func start() async {
         guard !recorder.isActive else { return }
         do {
-            try await recorder.start(quality: .standard, enhancedVoice: false)
+            // Compact AAC (32 kHz mono) keeps the Watch's temporary capture to ~230 MB/hour and transfers quickly.
+            try await recorder.start(quality: .compact, enhancedVoice: false)
             WKInterfaceDevice.current().play(.start)
         } catch {
             errorMessage = error.localizedDescription

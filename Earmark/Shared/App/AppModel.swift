@@ -1,5 +1,10 @@
 import Foundation
 import Observation
+#if os(iOS)
+import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
 
 /// One per app (iPhone, Mac). Owns the library, recorder and background work, and is what
 /// Siri / Shortcuts / Control Center / the menu bar talk to.
@@ -24,24 +29,24 @@ final class AppModel {
     private(set) var isWatchReachable = false
     /// Recordings being encoded and saved after stopping.
     private(set) var savingCount = 0
-    /// Set when a stop needs confirming (protection mode "Tap, then confirm" from a menu or shortcut).
+    /// iPhone: set when a stop from a deep link needs confirming (the Mac asks with an alert instead).
     var stopConfirmationPending = false
 
     /// iPhone hooks this up to the Live Activity.
     @ObservationIgnored var onRecorderStateChange: ((Recorder.State) -> Void)?
 
     @ObservationIgnored private var started = false
+    @ObservationIgnored private var prepareTask: Task<Void, Never>?
+    /// Captures being encoded/saved right now, so crash recovery doesn't mistake them for orphans.
+    @ObservationIgnored private var capturesInFlight: Set<String> = []
 
+    /// Everything here must work even when the app is cold-launched straight into an intent
+    /// (Action Button, Control Center) or in the background to receive a Watch file, before any scene exists.
     private init() {
         AppSettings.register()
         let library = RecordingLibrary()
         self.library = library
         processing = ProcessingQueue(library: library)
-    }
-
-    func start() async {
-        guard !started else { return }
-        started = true
 
         recorder.onStateChange = { [weak self] state in self?.onRecorderStateChange?(state) }
         library.onItemsChanged = { [weak self] items in
@@ -55,8 +60,19 @@ final class AppModel {
         WatchSync.shared.onReachabilityChanged = { [weak self] reachable in self?.isWatchReachable = reachable }
         WatchSync.shared.activate()
         #endif
+    }
 
-        await library.prepare()
+    /// Finds the iCloud folder and loads the library, once. Saving a recording waits for this.
+    func prepareLibrary() async {
+        if prepareTask == nil { prepareTask = Task { await library.prepare() } }
+        await prepareTask?.value
+    }
+
+    func start() async {
+        guard !started else { return }
+        started = true
+
+        await prepareLibrary()
         await recoverInterruptedRecordings()
         #if os(iOS)
         await drainWatchInbox()
@@ -121,9 +137,20 @@ final class AppModel {
         guard recorder.isActive else { return }
         if AppSettings.stopProtection == .tap {
             await stopRecording()
-        } else {
-            stopConfirmationPending = true
+            return
         }
+        #if os(macOS)
+        // From a menu, toolbar or menu-bar item the main window may be closed, so ask with a standalone alert.
+        let alert = NSAlert()
+        alert.messageText = "Stop recording?"
+        alert.informativeText = "The recording will be saved."
+        alert.addButton(withTitle: "Stop and Save")
+        alert.addButton(withTitle: "Keep Recording")
+        NSApplication.shared.activate()
+        if alert.runModal() == .alertFirstButtonReturn { await stopRecording() }
+        #else
+        stopConfirmationPending = true
+        #endif
     }
 
     @discardableResult
@@ -140,11 +167,31 @@ final class AppModel {
         return item
     }
 
+    /// Throw away the recording in progress (after the user confirmed).
+    func discardRecording() async {
+        recorder.bufferHandler = nil
+        recorder.discard()
+        await liveTranscriber.stop()
+    }
+
     /// Encodes a capture into its final format and moves it into the library. The capture (and its
     /// checkpoint) is deleted only after that succeeds, so a failure here never loses audio.
     private func save(_ finished: Recorder.Finished) async -> RecordingItem? {
+        let key = finished.audioURL.standardizedFileURL.path
+        capturesInFlight.insert(key)
         savingCount += 1
-        defer { savingCount -= 1 }
+        #if os(iOS)
+        // Stopping from the Lock Screen or Siri leaves the app in the background; finish saving anyway.
+        let backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Save recording")
+        #endif
+        defer {
+            capturesInFlight.remove(key)
+            savingCount -= 1
+            #if os(iOS)
+            UIApplication.shared.endBackgroundTask(backgroundTask)
+            #endif
+        }
+        await prepareLibrary()
         do {
             let encoded: URL
             do {
@@ -168,7 +215,7 @@ final class AppModel {
     /// Recordings cut short by a crash, force quit or dead battery are saved on the next launch.
     func recoverInterruptedRecordings() async {
         guard !recorder.isActive else { return }
-        let orphans = recorder.orphanedCaptures()
+        let orphans = recorder.orphanedCaptures(excluding: capturesInFlight)
         guard !orphans.isEmpty else { return }
         var recovered = 0
         for orphan in orphans {
