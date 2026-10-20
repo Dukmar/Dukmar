@@ -103,9 +103,30 @@ Earmark/
 
 ## Status
 
-This is a complete first version of the source, written without access to a Mac, so it hasn't been
-compiled yet. Expect a short round of fixes the first time you build it in Xcode. Device testing is
-needed for background recording on the Watch, iCloud sync timing and the Live Activity.
+_Last updated: October 20, 2026_
+
+**Done (cloud session, Oct 19–20):**
+- Research on the best recorder apps → feature set ([docs/RESEARCH.md](docs/RESEARCH.md)).
+- Full source for iPhone, Watch, Mac, widgets and complications.
+- Accidental-stop protection and crash recovery.
+- A code review pass, with its fixes applied.
+- Core unit tests (`EarmarkCoreTests`).
+
+**Not yet done:** the code was written without a Mac, so it has **never been compiled or run**.
+
+**Next steps** (continuing locally on the Mac):
+1. Generate the project, build every scheme, and fix compile errors.
+2. Run `EarmarkCoreTests`.
+3. Sign with an Apple developer team and enable the iCloud container.
+4. Test on real devices:
+   - Watch background recording with the wrist down.
+   - Watch → iPhone transfer, and the CloudKit inbox when the iPhone is away.
+   - iCloud Drive sync to Finder.
+   - Live Activity and Control Center button.
+   - Hold-to-stop on each device.
+   - Crash recovery: force-quit mid-recording, reopen, and look for `#recovered`.
+5. Import the existing Just Press Record library.
+6. Optionally move the app out of the profile repo into its own repository.
 
 ## Roadmap ideas
 - Speaker labels (when Apple's speech APIs add diarization).
