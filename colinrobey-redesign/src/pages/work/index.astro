@@ -1,0 +1,42 @@
+---
+import Base from '../../layouts/Base.astro';
+import ContactBand from '../../components/ContactBand.astro';
+import MarkupDemo from '../../components/MarkupDemo.astro';
+import { STORY } from '../../data/site';
+---
+<Base title="Website Work & Case Studies | Colin Robey, Burlington" description="Websites I’ve designed and built for small Ontario businesses, with before-and-after screenshots and numbers you can check yourself." crumbs={[{ name: 'Work', href: '/work/' }]}>
+  <main id="main">
+    <section class="page-hero">
+      <div class="wrap">
+        <p class="eyebrow">Work</p>
+        <h1>Before, after, and numbers you can check.</h1>
+        <p class="lead">I take on a few clients at a time, so this list grows slowly and every entry is real. Each case study shows what changed and how you can verify it yourself.</p>
+      </div>
+    </section>
+    <section class="section--tight" style="padding-top:0">
+      <div class="wrap">
+        <a href="/work/the-story-group/" class="card feature-card">
+          <img src="/work/storygroup-after-1080.webp" alt="The rebuilt storygroup.ca homepage" width="1440" height="1024" loading="eager" style="aspect-ratio:1440/1024; height:100%" />
+          <div style="padding:clamp(1.25rem,1rem + 2vw,2.5rem)">
+            <p class="card-tag" style="margin:0 0 .75rem">Recruiting · Oakville, ON</p>
+            <h2 style="font-size:var(--step-3); margin:0 0 .75rem">The STORY Group</h2>
+            <p style="margin:0 0 1rem; color:var(--ink-soft)">An aging Wix site, rebuilt to be found: a page for each specialty, forms that finally track inquiries, and mobile speed from {STORY.speedBefore} to {STORY.speedAfter}.</p>
+            <span class="link">Read the case study →</span>
+          </div>
+        </a>
+      </div>
+    </section>
+    <section class="section band-paper2" aria-labelledby="demo-h">
+      <div class="wrap two-col" style="align-items:center">
+        <div>
+          <p class="eyebrow">How I look at a site</p>
+          <h2 id="demo-h">Every rebuild starts with a red pen.</h2>
+          <p class="lead">Before anything gets designed, I mark up what’s there: what it says, what it doesn’t, what’s slow, and what Google and the AI assistants can’t read. The free scorecard is the short version of that.</p>
+          <a class="btn btn-pen" href="/scorecard/">Get your site marked up, free <span class="arrow">→</span></a>
+        </div>
+        <MarkupDemo />
+      </div>
+    </section>
+    <ContactBand service="General enquiry (work page)" />
+  </main>
+</Base>

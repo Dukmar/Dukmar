@@ -1,0 +1,121 @@
+---
+import Base from '../layouts/Base.astro';
+import Faq from '../components/Faq.astro';
+import SpeedChecker from '../components/SpeedChecker.astro';
+import { SCORECARD_FAQS, SITE, BUSINESS } from '../data/site';
+import { faqSchema } from '../lib/schema';
+const grades = [
+  { g: 'B+', k: 'Design', d: 'How it looks and reads, on any screen.' },
+  { g: 'C', k: 'SEO', d: 'Whether Google can find you for more than your own name.' },
+  { g: 'D', k: 'AI-Readiness', d: 'Whether assistants can read your site well enough to recommend you.' },
+  { g: 'B–', k: 'Performance', d: 'How fast it loads, on the score Google actually weighs.' },
+];
+const offer = {
+  '@type': 'Service',
+  '@id': `${SITE}/scorecard/#service`,
+  name: 'Free Website Scorecard',
+  serviceType: 'Website review',
+  description: 'A free one-page review of a small-business website: letter grades on design, SEO, AI-Readiness and performance, plus the three things to fix first. Sent by email.',
+  provider: { '@id': BUSINESS.id },
+  offers: { '@type': 'Offer', price: '0', priceCurrency: 'CAD' },
+};
+---
+<Base
+  title="Free Website Scorecard for Small Businesses | Colin Robey"
+  description="A free one-page read on your website: letter grades on design, SEO, AI-Readiness and performance, plus the first three things to fix. Reviewed by a person, sent by email."
+  crumbs={[{ name: 'Free scorecard', href: '/scorecard/' }]}
+  schema={[offer, faqSchema(SCORECARD_FAQS, '/scorecard/')]}
+>
+  <main id="main">
+    <section class="page-hero">
+      <div class="wrap two-col" style="align-items:center">
+        <div>
+          <p class="eyebrow">Free · sent by email</p>
+          <h1>A free, honest read on your website.</h1>
+          <p class="lead">Tell me your site and I’ll send back a one-page scorecard: how it looks, how fast it loads, how easy it is to find in Google and in AI answers, and the first three things I’d fix.</p>
+          <p class="hand" style="font-size:1.6rem; margin:0">Reviewed by me, not a robot. Usually within a few days.</p>
+        </div>
+        <div class="form-card" id="request" style="box-shadow: 8px 8px 0 var(--ink); border:2px solid var(--ink)">
+          <h2 style="font-size:var(--step-2)">Send me your website.</h2>
+          <form class="form" name="scorecard" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/success/">
+            <input type="hidden" name="form-name" value="scorecard" />
+            <input type="hidden" name="subject" value="📋 Scorecard request — colinrobey.ca" />
+            <p class="hp" aria-hidden="true"><label>Leave this empty: <input name="bot-field" tabindex="-1" autocomplete="off" /></label></p>
+            <div class="field"><label for="sc-website">Your website</label><input id="sc-website" name="website" inputmode="url" placeholder="yourbusiness.ca" autocomplete="url" required /></div>
+            <div class="field"><label for="sc-name">Name</label><input id="sc-name" name="name" autocomplete="name" required /></div>
+            <div class="field"><label for="sc-email">Email <span class="opt-txt">(where I’ll send it)</span></label><input id="sc-email" type="email" name="email" autocomplete="email" required /></div>
+            <div class="field"><label for="sc-msg">Anything you’d like me to know <span class="opt-txt">(optional)</span></label><textarea id="sc-msg" name="message" style="min-height:90px"></textarea></div>
+            <button class="btn btn-pen" type="submit">Send me the scorecard <span class="arrow">→</span></button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="section band-paper2" aria-labelledby="sample-h">
+      <div class="wrap two-col" style="align-items:center">
+        <div>
+          <p class="eyebrow">What one looks like</p>
+          <h2 id="sample-h">Four grades and a short list.</h2>
+          <p class="lead">Every scorecard is built off your own site, not a template. Here’s a sample for a made-up business.</p>
+        </div>
+        <div class="form-card" style="rotate:-1deg">
+          <div style="display:flex; justify-content:space-between; align-items:baseline; border-bottom:2px solid var(--ink); padding-bottom:.75rem; margin-bottom:1rem">
+            <div><strong style="font-family:var(--display); font-size:1.3rem">Northside Fabrication</strong><br /><span class="small muted">northside-fab.ca</span></div>
+            <span class="chip">Sample</span>
+          </div>
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:.75rem; margin-bottom:1.25rem">
+            {grades.map((x) => (
+              <div style="border:1px solid var(--line); border-radius:10px; padding:.75rem; text-align:center">
+                <div style="font:800 2.2rem/1 var(--display); color:var(--pen-deep)">{x.g}</div>
+                <div style="font-weight:700; font-size:.9rem">{x.k}</div>
+              </div>
+            ))}
+          </div>
+          <p style="font-weight:700; margin-bottom:.5rem">The three things I’d fix first</p>
+          <ol style="margin:0; padding-left:1.2rem; display:grid; gap:.5rem; font-size:.95rem; color:var(--ink-soft)">
+            <li>Rewrite the homepage headline so it says what you build. Right now Google can’t tell you apart from a hardware store.</li>
+            <li>Compress the hero image (1.4&nbsp;MB today). It’s the main reason the mobile speed score is low.</li>
+            <li>Add a short FAQ so an AI assistant can quote you when someone asks it for a fabricator.</li>
+          </ol>
+          <p class="hand" style="font-size:1.5rem; margin:1rem 0 0; text-align:right">— Colin</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="grades-h">
+      <div class="wrap">
+        <div class="head"><p class="eyebrow">What’s on it</p><h2 id="grades-h">What each grade measures.</h2></div>
+        <ul class="ticks" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr)); gap:1.5rem 2rem">
+          {grades.map((x) => <li><strong>{x.k}</strong>{x.d}</li>)}
+        </ul>
+      </div>
+    </section>
+
+    <section class="section--tight band-pine" aria-labelledby="try-h">
+      <div class="wrap two-col" style="align-items:center">
+        <div><h2 id="try-h" style="font-size:var(--step-3)">Can’t wait a few days?</h2><p>Run Google’s mobile speed test on your site right now. It’s one of the four grades, and you’ll see where you stand in about twenty seconds.</p></div>
+        <SpeedChecker />
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="scfaq-h">
+      <div class="wrap faq-grid">
+        <div class="head"><p class="eyebrow">Questions</p><h2 id="scfaq-h">About the scorecard.</h2></div>
+        <Faq faqs={SCORECARD_FAQS} />
+      </div>
+    </section>
+  </main>
+  <script is:inline>
+    // Prefill from the homepage's ?website= hand-off, and accept "northside-fab.ca" as typed.
+    (function () {
+      var w = document.getElementById('sc-website');
+      if (!w) return;
+      try { var q = new URLSearchParams(location.search).get('website'); if (q) w.value = q; } catch (_) {}
+      w.form.addEventListener('submit', function () {
+        var v = w.value.trim();
+        if (v && !/^[a-z][a-z0-9+.-]*:\/\//i.test(v)) w.value = 'https://' + v;
+      });
+      if (w.value) { var n = document.getElementById('sc-name'); if (n) n.focus({ preventScroll: true }); }
+    })();
+  </script>
+</Base>

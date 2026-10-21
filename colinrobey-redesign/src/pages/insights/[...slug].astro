@@ -1,0 +1,96 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Faq from '../../components/Faq.astro';
+import InsightCards from '../../components/InsightCards.astro';
+import { Image } from 'astro:assets';
+import portrait from '../../assets/colin-robey-headshot.jpg';
+import { getPosts, readingTime, formatDate, iso, faqSchema } from '../../lib/schema';
+import { SITE, AUTHOR, BUSINESS } from '../../data/site';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+const { post } = Astro.props;
+const { Content } = await render(post);
+const { title, seoTitle, description, answer, pubDate, updatedDate, tag, faqs, image, imageAlt } = post.data;
+const path = `/insights/${post.id}/`;
+const url = `${SITE}${path}`;
+const published = iso(pubDate);
+const modified = iso(updatedDate ?? pubDate);
+const schema: Record<string, unknown>[] = [{
+  '@type': 'BlogPosting',
+  '@id': `${url}#post`,
+  headline: title,
+  description,
+  abstract: answer,
+  datePublished: published,
+  dateModified: modified,
+  ...(image ? { image: { '@type': 'ImageObject', url: `${SITE}${image}`, width: 1200, height: 630 } } : {}),
+  author: { '@id': AUTHOR.id },
+  publisher: { '@id': BUSINESS.id },
+  mainEntityOfPage: { '@id': `${url}#webpage` },
+  isPartOf: { '@id': `${SITE}/insights/#blog` },
+  keywords: tag,
+  inLanguage: 'en-CA',
+  wordCount: (post.body ?? '').split(/\s+/).filter(Boolean).length,
+}];
+if (faqs?.length) schema.push(faqSchema(faqs, path));
+---
+<Base
+  title={seoTitle ?? `${title} | Colin Robey`}
+  description={description}
+  image={image}
+  imageAlt={image ? (imageAlt ?? `Colin Robey Insights card: “${title}”`) : undefined}
+  type="article"
+  published={published}
+  modified={modified}
+  crumbs={[{ name: 'Insights', href: '/insights/' }, { name: title, href: path }]}
+  schema={schema}
+>
+  <main id="main">
+    <article>
+      <header class="page-hero" style="padding-bottom:1.5rem">
+        <div class="wrap" style="max-width:calc(820px + 2 * var(--gutter))">
+          <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/insights/">Insights</a></nav>
+          <p class="eyebrow">{tag}</p>
+          <h1 style="font-size:var(--step-4); max-width:none">{title}</h1>
+          <div class="byline">
+            <Image src={portrait} alt="" width={88} height={88} />
+            <span><strong>Colin Robey</strong> · Website designer, Burlington</span>
+            <span>Published <time datetime={published}>{formatDate(pubDate)}</time></span>
+            {updatedDate && <span>Updated <time datetime={modified}>{formatDate(updatedDate)}</time></span>}
+            <span>{readingTime(post.body ?? '')}</span>
+          </div>
+        </div>
+      </header>
+      <div class="wrap" style="max-width:calc(820px + 2 * var(--gutter))">
+        <div class="answer" style="margin-bottom:2.5rem">
+          <p class="answer-label">The short answer</p>
+          <p>{answer}</p>
+        </div>
+        <div class="prose"><Content /></div>
+        {faqs?.length ? (
+          <section style="margin-top:3rem" aria-labelledby="pfaq-h">
+            <h2 id="pfaq-h" style="font-size:var(--step-3)">Questions people ask</h2>
+            <Faq faqs={faqs} openFirst={false} />
+          </section>
+        ) : null}
+        <aside class="form-card" style="margin:3.5rem 0 0; display:grid; grid-template-columns:auto 1fr; gap:1.25rem; align-items:center; box-shadow:none; border:1px solid var(--line)">
+          <Image src={portrait} alt="Colin Robey" width={160} height={160} style="width:80px; height:80px; border-radius:50%; object-fit:cover" />
+          <div>
+            <p style="margin:0 0 .4rem"><strong>Colin Robey</strong> designs and builds websites for small Ontario service businesses, built to be found in Google and in AI answers.</p>
+            <p style="margin:0"><a class="link" href="/scorecard/">Get a free scorecard on your site →</a></p>
+          </div>
+        </aside>
+      </div>
+    </article>
+    <section class="section band-paper2" style="margin-top:4rem" aria-labelledby="more-h">
+      <div class="wrap">
+        <h2 id="more-h" style="font-size:var(--step-3)">Keep reading</h2>
+        <InsightCards limit={3} exclude={post.id} />
+      </div>
+    </section>
+  </main>
+</Base>

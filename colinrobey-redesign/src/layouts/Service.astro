@@ -1,0 +1,101 @@
+---
+// Shared template for the three paid services. Every service page answers, in order:
+// what is it (answer card, quotable on its own), what's in it, how it runs, proof, FAQ, ask.
+import Base from './Base.astro';
+import Faq from '../components/Faq.astro';
+import ContactBand from '../components/ContactBand.astro';
+import { SERVICES, SITE, BUSINESS, AREAS, type Faq as FaqT } from '../data/site';
+import { faqSchema } from '../lib/schema';
+
+interface Props {
+  slug: string;
+  title: string;
+  description: string;
+  h1: string;
+  intro: string;
+  answer: string;
+  faqs: FaqT[];
+  serviceType: string;
+  ask: { heading: string; body: string; label: string };
+}
+const { slug, title, description, h1, intro, answer, faqs, serviceType, ask } = Astro.props;
+const s = SERVICES.find((x) => x.slug === slug)!;
+const path = s.href;
+const url = `${SITE}${path}`;
+const others = SERVICES.filter((x) => x.slug !== slug);
+
+const service = {
+  '@type': 'Service',
+  '@id': `${url}#service`,
+  name: s.name,
+  serviceType,
+  description: answer,
+  url,
+  provider: { '@id': BUSINESS.id },
+  areaServed: AREAS.map((a) => ({ '@type': 'City', name: `${a.name}, Ontario` })),
+  offers: {
+    '@type': 'Offer',
+    price: String(s.priceValue),
+    priceCurrency: 'CAD',
+    ...(s.price.startsWith('from') ? { priceSpecification: { '@type': 'PriceSpecification', minPrice: String(s.priceValue), priceCurrency: 'CAD' } } : {}),
+    url,
+    availability: 'https://schema.org/InStock',
+  },
+};
+---
+<Base title={title} description={description} crumbs={[{ name: 'Services', href: '/services/' }, { name: s.name, href: path }]} schema={[service, faqSchema(faqs, path)]}>
+  <main id="main">
+    <section class="page-hero">
+      <div class="wrap">
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/services/">Services</a><span>/</span><span>{s.name}</span></nav>
+        <p class="eyebrow">{s.name} · {s.price}</p>
+        <h1>{h1}</h1>
+        <p class="lead">{intro}</p>
+        <div class="hero-actions" style="margin-top:1.75rem">
+          <a class="btn btn-pen" href="#ask">{ask.label} <span class="arrow">→</span></a>
+          <a class="btn btn-ghost" href="/scorecard/">Or start with the free scorecard</a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section--tight" style="padding-top:0">
+      <div class="wrap">
+        <div class="answer">
+          <p class="answer-label">The short answer</p>
+          <p>{answer}</p>
+        </div>
+      </div>
+    </section>
+
+    <slot />
+
+    <section class="section" aria-labelledby="sfaq-h">
+      <div class="wrap faq-grid">
+        <div class="head">
+          <p class="eyebrow">Questions</p>
+          <h2 id="sfaq-h">Common questions about the {s.name}.</h2>
+          <p>Something else on your mind? <a class="link" href="#ask">Ask me directly.</a></p>
+        </div>
+        <Faq faqs={faqs} />
+      </div>
+    </section>
+
+    <section class="section--tight band-paper2" aria-labelledby="other-h">
+      <div class="wrap">
+        <h2 id="other-h" style="font-size:var(--step-2)">The other ways in</h2>
+        <div class="cards" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr))">
+          {others.map((o) => (
+            <a class="card" href={o.href} style="padding-top:1.1rem">
+              <p class="card-tag" style="margin-top:0">{o.price}</p>
+              <h3>{o.name}</h3>
+              <p>{o.blurb}</p>
+              <p class="card-meta">{o.time}</p>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <ContactBand id="ask" heading={ask.heading} body={ask.body} service={`${s.name} (${s.price})`} messageLabel="What are you trying to fix?" />
+  </main>
+</Base>

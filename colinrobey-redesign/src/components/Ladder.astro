@@ -1,0 +1,23 @@
+---
+import { SERVICES } from '../data/site';
+---
+<div class="ladder">
+  {SERVICES.map((s, i) => {
+    const feature = i === SERVICES.length - 1;
+    const prev = SERVICES[i - 1];
+    const [lead, rest] = s.price.startsWith('from ') ? ['from', s.price.slice(5)] : ['', s.price];
+    return (
+      <article class:list={['rung reveal', { 'rung--feature': feature, 'rung--free': s.priceValue === 0 }]}>
+        {prev?.credit && <span class="rung-credit" aria-hidden="true">{prev.price} credited ↗</span>}
+        <p class="rung-kicker">{s.kicker}</p>
+        <h3>{s.name}</h3>
+        <p class="rung-price">{lead && <small>{lead}</small>}{rest}</p>
+        <p>{s.blurb}</p>
+        <ul>{s.bullets.map((b) => <li>{b}</li>)}</ul>
+        {s.credit && <p class="small"><strong>{s.credit}</strong> if you go on.</p>}
+        <p class="rung-time">{s.time}</p>
+        <a class="link" href={s.href}>{s.priceValue === 0 ? 'Get your scorecard' : 'See what you get'} →</a>
+      </article>
+    );
+  })}
+</div>

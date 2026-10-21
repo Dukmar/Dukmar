@@ -1,0 +1,18 @@
+---
+import Base from '../layouts/Base.astro';
+import ContactBand from '../components/ContactBand.astro';
+import { AUTHOR, BUSINESS, SITE } from '../data/site';
+const page = { '@type': 'ContactPage', '@id': `${SITE}/contact/#contact`, url: `${SITE}/contact/`, about: { '@id': BUSINESS.id } };
+---
+<Base title="Contact Colin Robey, Website Designer in Burlington, Ontario" description="Get in touch about a website for your small business: send a note, ask for a twenty-minute call, or request a free website scorecard. Based in Burlington, Ontario." crumbs={[{ name: 'Contact', href: '/contact/' }]} schema={[page]}>
+  <main id="main">
+    <section class="page-hero" style="padding-bottom:1rem">
+      <div class="wrap">
+        <p class="eyebrow">Contact</p>
+        <h1>Let’s talk about your website.</h1>
+        <p class="lead">A short note is plenty. Tell me what you do and what’s bugging you, and I’ll reply myself, usually within a business day or two. Prefer email? It’s <a class="link" href={`mailto:${AUTHOR.email}`}>{AUTHOR.email}</a>.</p>
+      </div>
+    </section>
+    <ContactBand heading="Send me a note." body="No website yet? Tick the call box and tell me what you do. Have one? Pop it in and I’ll look before we talk." service="General enquiry (contact page)" />
+  </main>
+</Base>

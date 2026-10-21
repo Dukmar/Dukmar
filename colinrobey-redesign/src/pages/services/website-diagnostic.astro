@@ -1,0 +1,57 @@
+---
+import Service from '../../layouts/Service.astro';
+import { DIAGNOSTIC_FAQS } from '../../data/site';
+const gets = [
+  ['A page-by-page read', 'The design, how it holds up on a phone, and how you turn up in Google.'],
+  ['The live AI check', 'I run the questions your buyers would actually ask an assistant, then show you whether you’re named, who is instead, and the sources those tools lean on.'],
+  ['What’s quietly costing you', 'The gaps holding the site back, in plain language rather than jargon.'],
+  ['What to fix first', 'A short, prioritized list you can act on yourself or hand to whoever builds your site. Yours to keep either way.'],
+];
+const qs = [
+  ['Two broad ones', '“Best plumbers in Oakville.” Big firms and directories usually own these.'],
+  ['Two the way people talk', '“My water heater is leaking, who do I call in Oakville?” This is where the money is.'],
+  ['Two in the middle', '“Licensed plumber, Halton Region, same-day.” The contested ground.'],
+  ['Two on your specialty', '“Tankless water heater install, Oakville.” The narrow thing you should win.'],
+];
+---
+<Service
+  slug="website-diagnostic"
+  title="Website Diagnostic: Review + AI Check, $400 | Colin Robey"
+  description="A page-by-page read of your site, plus a live check of where you show up when someone asks an AI, and who gets named instead. $400, credited toward a Growth Audit."
+  h1="Find out what your site actually needs."
+  intro="A paid first look at your site, one page at a time, plus a live check of whether the assistants name you when a buyer asks for someone who does what you do. If it turns out you need very little, I’ll tell you that."
+  answer="A Website Diagnostic is a paid, page-by-page review of your site, plus a live check of where you show up when someone asks an AI for a recommendation, and who gets named instead. It costs $400, credited toward a Growth Audit if you go on, it’s written up within five business days of a confirmed start date, and the findings are yours to keep."
+  faqs={DIAGNOSTIC_FAQS}
+  serviceType="Website audit"
+  ask={{ heading: 'Book a Website Diagnostic.', body: 'Send me your site. I’ll confirm a start date before anything is owed, and the write-up lands in your inbox five business days after that.', label: 'Book a Diagnostic' }}
+>
+  <section class="section" aria-labelledby="get-h">
+    <div class="wrap two-col">
+      <div>
+        <p class="eyebrow">What you get</p>
+        <h2 id="get-h">A clear read, and a plan you can act on.</h2>
+        <p class="lead">If the fixes are small, I’ll say so and quote a fixed-scope piece of work to do them. None of it needs a rebuild unless it really does, and the report says which.</p>
+      </div>
+      <ul class="ticks">{gets.map(([t, d]) => <li><strong>{t}</strong>{d}</li>)}</ul>
+    </div>
+  </section>
+  <section class="section band-pine" aria-labelledby="ai-h">
+    <div class="wrap">
+      <div class="head">
+        <p class="eyebrow">The live AI check</p>
+        <h2 id="ai-h">Eight questions, asked the way your buyers ask them.</h2>
+        <p>Three assistants: Perplexity, ChatGPT and Google’s AI Mode. The questions come off your own site, so they’re the ones a buyer would type. For a plumber in Oakville they look like this:</p>
+      </div>
+      <div class="pains">
+        {qs.map(([t, d]) => (
+          <div class="pain" style="background:rgb(255 255 255 / .06);border-color:rgb(255 255 255 / .14);rotate:0deg">
+            <q style="color:var(--on-pine)">{t}</q>
+            <p style="margin:0">{d}</p>
+          </div>
+        ))}
+      </div>
+      <p style="margin-top:2rem; max-width:70ch">Plus your own name, to see what the assistants say about you and where they got it. For each answer I record whether you were named, who was named instead, and which sources the assistant read. The last one is what turns a result into a fix.</p>
+      <p style="max-width:70ch">The unbranded answers move day to day, so treat them as a dated snapshot, never a rank. I ran the same check on my own site on 1 and 2 September 2026: Perplexity and ChatGPT named me one day and not the next. <a class="link" href="/insights/check-what-ai-says-about-your-business/">How to run this check yourself →</a></p>
+    </div>
+  </section>
+</Service>

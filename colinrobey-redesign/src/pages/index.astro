@@ -1,0 +1,265 @@
+---
+import Base from '../layouts/Base.astro';
+import MarkupDemo from '../components/MarkupDemo.astro';
+import BeforeAfter from '../components/BeforeAfter.astro';
+import Gauge from '../components/Gauge.astro';
+import SpeedChecker from '../components/SpeedChecker.astro';
+import Anatomy from '../components/Anatomy.astro';
+import Lenses from '../components/Lenses.astro';
+import Ladder from '../components/Ladder.astro';
+import PathFinder from '../components/PathFinder.astro';
+import Faq from '../components/Faq.astro';
+import InsightCards from '../components/InsightCards.astro';
+import ContactBand from '../components/ContactBand.astro';
+import { Image } from 'astro:assets';
+import portrait from '../assets/colin-robey-headshot.jpg';
+import { HOME_FAQS, STORY } from '../data/site';
+import { faqSchema } from '../lib/schema';
+
+const pains = [
+  { q: 'My nephew built it in 2016. He’s an accountant now.', a: 'Lovely nephew. Let’s get you a site you can actually run.' },
+  { q: 'It looks fine on my laptop. My phone is another story.', a: 'Your customers are on their phones. I design for that first.' },
+  { q: 'We only show up when people search our name.', a: 'Then each thing you do needs its own page. That’s how the other searches find you.' },
+  { q: 'I asked ChatGPT for a firm like mine. It named someone else.', a: 'I check who the assistants name, and why. Then we work the levers you control.' },
+  { q: 'Every small change means emailing someone and waiting a week.', a: 'You’ll own it outright. Small edits take minutes, not a ticket.' },
+  { q: 'I have no idea if anyone uses the contact form.', a: 'Every build ships with analytics and forms you can actually track.' },
+];
+
+const steps = [
+  { when: 'Week 0', t: 'A short call', d: 'Twenty minutes, phone or video. If you have a site, I’ll have scored it before we talk.' },
+  { when: 'Week 1', t: 'A plan and a fixed price', d: 'The pages you need, what each one has to do, and a price that doesn’t move unless you ask for something new.' },
+  { when: 'Weeks 1–3', t: 'Your knowledge, my words', d: 'You bring what only you know about your customers. I shape it into pages. A few hours of your time, mostly here.' },
+  { when: 'Weeks 3–7', t: 'Built in the open', d: 'You watch it come together on a live link, with a note from me every week on what’s done and what’s next.' },
+  { when: 'Launch + 90 days', t: 'Tuning, included', d: 'I watch how people use it, sharpen the pages that aren’t pulling their weight, and make the edits you think of once it’s real.' },
+];
+---
+<Base
+  title="Small Business Website Design, Burlington ON | Colin Robey"
+  description="Fast, custom websites for small Ontario service businesses, built to show up in Google and in AI answers, and owned by you outright. Free website scorecard. From $6,500."
+  schema={[faqSchema(HOME_FAQS, '/')]}
+>
+  <main id="main">
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <p class="eyebrow">Website design · Burlington, Ontario</p>
+          <h1>Websites that make small businesses look <span class="hl hl-anim">as good as they are</span>.</h1>
+          <p class="lead">Fast, custom websites for owner-led service businesses in Ontario. Built to show up in Google and in AI answers, and yours outright when we’re done.</p>
+          <div class="hero-who">
+            <Image src={portrait} alt="Colin Robey" width={112} height={112} loading="eager" />
+            <p><strong>I’m Colin.</strong> You work with me directly, from the first call to launch day and the 90 days after it.</p>
+          </div>
+          <form class="url-form" action="/scorecard/" method="get">
+            <label><span class="sr-only">Your website address</span><input type="text" name="website" inputmode="url" autocomplete="url" placeholder="yourbusiness.ca" /></label>
+            <button class="btn btn-pen" type="submit">Get my free scorecard <span class="arrow">→</span></button>
+          </form>
+          <p class="hero-note">Free, by email, no call required. No website yet? <a href="/contact/">Ask for a twenty-minute call.</a></p>
+        </div>
+        <MarkupDemo />
+      </div>
+    </section>
+
+    <!-- WHAT EVERY BUILD INCLUDES -->
+    <div class="proofbar">
+      <div class="wrap">
+        <span class="proofbar-label">Every build</span>
+        <ul>
+          <li>Custom design, no templates</li>
+          <li>Built for Google and AI answers</li>
+          <li>Yours outright, no platform fees</li>
+          <li>Fixed price before work starts</li>
+          <li>90 days of tuning after launch</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- SOUND FAMILIAR -->
+    <section class="section" aria-labelledby="pains-h">
+      <div class="wrap">
+        <div class="head-split">
+          <div>
+            <p class="eyebrow">Sound familiar?</p>
+            <h2 id="pains-h">If any of these sound like you, we should talk.</h2>
+          </div>
+          <p class="lead">Owners rarely come to me saying they need “a new website.” They come with one of these.</p>
+        </div>
+        <div class="pains">
+          {pains.map((p) => (
+            <div class="pain reveal">
+              <q>{p.q}</q>
+              <p class="hand">{p.a}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- CASE STUDY -->
+    <section class="section band-pine" aria-labelledby="case-h">
+      <div class="wrap case">
+        <div class="reveal">
+          <BeforeAfter />
+          <p class="small" style="margin-top:0.9rem; color:var(--on-pine-soft)">Drag the handle to compare the old site with the new one.</p>
+        </div>
+        <div>
+          <p class="eyebrow">Recent work</p>
+          <h2 id="case-h">An aging Wix site, rebuilt to be found.</h2>
+          <div class="case-meta">
+            <span class="chip">The STORY Group</span><span class="chip">Recruiting</span><span class="chip">Oakville, ON</span><span class="chip">Wix → custom build</span>
+          </div>
+          <p>A recruiting firm with three specialties and no page for any of them. The rebuild gave each one its own page, on a fast foundation the firm owns outright, with forms that capture the inquiries the old site couldn’t track.</p>
+          <div class="gauges">
+            <Gauge value={STORY.speedBefore} label="Mobile speed, before" variant="before" />
+            <span class="gauge-arrow" aria-hidden="true">→</span>
+            <Gauge value={STORY.speedAfter} label="Mobile speed, after" variant="after" />
+          </div>
+          <p class="small" style="color:var(--on-pine-soft)">Google PageSpeed, mobile. Anyone can check it: run storygroup.ca through the test.</p>
+          <a class="btn btn-marker" href="/work/the-story-group/">Read the case study <span class="arrow">→</span></a>
+        </div>
+      </div>
+      <div class="wrap" style="margin-top: clamp(3rem, 2rem + 3vw, 5rem)">
+        <div class="case" style="align-items:start">
+          <blockquote class="quote reveal">
+            <p>What stood out wasn’t just the website, it was <span class="mark">the strategic thinking behind it.</span> Our site is significantly faster, and we’re now <span class="mark">receiving and tracking inquiries that we simply weren’t before.</span></p>
+            <footer><span><strong>{STORY.person}</strong>{STORY.role}, {STORY.client}</span></footer>
+          </blockquote>
+          <div class="reveal">
+            <h3 style="color:var(--on-pine)">Your turn. How fast is your site on a phone?</h3>
+            <p>This runs Google’s own mobile speed test on your homepage, right here. Speed is one signal of many, so treat it as a first clue, not a verdict.</p>
+            <SpeedChecker />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ANATOMY -->
+    <section class="section band-paper2" aria-labelledby="anatomy-h">
+      <div class="wrap">
+        <div class="head">
+          <p class="eyebrow">What you’re paying for</p>
+          <h2 id="anatomy-h">A site that does its job is a dozen small decisions, made on purpose.</h2>
+          <p class="lead">The design is the part you see. Most of the work is in the decisions underneath it. Hover over each one to see where it lives on the page.</p>
+        </div>
+        <Anatomy />
+      </div>
+    </section>
+
+    <!-- THREE AUDIENCES -->
+    <section class="section band-pine" aria-labelledby="lens-h">
+      <div class="wrap lenses">
+        <div>
+          <p class="eyebrow">Built for search and AI</p>
+          <h2 id="lens-h">Your website has three audiences now. Two of them are machines.</h2>
+          <p>People still make the decision. But more of them start with a Google search, or by asking an AI assistant for a recommendation and acting on the answer.</p>
+          <p>So every site I build is written and coded for all three: the person, the search engine and the assistant. Whether you show up also runs on your reviews and listings, so I look at those too and tell you where you stand.</p>
+          <a class="link" href="/insights/showing-up-in-ai-answers/">How showing up in AI answers works →</a>
+        </div>
+        <Lenses />
+      </div>
+    </section>
+
+    <!-- PRICING LADDER -->
+    <section class="section" aria-labelledby="ladder-h">
+      <div class="wrap">
+        <div class="head-split">
+          <div>
+            <p class="eyebrow">Services &amp; pricing</p>
+            <h2 id="ladder-h">Real prices, on the page. Start small.</h2>
+          </div>
+          <p class="lead">Some sites need a rebuild. Plenty just need to be found. Each step tells you whether the next one is worth paying for, and what you’ve paid comes off it.</p>
+        </div>
+        <Ladder />
+        <div class="ladder-note">
+          <p><strong>No website yet?</strong> Skip the first three. There’s nothing to score or diagnose, so we start with a twenty-minute call about what a first site needs to do.</p>
+          <a class="btn btn-ghost" href="/contact/">Ask for a call</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROCESS -->
+    <section class="section band-paper2" aria-labelledby="process-h">
+      <div class="wrap">
+        <div class="head">
+          <p class="eyebrow">How a build runs</p>
+          <h2 id="process-h">Six to eight weeks, and you’ll always know where things stand.</h2>
+          <p class="lead">It works best as a partnership. You bring the inside knowledge of your business; I bring the design, the writing and the build. The aim is one less thing on your plate.</p>
+        </div>
+        <ol class="steps">
+          {steps.map((s) => (
+            <li class="step reveal">
+              <p class="step-when">{s.when}</p>
+              <h3>{s.t}</h3>
+              <p>{s.d}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+
+    <!-- MEET COLIN -->
+    <section class="section" aria-labelledby="meet-h">
+      <div class="wrap meet">
+        <figure class="polaroid reveal">
+          <Image src={portrait} alt="Colin Robey, smiling, outdoors" width={720} height={720} loading="lazy" />
+          <figcaption>That’s me. I answer my own email.</figcaption>
+        </figure>
+        <div>
+          <p class="eyebrow">Who you’d be working with</p>
+          <h2 id="meet-h">Hi, I’m Colin. I’m the one doing the work.</h2>
+          <p class="lead">I’m a marketer who builds websites, based in Burlington. I take on a few owner-led businesses at a time, on purpose, so you deal with me directly and I stay close enough to the work to get it right.</p>
+          <p>AI handles the production: first drafts, research passes, the repetitive build work that used to eat the budget. I make the calls on what to say, how it sounds and what’s worth doing for your business. It can draft fifty pages. Knowing the five your customers actually search for is the part you’re paying for.</p>
+          <h3 style="font-size:var(--step-1); margin-top:1.75rem">Things I won’t do</h3>
+          <ul class="wont">
+            <li><span><s>Promise you page one of Google</s> &nbsp;Nobody outside Google controls that.</span></li>
+            <li><span><s>Rent you your own website</s> &nbsp;You own the code and the content.</span></li>
+            <li><span><s>Hand you off to an account manager</s> &nbsp;It’s me, start to finish.</span></li>
+            <li><span><s>Vanish on launch day</s> &nbsp;90 days of tuning are in the price.</span></li>
+            <li><span><s>Bury you in jargon</s> &nbsp;If I can’t say it plainly, I don’t understand it well enough.</span></li>
+          </ul>
+          <a class="link" href="/how-i-work/">More about how I work →</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- PATH FINDER -->
+    <section class="section band-paper2" aria-labelledby="finder-h">
+      <div class="wrap two-col" style="align-items:center">
+        <div>
+          <p class="eyebrow">Not sure where to start?</p>
+          <h2 id="finder-h">Two questions. One honest answer.</h2>
+          <p class="lead">Most people don’t need everything. Tell me where you are and I’ll point you at the right first step, which is usually the cheap one.</p>
+        </div>
+        <PathFinder />
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" aria-labelledby="faq-h">
+      <div class="wrap faq-grid">
+        <div class="head">
+          <p class="eyebrow">Questions</p>
+          <h2 id="faq-h">What owners ask me first.</h2>
+          <p>Short answers. If yours isn’t here, <a class="link" href="/contact/">just ask</a>.</p>
+        </div>
+        <Faq faqs={HOME_FAQS} />
+      </div>
+    </section>
+
+    <!-- INSIGHTS -->
+    <section class="section band-paper2" aria-labelledby="ins-h">
+      <div class="wrap">
+        <div class="head-split">
+          <div>
+            <p class="eyebrow">Insights</p>
+            <h2 id="ins-h">Notes on getting found.</h2>
+          </div>
+          <p class="lead">Plain-English pieces on Google, AI answers and small-business websites. The stuff I’d want to know if I ran your business. <a class="link" href="/insights/">All articles →</a></p>
+        </div>
+        <InsightCards limit={3} />
+      </div>
+    </section>
+
+    <ContactBand service="General enquiry (homepage)" />
+  </main>
+</Base>

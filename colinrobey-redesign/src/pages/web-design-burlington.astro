@@ -1,0 +1,81 @@
+---
+import Base from '../layouts/Base.astro';
+import Faq from '../components/Faq.astro';
+import Ladder from '../components/Ladder.astro';
+import BeforeAfter from '../components/BeforeAfter.astro';
+import ContactBand from '../components/ContactBand.astro';
+import { AREAS, LOCAL_FAQS, SITE, BUSINESS, STORY } from '../data/site';
+import { faqSchema } from '../lib/schema';
+// One substantial local page rather than a thin page per town: the towns are listed here
+// honestly (where Colin actually works), and the page carries real proof from Oakville.
+const svc = {
+  '@type': 'Service',
+  '@id': `${SITE}/web-design-burlington/#service`,
+  name: 'Website design in Burlington, Ontario',
+  serviceType: 'Website design',
+  provider: { '@id': BUSINESS.id },
+  areaServed: [...AREAS.map((a) => ({ '@type': 'City', name: `${a.name}, Ontario` })), { '@type': 'AdministrativeArea', name: 'Halton Region' }],
+  offers: { '@type': 'Offer', priceCurrency: 'CAD', price: '6500', priceSpecification: { '@type': 'PriceSpecification', minPrice: '6500', priceCurrency: 'CAD' } },
+};
+---
+<Base
+  title="Web Design in Burlington, Oakville & Halton | Colin Robey"
+  description="A Burlington web designer for owner-led small businesses across Halton and Hamilton. Custom sites built to be found in Google and AI answers, owned outright. Free website scorecard."
+  crumbs={[{ name: 'Web design in Burlington', href: '/web-design-burlington/' }]}
+  schema={[svc, faqSchema(LOCAL_FAQS, '/web-design-burlington/')]}
+>
+  <main id="main">
+    <section class="page-hero">
+      <div class="wrap">
+        <p class="eyebrow">Burlington · Oakville · Halton · Hamilton</p>
+        <h1>A Burlington web designer you can actually meet.</h1>
+        <p class="lead">I design and build custom websites for owner-led businesses across Halton, Hamilton and Southern Ontario. One person, start to finish, close enough for a coffee when it helps.</p>
+        <div class="hero-actions" style="margin-top:1.75rem">
+          <a class="btn btn-pen" href="/scorecard/">Get a free website scorecard <span class="arrow">→</span></a>
+          <a class="btn btn-ghost" href="/contact/">Ask for a call</a>
+        </div>
+      </div>
+    </section>
+    <section class="section--tight" style="padding-top:0">
+      <div class="wrap">
+        <div class="answer">
+          <p class="answer-label">The short answer</p>
+          <p>Colin Robey is an independent website designer based in Burlington, Ontario. He builds fast, custom websites for small service businesses in Burlington, Oakville, Hamilton, Milton and the rest of Halton, built to be found in Google and in AI answers and owned outright by the client. Builds start at $6,500, and a free website scorecard is the usual first step.</p>
+        </div>
+      </div>
+    </section>
+    <section class="section" aria-labelledby="areas-h">
+      <div class="wrap">
+        <div class="head"><p class="eyebrow">Where I work</p><h2 id="areas-h">Local enough to know the market.</h2>
+          <p class="lead">Most of the work runs over short calls and shared links. For businesses close by, meeting in person at the start of a project is easy to arrange.</p></div>
+        <ul class="area-grid">
+          {AREAS.map((a) => <li>{a.name}{a.note && <span>{a.note}</span>}</li>)}
+        </ul>
+      </div>
+    </section>
+    <section class="section band-pine" aria-labelledby="local-proof">
+      <div class="wrap case">
+        <BeforeAfter />
+        <div>
+          <p class="eyebrow">Close to home</p>
+          <h2 id="local-proof">An Oakville firm, rebuilt.</h2>
+          <p>{STORY.client}, a recruiting firm in Oakville, moved from an aging Wix site to a custom build with a page for each specialty. Mobile speed went from {STORY.speedBefore} to {STORY.speedAfter}, and the new forms capture inquiries the old site couldn’t track.</p>
+          <a class="btn btn-marker" href="/work/the-story-group/">Read the case study <span class="arrow">→</span></a>
+        </div>
+      </div>
+    </section>
+    <section class="section" aria-labelledby="local-ladder">
+      <div class="wrap">
+        <div class="head"><p class="eyebrow">Pricing</p><h2 id="local-ladder">What it costs, in plain numbers.</h2></div>
+        <Ladder />
+      </div>
+    </section>
+    <section class="section band-paper2" aria-labelledby="lfaq-h">
+      <div class="wrap faq-grid">
+        <div class="head"><p class="eyebrow">Local questions</p><h2 id="lfaq-h">Hiring a web designer near Burlington.</h2></div>
+        <Faq faqs={LOCAL_FAQS} />
+      </div>
+    </section>
+    <ContactBand service="General enquiry (Burlington page)" />
+  </main>
+</Base>

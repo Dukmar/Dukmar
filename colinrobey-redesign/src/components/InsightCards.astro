@@ -1,0 +1,17 @@
+---
+import { getPosts, formatDate, readingTime } from '../lib/schema';
+interface Props { limit?: number; exclude?: string }
+const { limit = 3, exclude } = Astro.props;
+const posts = (await getPosts()).filter((p) => p.id !== exclude).slice(0, limit);
+---
+<div class="cards">
+  {posts.map((p) => (
+    <a class="card reveal" href={`/insights/${p.id}/`}>
+      <img src={p.data.image ?? '/og-colin-robey-2026-08c.jpg'} alt="" width="1200" height="630" loading="lazy" decoding="async" />
+      <p class="card-tag">{p.data.tag}</p>
+      <h3>{p.data.title}</h3>
+      <p>{p.data.description}</p>
+      <p class="card-meta">{formatDate(p.data.pubDate)} · {readingTime(p.body ?? '')}</p>
+    </a>
+  ))}
+</div>

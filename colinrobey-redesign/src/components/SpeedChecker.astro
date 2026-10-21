@@ -1,0 +1,51 @@
+---
+// "Your turn": runs Google's own PageSpeed Insights mobile test on the visitor's site, in
+// the browser, and puts their score beside a real build. No API key needed for light use
+// (add one as PSI_KEY below if traffic grows). If the call fails for any reason, the
+// visitor gets a direct link to the same test on pagespeed.web.dev instead.
+interface Props { dark?: boolean }
+const { dark = true } = Astro.props;
+---
+<div class="checker" data-checker>
+  <form class="url-form" style={dark ? 'box-shadow:4px 4px 0 var(--marker)' : ''}>
+    <label><span class="sr-only">Your website address</span><input type="text" name="url" inputmode="url" placeholder="yourbusiness.ca" required autocomplete="url" /></label>
+    <button class="btn btn-ink" type="submit" style="--btn-bg:var(--ink);--btn-fg:#fff">Test my site</button>
+  </form>
+  <div class="checker-out" aria-live="polite">
+    <p class="checker-msg" style="margin:0"></p>
+  </div>
+</div>
+<script is:inline>
+  (function () {
+    var PSI_KEY = '';
+    document.querySelectorAll('[data-checker]').forEach(function (root) {
+      var form = root.querySelector('form');
+      var out = root.querySelector('.checker-out');
+      var msg = root.querySelector('.checker-msg');
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var v = form.url.value.trim();
+        if (!v) return;
+        if (!/^https?:\/\//i.test(v)) v = 'https://' + v;
+        var manual = 'https://pagespeed.web.dev/analysis?url=' + encodeURIComponent(v) + '&form_factor=mobile';
+        out.classList.add('is-on');
+        msg.innerHTML = 'Running Google’s mobile speed test on <strong></strong>. It takes about twenty seconds…';
+        msg.querySelector('strong').textContent = v.replace(/^https?:\/\//, '');
+        var api = 'https://www.googleapis.com/pagespeedonline/v5/runPagespeed?category=performance&strategy=mobile&url=' + encodeURIComponent(v) + (PSI_KEY ? '&key=' + PSI_KEY : '');
+        fetch(api).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }).then(function (d) {
+          var s = Math.round(((d.lighthouseResult || {}).categories || {}).performance.score * 100);
+          var lcp = (((d.lighthouseResult || {}).audits || {})['largest-contentful-paint'] || {}).displayValue || '';
+          var verdict = s >= 90 ? 'That’s quick. Speed isn’t your problem, so the scorecard will look at what is.' : s >= 50 ? 'Middle of the pack. On a phone, that’s usually the difference between a visitor and a back button.' : 'That’s slow on a phone, and Google weighs it. This is very fixable.';
+          msg.innerHTML = '<span class="checker-row"><span style="font:800 3rem/1 var(--display)">' + s + '<small style="font-size:1rem;opacity:.7">/100</small></span><span>Your mobile score' + (lcp ? ' · main content in ' + lcp : '') + '<br>The STORY Group after the rebuild: <strong>98</strong></span></span><span style="display:block;margin-top:.75rem"></span>';
+          msg.lastChild.textContent = verdict + ' ';
+          var a = document.createElement('a'); a.href = '/scorecard/'; a.className = 'link'; a.textContent = 'Get the full free scorecard →';
+          msg.lastChild.appendChild(a);
+        }).catch(function () {
+          msg.innerHTML = 'Google’s test didn’t answer from here. You can run the exact same test yourself: ';
+          var a = document.createElement('a'); a.href = manual; a.className = 'link'; a.rel = 'noopener'; a.target = '_blank'; a.textContent = 'open it on pagespeed.web.dev →';
+          msg.appendChild(a);
+        });
+      });
+    });
+  })();
+</script>

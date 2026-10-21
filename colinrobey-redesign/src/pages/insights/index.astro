@@ -1,0 +1,22 @@
+---
+import Base from '../../layouts/Base.astro';
+import InsightCards from '../../components/InsightCards.astro';
+import ContactBand from '../../components/ContactBand.astro';
+import { getPosts } from '../../lib/schema';
+import { SITE } from '../../data/site';
+const posts = await getPosts();
+const blog = { '@type': 'Blog', '@id': `${SITE}/insights/#blog`, name: 'Colin Robey: Insights', url: `${SITE}/insights/`, blogPost: posts.map((p) => ({ '@id': `${SITE}/insights/${p.id}/#post` })) };
+---
+<Base title="Insights on Websites, Google & AI Answers | Colin Robey" description="Plain-English articles on getting a small business found in Google and named in AI answers, and on what makes a website worth having." crumbs={[{ name: 'Insights', href: '/insights/' }]} schema={[blog]}>
+  <main id="main">
+    <section class="page-hero">
+      <div class="wrap">
+        <p class="eyebrow">Insights</p>
+        <h1>Notes on getting found.</h1>
+        <p class="lead">Plain-English pieces on Google, AI answers and small-business websites. Every claim is sourced, every test is dated, and the misses get published too.</p>
+      </div>
+    </section>
+    <section class="section--tight" style="padding-top:0"><div class="wrap"><InsightCards limit={50} /></div></section>
+    <ContactBand service="General enquiry (insights)" />
+  </main>
+</Base>

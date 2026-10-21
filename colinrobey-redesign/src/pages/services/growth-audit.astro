@@ -1,0 +1,50 @@
+---
+import Service from '../../layouts/Service.astro';
+import { AUDIT_FAQS, STORY } from '../../data/site';
+const parts = [
+  ['Your site', 'A page-by-page read: design, speed, how it holds up on a phone, and whether visitors have a clear path to get in touch. This is the Website Diagnostic, with its $400 credited in.'],
+  ['Content and visibility', 'Where you turn up when someone searches for what you do, and whether anything you publish brings people in.'],
+  ['AI visibility', 'I run the real questions your buyers would ask an assistant, then show you whether you’re named, who is instead, and what it would take to change that.'],
+  ['Lead flow', 'How a stranger becomes a client, traced step by step, and where that path leaks or stalls.'],
+  ['Manual work', 'The repetitive tasks eating your team’s time that a simple tool could take off their plate.'],
+];
+---
+<Service
+  slug="growth-audit"
+  title="Growth Audit for Small Businesses, $2,500 | Colin Robey"
+  description="A two-week audit of your whole lead path: site, content, AI visibility, lead flow and manual work, ending in a 30/60/90-day plan. $2,500, credited toward a website build."
+  h1="Know exactly what to fix first."
+  intro="The whole path from “never heard of you” to “booked a call”: how people find you, what turns them into a lead, and where it leaks. Your site is one of five parts, and you come out with a dated plan you can start on Monday."
+  answer="A Growth Audit maps your whole path from a stranger discovering you to a booked call. Over about two weeks it covers five things: your site, your content and visibility, whether AI assistants name you, how leads actually reach you, and the manual work a tool could remove. It ends with a 30/60/90-day plan. It costs $2,500, credited toward a website build if you go on, and the plan is yours to act on with or without me."
+  faqs={AUDIT_FAQS}
+  serviceType="Marketing audit"
+  ask={{ heading: 'Start a Growth Audit.', body: 'Tell me a bit about your business and what’s prompting this. I’ll come back with what I’d need from you, when I could start, and what it looks like from there. If it isn’t the right fit, I’ll say that instead.', label: 'Start a Growth Audit' }}
+>
+  <section class="section" aria-labelledby="parts-h">
+    <div class="wrap">
+      <div class="head"><p class="eyebrow">What it covers</p><h2 id="parts-h">Five parts, and a plan.</h2></div>
+      <ol class="steps">
+        {parts.map(([t, d], i) => (
+          <li class="step reveal"><p class="step-when">Part {i + 1}</p><h3>{t}</h3><p>{d}</p></li>
+        ))}
+      </ol>
+      <p class="lead" style="margin-top:2.5rem">You come out with a written report and a 30/60/90-day plan: what to tackle first, what your team can handle itself, and what’s worth paying for help on.</p>
+    </div>
+  </section>
+  <section class="section--tight band-pine" aria-labelledby="ga-proof">
+    <div class="wrap two-col" style="align-items:center">
+      <div>
+        <p class="eyebrow">Has this worked</p>
+        <h2 id="ga-proof" style="font-size:var(--step-3)">It starts with a written order of work.</h2>
+        <p>The STORY Group’s site was found by people already looking for it, and almost no one else. Deciding the order of the work came before anything got built. That engagement was a rebuild rather than an audit, but it started the same way.</p>
+      </div>
+      <blockquote class="quote"><p>Every recommendation had a clear purpose, and the improvements were noticeable almost immediately.</p><footer><span><strong>{STORY.person}</strong>{STORY.role}, {STORY.client}</span></footer></blockquote>
+    </div>
+  </section>
+  <section class="section--tight" aria-labelledby="credit-h">
+    <div class="wrap">
+      <h2 id="credit-h" style="font-size:var(--step-2)">Nothing you pay for is wasted.</h2>
+      <p class="lead">Already had a <a class="link" href="/services/website-diagnostic/">Website Diagnostic</a>? Its $400 comes off this, so you don’t pay for the site review twice. If the plan points to a new site, the $2,500 comes off the <a class="link" href="/services/website-rebuild/">build</a> in turn.</p>
+    </div>
+  </section>
+</Service>

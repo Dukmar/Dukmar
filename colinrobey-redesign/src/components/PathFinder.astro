@@ -1,0 +1,57 @@
+---
+// "Where should you start?" Two questions, CSS-only (:has), so it works with JavaScript off.
+// Tone matters here: nothing tells a visitor they're behind, and "no website yet" is a
+// perfectly good answer with its own door.
+---
+<form class="finder" aria-labelledby="finder-h" onsubmit="return false">
+  <fieldset>
+    <legend>Do you have a website right now?</legend>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="f-site" id="f-site-yes" /><span>Yes</span></label>
+      <label class="opt"><input type="radio" name="f-site" id="f-site-no" /><span>Not yet</span></label>
+    </div>
+  </fieldset>
+  <fieldset class="q2">
+    <legend>What bugs you most about it?</legend>
+    <div class="opts">
+      <label class="opt"><input type="radio" name="f-why" id="f-why-unsure" /><span>Something’s off, not sure what</span></label>
+      <label class="opt"><input type="radio" name="f-why" id="f-why-dated" /><span>It looks dated</span></label>
+      <label class="opt"><input type="radio" name="f-why" id="f-why-found" /><span>Nobody finds us</span></label>
+      <label class="opt"><input type="radio" name="f-why" id="f-why-leads" /><span>Visitors don’t turn into calls</span></label>
+    </div>
+  </fieldset>
+  <div class="answers" aria-live="polite">
+    <div class="a-idle">Pick an answer and I’ll point you at the right first step. It’s usually the cheap one.</div>
+    <div class="a-nosite">
+      <span class="hand">Good news: nothing to unpick.</span>
+      <h3>Start with a twenty-minute call.</h3>
+      <p>We work out what your customers search for and how many pages you’d need, then I quote it. Building from scratch usually moves faster than a rebuild.</p>
+      <a class="btn btn-pen" href="/contact/">Ask for a call <span class="arrow">→</span></a>
+    </div>
+    <div class="a-unsure">
+      <span class="hand">Let’s find out what’s off.</span>
+      <h3>Start with the free scorecard.</h3>
+      <p>Four letter grades and the three fixes I’d make first, by email. It costs nothing and tells you whether a closer look is worth it.</p>
+      <a class="btn btn-pen" href="/scorecard/">Get my free scorecard <span class="arrow">→</span></a>
+    </div>
+    <div class="a-dated">
+      <span class="hand">Dated is fixable.</span>
+      <h3>Get the scorecard, then we talk about a build.</h3>
+      <p>If the bones are fine, you may need less than you think. If they’re not, a custom build (from $6,500) fixes it properly, and you own it outright.</p>
+      <a class="btn btn-pen" href="/scorecard/">Get my free scorecard <span class="arrow">→</span></a>
+      <p style="margin:0.8rem 0 0"><a class="link" href="/services/website-rebuild/">See what a build includes</a></p>
+    </div>
+    <div class="a-found">
+      <span class="hand">Being found is its own job.</span>
+      <h3>Start with the $400 Website Diagnostic.</h3>
+      <p>Every page read closely, plus a live check of who the AI assistants name when someone asks for a business like yours. The $400 comes off a Growth Audit if you go on.</p>
+      <a class="btn btn-pen" href="/services/website-diagnostic/">See the Diagnostic <span class="arrow">→</span></a>
+    </div>
+    <div class="a-leads">
+      <span class="hand">Let’s find the leak.</span>
+      <h3>Start with the Growth Audit.</h3>
+      <p>The whole path from stranger to booked call, and where it leaks, ending in a 30/60/90-day plan. $2,500, credited toward a build if you go ahead.</p>
+      <a class="btn btn-pen" href="/services/growth-audit/">See the Growth Audit <span class="arrow">→</span></a>
+    </div>
+  </div>
+</form>

@@ -1,0 +1,20 @@
+{
+  "name": "colinrobey-redesign",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "build:relative": "astro build && node scripts/relativize.mjs dist dist-relative"
+  },
+  "dependencies": {
+    "@astrojs/rss": "^4.0.19",
+    "@astrojs/sitemap": "^3.7.3",
+    "@fontsource-variable/bricolage-grotesque": "^5.2.10",
+    "@fontsource/caveat": "^5.2.10",
+    "@fontsource/figtree": "^5.2.10",
+    "astro": "5.18.2"
+  }
+}

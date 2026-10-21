@@ -1,0 +1,79 @@
+---
+import Base from '../layouts/Base.astro';
+import ContactBand from '../components/ContactBand.astro';
+import { Image } from 'astro:assets';
+import portrait from '../assets/colin-robey-headshot.jpg';
+import { SITE, AUTHOR } from '../data/site';
+const about = { '@type': 'AboutPage', '@id': `${SITE}/how-i-work/#about`, url: `${SITE}/how-i-work/`, mainEntity: { '@id': AUTHOR.id } };
+const who = ['Recruiting', 'Accounting', 'Law', 'Trades', 'Advisory', 'Professional services'];
+---
+<Base title="How I Work: a Real Person, with AI Behind It | Colin Robey" description="Who you’d work with, how a project runs, what the AI does and what I do, and why I only take on a few small-business clients at a time." crumbs={[{ name: 'How I work', href: '/how-i-work/' }]} schema={[about]}>
+  <main id="main">
+    <section class="page-hero">
+      <div class="wrap meet">
+        <figure class="polaroid">
+          <Image src={portrait} alt="Colin Robey" width={720} height={720} loading="eager" />
+          <figcaption>Colin Robey, Burlington, Ontario</figcaption>
+        </figure>
+        <div>
+          <p class="eyebrow">How I work</p>
+          <h1 style="font-size:var(--step-4)">A real person doing the work, with AI behind it.</h1>
+          <p class="lead">The interesting thing about AI isn’t the volume. It’s that one person can now do work that actually fits your business, and stay close enough to get the judgment right.</p>
+          <p>I work from Burlington, Ontario, with small Canadian service businesses: the kind a client chooses after a conversation rather than on the spot.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section band-paper2" aria-labelledby="who-h">
+      <div class="wrap two-col">
+        <div><p class="eyebrow">Who I work with</p><h2 id="who-h">Owner-led service businesses.</h2></div>
+        <div>
+          <p class="lead">Usually small enough that the owner still makes the marketing calls, and after practical help without handing the whole thing to an agency.</p>
+          <ul class="foot-areas" style="list-style:none; padding:0; display:flex; flex-wrap:wrap; gap:.5rem; margin:0 0 1.25rem">{who.map((w) => <li class="chip">{w}</li>)}</ul>
+          <p>Some arrive with a site that isn’t earning its keep. Some arrive with nothing but a Facebook page and twenty years of referrals, which is a perfectly good place to start. What they have in common is that nobody in the building wakes up thinking about marketing.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="ai-h">
+      <div class="wrap">
+        <div class="head"><p class="eyebrow">What the AI does, and what I do</p><h2 id="ai-h">I’m not hiding the AI. It’s how the work stays affordable.</h2>
+          <p class="lead">The repetitive production runs on AI, and a person makes the judgment calls. What you’re paying for is the part that can’t be automated.</p></div>
+        <div class="two-col">
+          <div class="form-card" style="box-shadow:none; border:1px solid var(--line)">
+            <h3>The AI handles the volume</h3>
+            <ul class="ticks"><li>First drafts and variations</li><li>Research passes and first cuts</li><li>The repetitive production work that used to eat the budget</li></ul>
+          </div>
+          <div class="form-card" style="background:var(--pine); color:var(--on-pine)">
+            <h3 style="color:var(--on-pine)">I handle the judgment</h3>
+            <ul class="ticks"><li>What’s actually worth saying</li><li>Whether it sounds like you, and whether it’s true</li><li>The decisions and the relationship that need a person who knows your business</li></ul>
+          </div>
+        </div>
+        <p class="lead" style="margin-top:2rem">It can draft fifty pages. Knowing the five your customers actually search for, and cutting the other forty-five, is the part you’re paying for.</p>
+      </div>
+    </section>
+
+    <section class="section band-paper2" aria-labelledby="partner-h">
+      <div class="wrap two-col">
+        <div><p class="eyebrow">How we’d work together</p><h2 id="partner-h">It works best as a partnership.</h2></div>
+        <div>
+          <p class="lead">Hand me a brief and wait, and you’ll get something worse than we could have made together.</p>
+          <p>The best work happens when you bring what only you know: your customers, your business, what’s worked and what hasn’t. I bring the design, the build and the systems behind it. You hear from me every week, and you see the work on a live link as it comes together. The goal is for this to be one less thing you carry.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="few-h">
+      <div class="wrap two-col">
+        <div><p class="eyebrow">Why only a few clients</p><h2 id="few-h">A few clients at a time, on purpose.</h2></div>
+        <div>
+          <p class="lead">You work directly with the person doing the work, rather than an account manager relaying messages, and I stay close enough to make sure it’s actually good.</p>
+          <p>The trade-off is that there isn’t always room to start right away, and some projects are a poor fit. So we begin with a conversation about whether this one is right, for both of us, before anyone commits to anything.</p>
+          <p>This site is the example. Every page is built the way I’d build yours, including the AI-visibility work, which I run on my own site and <a class="link" href="/insights/check-what-ai-says-about-your-business/">publish the results of</a>, misses included.</p>
+        </div>
+      </div>
+    </section>
+
+    <ContactBand heading="See if I’m a fit." body="The first step is a free scorecard on your current site, or just a note. Whichever’s easier." service="General enquiry (how I work)" />
+  </main>
+</Base>

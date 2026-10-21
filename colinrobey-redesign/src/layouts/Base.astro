@@ -1,0 +1,217 @@
+---
+import '@fontsource-variable/bricolage-grotesque/wdth.css';
+import '@fontsource/figtree/400.css';
+import '@fontsource/figtree/500.css';
+import '@fontsource/figtree/600.css';
+import '@fontsource/figtree/700.css';
+import '@fontsource/caveat/600.css';
+import '@fontsource/caveat/700.css';
+import '../styles/global.css';
+import fontDisplay from '@fontsource-variable/bricolage-grotesque/files/bricolage-grotesque-latin-wdth-normal.woff2?url';
+import fontBody from '@fontsource/figtree/files/figtree-latin-400-normal.woff2?url';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { SITE, PREVIEW, AUTHOR, BUSINESS, AREAS, SERVICES } from '../data/site';
+
+interface Crumb { name: string; href: string }
+interface Props {
+  title: string;
+  description: string;
+  image?: string;
+  imageAlt?: string;
+  type?: 'website' | 'article';
+  crumbs?: Crumb[];
+  schema?: Record<string, unknown>[];
+  published?: string;
+  modified?: string;
+  noindex?: boolean;
+}
+
+const { title, description, image = '/og-colin-robey-2026-08c.jpg', imageAlt = 'Colin Robey, website designer in Burlington, Ontario', type = 'website', crumbs = [], schema = [], published, modified, noindex = false } = Astro.props;
+const canonical = new URL(Astro.url.pathname, SITE).href;
+const ogImage = new URL(image, SITE).href;
+
+// One sitewide @graph. Every page re-states the three core entities by @id (the business,
+// the person, the website) so any single page read on its own resolves to the same
+// Colin Robey. Page-specific nodes are appended from the `schema` prop.
+const business = {
+  '@type': 'LocalBusiness',
+  '@id': BUSINESS.id,
+  name: BUSINESS.name,
+  url: `${SITE}/`,
+  description:
+    'Independent website design and AI-assisted marketing for small Canadian service businesses. Custom websites built to be found in Google and in AI answers, owned outright, from Burlington, Ontario.',
+  slogan: BUSINESS.slogan,
+  image: AUTHOR.image,
+  logo: `${SITE}/apple-touch-icon.png`,
+  telephone: BUSINESS.telephone,
+  email: BUSINESS.email,
+  priceRange: '$400–$6,500+ CAD',
+  currenciesAccepted: 'CAD',
+  // Service-area business: locality only, no street address (matches the Google Business
+  // Profile, which hides the address).
+  address: { '@type': 'PostalAddress', addressLocality: BUSINESS.locality, addressRegion: BUSINESS.region, addressCountry: BUSINESS.country },
+  areaServed: [
+    ...AREAS.map((a) => ({ '@type': 'City', name: `${a.name}, Ontario` })),
+    { '@type': 'AdministrativeArea', name: 'Halton Region, Ontario' },
+    { '@type': 'AdministrativeArea', name: 'Southern Ontario' },
+  ],
+  founder: { '@id': AUTHOR.id },
+  knowsAbout: AUTHOR.knowsAbout,
+  sameAs: BUSINESS.sameAs,
+  hasOfferCatalog: {
+    '@type': 'OfferCatalog',
+    name: 'Website and marketing services',
+    itemListElement: SERVICES.map((s) => ({
+      '@type': 'Offer',
+      url: `${SITE}${s.href}`,
+      price: String(s.priceValue ?? 0),
+      priceCurrency: 'CAD',
+      itemOffered: { '@type': 'Service', name: s.name, description: s.blurb },
+    })),
+  },
+};
+const person = {
+  '@type': 'Person',
+  '@id': AUTHOR.id,
+  name: AUTHOR.name,
+  url: AUTHOR.url,
+  image: AUTHOR.image,
+  jobTitle: AUTHOR.jobTitle,
+  description: AUTHOR.description,
+  worksFor: { '@id': BUSINESS.id },
+  knowsAbout: AUTHOR.knowsAbout,
+  address: { '@type': 'PostalAddress', addressLocality: 'Burlington', addressRegion: 'ON', addressCountry: 'CA' },
+  sameAs: AUTHOR.sameAs,
+};
+const website = {
+  '@type': 'WebSite',
+  '@id': `${SITE}/#website`,
+  url: `${SITE}/`,
+  name: 'Colin Robey',
+  inLanguage: 'en-CA',
+  publisher: { '@id': BUSINESS.id },
+};
+const webpage = {
+  '@type': 'WebPage',
+  '@id': `${canonical}#webpage`,
+  url: canonical,
+  name: title,
+  description,
+  isPartOf: { '@id': `${SITE}/#website` },
+  about: { '@id': BUSINESS.id },
+  inLanguage: 'en-CA',
+  ...(published ? { datePublished: published } : {}),
+  ...(modified ? { dateModified: modified } : {}),
+  ...(crumbs.length ? { breadcrumb: { '@id': `${canonical}#breadcrumbs` } } : {}),
+};
+const breadcrumbs = crumbs.length
+  ? [{
+      '@type': 'BreadcrumbList',
+      '@id': `${canonical}#breadcrumbs`,
+      itemListElement: [{ name: 'Home', href: '/' }, ...crumbs].map((c, i) => ({
+        '@type': 'ListItem', position: i + 1, name: c.name, item: new URL(c.href, SITE).href,
+      })),
+    }]
+  : [];
+const graph = { '@context': 'https://schema.org', '@graph': [business, person, website, webpage, ...breadcrumbs, ...schema] };
+---
+<!doctype html>
+<html lang="en-CA">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>{title}</title>
+    <link rel="preload" href={fontDisplay} as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href={fontBody} as="font" type="font/woff2" crossorigin />
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    {(PREVIEW || noindex) && <meta name="robots" content="noindex, nofollow" />}
+    <meta name="author" content="Colin Robey" />
+    <meta name="theme-color" content="#163a31" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="alternate" type="application/rss+xml" title="Colin Robey: Insights" href="/rss.xml" />
+    <link rel="alternate" type="text/plain" title="llms.txt" href="/llms.txt" />
+    <meta property="og:type" content={type} />
+    <meta property="og:site_name" content="Colin Robey" />
+    <meta property="og:locale" content="en_CA" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={imageAlt} />
+    {published && <meta property="article:published_time" content={published} />}
+    {modified && <meta property="article:modified_time" content={modified} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="geo.region" content="CA-ON" />
+    <meta name="geo.placename" content="Burlington" />
+    <script type="application/ld+json" set:html={JSON.stringify(graph)} />
+    <slot name="head" />
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    {PREVIEW && <div class="preview-ribbon">Redesign preview for review. The live site at colinrobey.ca is unchanged.</div>}
+    <Header />
+    <slot />
+    <Footer />
+    <script is:inline>
+      // Header: shadow line once scrolled, and the mobile menu toggle.
+      (function () {
+        var h = document.querySelector('.site-header');
+        if (!h) return;
+        var b = h.querySelector('.menu-btn');
+        var onScroll = function () { h.classList.toggle('is-scrolled', window.scrollY > 8); };
+        onScroll();
+        window.addEventListener('scroll', onScroll, { passive: true });
+        if (b) b.addEventListener('click', function () {
+          var open = h.classList.toggle('is-open');
+          b.setAttribute('aria-expanded', open ? 'true' : 'false');
+        });
+      })();
+      // Before/after sliders: the range input drives the --split custom property.
+      document.querySelectorAll('.markup-stage, .ba').forEach(function (stage) {
+        var r = stage.querySelector('input[type=range]');
+        if (r) r.addEventListener('input', function () { stage.style.setProperty('--split', r.value + '%'); });
+      });
+      // Gauges: final value is already drawn; replay the fill + count once when seen.
+      (function () {
+        if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        var io = new IntersectionObserver(function (entries) {
+          entries.forEach(function (en) {
+            if (!en.isIntersecting) return;
+            io.unobserve(en.target);
+            var g = en.target, v = +g.dataset.gauge, c = g.querySelector('.val'), t = g.querySelector('text');
+            var C = +c.dataset.c, start = null;
+            function f(ts) {
+              if (!start) start = ts;
+              var p = Math.min(1, (ts - start) / 1100), e = 1 - Math.pow(1 - p, 3), now = v * e;
+              c.setAttribute('stroke-dasharray', (now / 100 * C).toFixed(1) + ' ' + C);
+              t.textContent = Math.round(now);
+              if (p < 1) requestAnimationFrame(f);
+            }
+            requestAnimationFrame(f);
+          });
+        }, { threshold: 0.6 });
+        document.querySelectorAll('[data-gauge]').forEach(function (g) { io.observe(g); });
+      })();
+      // Forms: on the real site Netlify handles these. Anywhere else (a local preview, a
+      // review link) a submit has nowhere to go, so say so instead of failing silently.
+      (function () {
+        var real = /(^|\.)colinrobey\.ca$|netlify\.app$/.test(location.hostname);
+        if (real) return;
+        document.querySelectorAll('form[data-netlify]').forEach(function (f) {
+          f.addEventListener('submit', function (e) {
+            e.preventDefault();
+            var s = f.querySelector('.form-status');
+            if (!s) { s = document.createElement('p'); s.className = 'form-status'; s.setAttribute('role', 'status'); f.appendChild(s); }
+            s.textContent = 'Preview only: this form works once the site is live on Netlify. Nothing was sent.';
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

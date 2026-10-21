@@ -1,0 +1,62 @@
+---
+// "What goes into a site that works": a wireframe with numbered zones and the list of
+// decisions beside it. Hover or tap a decision and its zone lights up on the wireframe.
+const parts = [
+  { z: 'head', t: 'A headline that says what you do, and where', d: 'A stranger should get it in three seconds. So should Google.' },
+  { z: 'cta', t: 'One obvious next step', d: 'A clear button for the thing you want people to do: call, ask for a quote, book.' },
+  { z: 'cards', t: 'A page for every service', d: 'Each thing you do gets its own page, so it can be found on its own instead of hiding on the homepage.' },
+  { z: 'faq', t: 'Plain answers to real questions', d: 'Questions written the way customers ask them, which is also how AI assistants look for something to quote.' },
+  { z: 'code', t: 'Structured data underneath', d: 'Code that tells search engines and assistants who you are, where you work and what you offer.' },
+  { z: 'all', t: 'Fast on a phone', d: 'Light pages and compressed images. Load speed is one of the signals Google weighs when it ranks you.' },
+];
+---
+<div class="anatomy" data-anatomy>
+  <div class="wire" aria-hidden="true">
+    <div class="wire-bar"><b></b><span><i></i><i></i><i></i></span></div>
+    <div class="wire-zone" data-zone="head"><span class="wire-num">1</span>
+      <div class="wire-h"></div><div class="wire-h short"></div>
+      <div class="wire-l w85"></div><div class="wire-l w70"></div>
+    </div>
+    <div class="wire-zone" data-zone="cta" style="display:inline-block"><span class="wire-num">2</span>
+      <span style="display:inline-block;width:9em;height:2.3em;border-radius:99px;background:var(--pen)"></span>
+    </div>
+    <div class="wire-zone" data-zone="cards"><span class="wire-num">3</span>
+      <div class="wire-cards"><div><i></i><i></i></div><div><i></i><i></i></div><div><i></i><i></i></div></div>
+    </div>
+    <div class="wire-zone wire-faq" data-zone="faq"><span class="wire-num">4</span>
+      <div><i></i><b></b></div><div><i style="width:48%"></i><b></b></div><div><i style="width:66%"></i><b></b></div>
+    </div>
+    <div class="wire-zone" data-zone="code" style="margin-bottom:0"><span class="wire-num">5</span>
+      <div class="wire-code">{'{ "@type": "LocalBusiness", "areaServed": "Halton" … }'}</div>
+    </div>
+  </div>
+  <ol class="parts">
+    {parts.map((p, i) => (
+      <li class="part reveal">
+        <button type="button" data-target={p.z} aria-pressed="false">
+          <span class="n" aria-hidden="true">{i + 1}</span>
+          <h3>{p.t}</h3>
+          <p>{p.d}</p>
+        </button>
+      </li>
+    ))}
+  </ol>
+</div>
+<script is:inline>
+  (function () {
+    var root = document.querySelector('[data-anatomy]');
+    if (!root) return;
+    var zones = root.querySelectorAll('[data-zone]');
+    var btns = root.querySelectorAll('[data-target]');
+    function light(z) {
+      zones.forEach(function (el) { el.classList.toggle('is-on', z === 'all' || el.dataset.zone === z); });
+      btns.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.target === z ? 'true' : 'false'); });
+    }
+    btns.forEach(function (b) {
+      b.addEventListener('mouseenter', function () { light(b.dataset.target); });
+      b.addEventListener('focus', function () { light(b.dataset.target); });
+      b.addEventListener('click', function () { light(b.dataset.target); });
+    });
+    light('head');
+  })();
+</script>

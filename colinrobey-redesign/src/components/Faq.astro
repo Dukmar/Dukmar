@@ -1,0 +1,15 @@
+---
+// Visible FAQ + matching FAQPage node. Schema is only ever emitted for questions that are
+// on the page, word for word.
+import type { Faq } from '../data/site';
+interface Props { faqs: Faq[]; openFirst?: boolean }
+const { faqs, openFirst = true } = Astro.props;
+---
+<div class="faq">
+  {faqs.map((f, i) => (
+    <details open={openFirst && i === 0}>
+      <summary>{f.q}</summary>
+      <div class="faq-a"><p>{f.a}</p></div>
+    </details>
+  ))}
+</div>

@@ -1,0 +1,93 @@
+---
+// The hero's "one memorable moment": a tired small-business homepage, marked up in red pen,
+// with a slider that reveals the same business rebuilt. Pure HTML/CSS (no images), so it's
+// crisp at any size and costs almost nothing to load. The business is fictional and labelled
+// as a sample: real client work lives in the case-study section below it.
+---
+<figure class="markup" aria-labelledby="markup-cap">
+  <div class="markup-frame">
+    <div class="markup-chrome" aria-hidden="true">
+      <i></i><i></i><i></i>
+      <span class="markup-url">northside-fab.ca</span>
+    </div>
+    <div class="markup-stage" style="--split:50%">
+      <!-- BEFORE -->
+      <div class="mock mock-before" aria-hidden="true">
+        <div class="mb-top">
+          <span class="mb-logo">Northside Fab.</span>
+          <span class="mb-nav"><span>Home</span><span>About</span><span>Gallery</span><span>Links</span></span>
+        </div>
+        <div class="mb-body">
+          <p class="mb-welcome"><span class="pen-ring">Welcome to our Website!!<svg viewBox="0 0 200 40" preserveAspectRatio="none" aria-hidden="true"><path d="M10 24 C 8 6, 186 2, 194 17 C 200 34, 30 40, 8 28 C 2 22, 14 12, 34 8" /></svg></span></p>
+          <div class="mb-photo">[ photo_final_v3.jpg ]</div>
+          <p class="mb-text">Northside Fabrication has been serving the community since 1998. We are a full service company committed to quality and excellence. Please browse our website and feel free to contact us.</p>
+          <span class="mb-counter">VISITORS: 004217</span>
+        </div>
+        <div class="mb-foot">© 2014 Northside Fabrication · Best viewed in Internet Explorer</div>
+
+        <span class="note note--r" style="right:2.5%; top:15%;">↑ no “get a quote” button anywhere</span>
+        <span class="note note--r" style="right:2.5%; top:33%;">← says nothing about what you do</span>
+        <span class="note note--r note--minor" style="right:2.5%; top:52%; rotate:5deg;">← 2&nbsp;MB photo. slow on a phone</span>
+        <span class="note note--r note--minor" style="right:2.5%; top:72%; rotate:2deg;">← a visitor counter. bold.</span>
+        <span class="note note--minor" style="left:2.5%; top:40%;">nothing Google or an AI can quote →</span>
+      </div>
+
+      <!-- AFTER -->
+      <div class="mock mock-after" aria-hidden="true">
+        <div class="ma-top">
+          <span class="ma-logo">Northside<b>.</b></span>
+          <span class="ma-nav"><span>Railings</span><span>Stairs</span><span>Structural</span><span>Get a quote</span></span>
+        </div>
+        <div class="ma-hero">
+          <div>
+            <div class="ma-eyebrow">Steel fabrication · Burlington</div>
+            <p class="ma-h">Custom steel, built for Halton’s builders.</p>
+            <p class="ma-p">Railings, stairs and structural steel, made in our Burlington shop. Quotes back within two business days.</p>
+            <div class="ma-btns"><span>Get a quote</span><span>Our work</span></div>
+          </div>
+          <div class="ma-img"><span class="ma-badge"><b>98</b> mobile speed</span></div>
+        </div>
+        <div class="ma-row">
+          <div class="ma-card"><b>Railings</b><span>Interior and exterior, built to code.</span></div>
+          <div class="ma-card"><b>Stairs</b><span>Straight, spiral and floating.</span></div>
+          <div class="ma-card"><b>Structural</b><span>Beams, posts and lintels.</span></div>
+        </div>
+        <div class="ma-trust"><span>Since 1998</span><span>Fully insured</span><span>Halton &amp; Hamilton</span></div>
+      </div>
+
+      <div class="markup-tags" aria-hidden="true"><span>After</span><span>Before</span></div>
+      <input class="markup-range" type="range" min="0" max="100" value="50" step="1" aria-label="Drag right to replace more of the old sample site with the rebuilt one" />
+      <span class="markup-handle" aria-hidden="true"></span>
+    </div>
+  </div>
+  <figcaption class="markup-caption" id="markup-cap">
+    <span class="hand">Drag to fix it →</span>
+    <span class="small">A made-up business, for illustration. Real client work is below.</span>
+  </figcaption>
+</figure>
+
+<script is:inline>
+  (function () {
+    document.querySelectorAll('.markup-stage').forEach(function (stage) {
+      var r = stage.querySelector('input[type=range]');
+      if (!r) return;
+      var set = function (v) { stage.style.setProperty('--split', v + '%'); };
+      // (the drag itself is bound sitewide in Base.astro)
+      // One gentle sweep the first time the hero demo is seen, so people notice it moves.
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      var touched = false;
+      r.addEventListener('pointerdown', function () { touched = true; }, { once: true });
+      var start = null, from = 6, to = 50, dur = 1400;
+      function step(t) {
+        if (touched) return;
+        if (!start) start = t;
+        var p = Math.min(1, (t - start) / dur);
+        var e = 1 - Math.pow(1 - p, 3);
+        var v = from + (to - from) * e;
+        set(v.toFixed(1)); r.value = Math.round(v);
+        if (p < 1) requestAnimationFrame(step);
+      }
+      setTimeout(function () { set(from); requestAnimationFrame(step); }, 700);
+    });
+  })();
+</script>

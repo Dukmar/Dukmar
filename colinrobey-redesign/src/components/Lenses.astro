@@ -1,0 +1,101 @@
+---
+// One sample business seen four ways: by a person, by Google, by an AI assistant, and in the
+// structured data underneath. All panels are in the HTML (readable with JS off and by
+// crawlers); the script turns them into tabs.
+const tabs = [
+  { id: 'person', label: 'The customer' },
+  { id: 'google', label: 'Google' },
+  { id: 'ai', label: 'An AI assistant' },
+  { id: 'code', label: 'Under the hood' },
+];
+---
+<div class="lens-wrap" data-tabs>
+  <div class="tablist" role="tablist" aria-label="How one website looks to each audience">
+    {tabs.map((t, i) => (
+      <button class="tab" role="tab" type="button" id={`tab-${t.id}`} aria-controls={`panel-${t.id}`} aria-selected={i === 0 ? 'true' : 'false'} tabindex={i === 0 ? 0 : -1}>{t.label}</button>
+    ))}
+  </div>
+
+  <div class="lens-panel" role="tabpanel" id="panel-person" aria-labelledby="tab-person">
+    <span class="lens-label">What a person sees · in about three seconds</span>
+    <div class="mini-site" aria-hidden="true">
+      <div class="ma-top"><span class="ma-logo">Northside<b>.</b></span><span class="ma-nav"><span>Railings</span><span>Stairs</span><span>Get a quote</span></span></div>
+      <div class="ma-hero" style="grid-template-columns:1fr">
+        <div>
+          <div class="ma-eyebrow">Steel fabrication · Burlington</div>
+          <p class="ma-h" style="font-size:1.5em">Custom steel, built for Halton’s builders.</p>
+          <div class="ma-btns"><span>Get a quote</span><span>See our work</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="lens-foot">What they do, where, and what to click. If a visitor has to work that out, most won’t.</p>
+  </div>
+
+  <div class="lens-panel" role="tabpanel" id="panel-google" aria-labelledby="tab-google">
+    <span class="lens-label">What Google shows · a search for “custom steel railings burlington”</span>
+    <div class="serp-url"><i>N</i><span>northside-fab.ca › railings</span></div>
+    <p class="serp-title">Custom Steel Railings in Burlington | Northside Fabrication</p>
+    <p class="serp-desc">Interior and exterior steel railings, built to code in our Burlington shop and installed across Halton and Hamilton. Quotes back within two business days.</p>
+    <div class="serp-faq" aria-hidden="true">
+      <div>How much do custom steel railings cost?</div>
+      <div>How long does fabrication take?</div>
+    </div>
+    <p class="lens-foot">That result exists because the railings have their own page, with a title, a description and answers written for it. A homepage that tries to say everything shows up for very little.</p>
+  </div>
+
+  <div class="lens-panel" role="tabpanel" id="panel-ai" aria-labelledby="tab-ai">
+    <span class="lens-label">What an assistant says · when someone asks for a recommendation</span>
+    <div class="chat">
+      <p class="chat-q">Who does custom steel railings near Burlington?</p>
+      <div class="chat-a">
+        <i aria-hidden="true">AI</i>
+        <div>
+          <p><strong>Northside Fabrication</strong> is a Burlington shop that builds custom steel railings, stairs and structural pieces for builders across Halton and Hamilton. According to their website, they quote within two business days and have been operating since 1998.</p>
+          <span class="chat-src">Source: northside-fab.ca/railings</span>
+        </div>
+      </div>
+    </div>
+    <p class="lens-foot">An assistant can only repeat what it can read clearly. Your reviews, your listings and the rest of the web matter too, so I work those levers alongside the site.</p>
+  </div>
+
+  <div class="lens-panel" role="tabpanel" id="panel-code" aria-labelledby="tab-code">
+    <span class="lens-label">What the machines read · structured data on the page</span>
+<pre class="code"><span class="c">&lt;!-- invisible to people, plain as day to Google and AI --&gt;</span>
+{"{"}
+  <span class="k">"@type"</span>: <span class="s">"LocalBusiness"</span>,
+  <span class="k">"name"</span>: <span class="s">"Northside Fabrication"</span>,
+  <span class="k">"address"</span>: {"{"} <span class="k">"addressLocality"</span>: <span class="s">"Burlington"</span> {"}"},
+  <span class="k">"areaServed"</span>: [<span class="s">"Halton"</span>, <span class="s">"Hamilton"</span>],
+  <span class="k">"foundingDate"</span>: <span class="s">"1998"</span>,
+  <span class="k">"makesOffer"</span>: [<span class="s">"Steel railings"</span>, <span class="s">"Stairs"</span>, <span class="s">"Structural steel"</span>]
+{"}"}</pre>
+    <p class="lens-foot">Every site I build ships with this, written for your business. You’ll never see it. Search engines and assistants read it first.</p>
+  </div>
+  <p class="small" style="margin:1rem 0 0; color: var(--on-pine-soft)">Northside Fabrication is a made-up business, used for illustration.</p>
+</div>
+
+<script is:inline>
+  (function () {
+    document.querySelectorAll('[data-tabs]').forEach(function (root) {
+      var tabs = Array.prototype.slice.call(root.querySelectorAll('[role=tab]'));
+      var panels = tabs.map(function (t) { return document.getElementById(t.getAttribute('aria-controls')); });
+      function select(i, focus) {
+        tabs.forEach(function (t, j) {
+          var on = i === j;
+          t.setAttribute('aria-selected', on ? 'true' : 'false');
+          t.tabIndex = on ? 0 : -1;
+          panels[j].hidden = !on;
+        });
+        if (focus) tabs[i].focus();
+      }
+      tabs.forEach(function (t, i) {
+        t.addEventListener('click', function () { select(i); });
+        t.addEventListener('keydown', function (e) {
+          if (e.key === 'ArrowRight') select((i + 1) % tabs.length, true);
+          if (e.key === 'ArrowLeft') select((i - 1 + tabs.length) % tabs.length, true);
+        });
+      });
+      select(0);
+    });
+  })();
+</script>

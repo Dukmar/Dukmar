@@ -1,0 +1,93 @@
+---
+import Service from '../../layouts/Service.astro';
+import BeforeAfter from '../../components/BeforeAfter.astro';
+import Gauge from '../../components/Gauge.astro';
+import Anatomy from '../../components/Anatomy.astro';
+import { REBUILD_FAQS, STORY } from '../../data/site';
+
+const included = [
+  ['A custom design', 'Shaped around your business and your customers, not a template with your logo dropped in.'],
+  ['A page for each thing you do', 'Dedicated pages for every service you want to be found for, beyond a home page and a contact page.'],
+  ['The writing, done with you', 'I draft every page from what you tell me about your customers. You check it sounds like you and that it’s true.'],
+  ['Search and AI built in', 'Clean markup, structured data, and plain answers that Google and AI assistants can read and repeat.'],
+  ['Fast on a phone', 'Light pages and compressed images: the load speed Google weighs when it decides where you rank.'],
+  ['Analytics and tracked forms', 'So you can see what’s working, and every enquiry lands somewhere you can count it.'],
+  ['Yours outright', 'The code and the content, with no monthly platform fee to keep it online and no lock-in to me.'],
+  ['90 days of tuning', 'Three months after launch to watch real visitors, sharpen weak pages and make the edits you think of once it’s live.'],
+];
+const moves = [
+  ['How many pages', 'A handful of pages is where $6,500 starts. Each service you want found usually needs its own.'],
+  ['Who writes', 'If you have strong copy already, less of the writing falls to me.'],
+  ['What it connects to', 'Booking tools, a CRM or an existing system add work. A contact form does not.'],
+];
+---
+<Service
+  slug="website-rebuild"
+  title="Custom Small Business Websites from $6,500 | Colin Robey"
+  description="A custom small-business website, new or replacing yours: fast, owned outright, built to be found in Google and AI answers, with 90 days of support. Burlington, Ontario. From $6,500."
+  h1="A website your business owns, built to be found."
+  intro="A fast, custom site shaped around what you actually do. The real work happens before the design: what each page says, and how it turns a visitor into a call. Yours outright when it’s done, and backed for 90 days after launch."
+  answer="A website build is a custom site, designed around your business, built to be found in Google and in AI answers, and owned by you outright with no monthly platform subscription like Wix or Squarespace. It starts from $6,500, usually takes six to eight weeks for a handful of pages, and includes three months of hands-on support after launch. It works the same whether it replaces a site you already have or it’s your first one."
+  faqs={REBUILD_FAQS}
+  serviceType="Website design and SEO"
+  ask={{ heading: 'Start with a conversation.', body: 'Every build is scoped differently, so there’s no order button here. Send me your site (or tell me you don’t have one yet) and what you’re trying to fix, and we’ll have a short call before anyone commits to anything.', label: 'Talk about a build' }}
+>
+  <section class="section" aria-labelledby="inc-h">
+    <div class="wrap">
+      <div class="head-split">
+        <div><p class="eyebrow">What’s included</p><h2 id="inc-h">Everything a site needs to do its job.</h2></div>
+        <p class="lead">One fixed price covers all of it. It doesn’t move unless you ask for something new.</p>
+      </div>
+      <ul class="ticks" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr)); gap:1.75rem 2.5rem">
+        {included.map(([t, d]) => <li><strong>{t}</strong>{d}</li>)}
+      </ul>
+    </div>
+  </section>
+
+  <section class="section band-pine" aria-labelledby="proof-h">
+    <div class="wrap case">
+      <BeforeAfter />
+      <div>
+        <p class="eyebrow">A build that shipped</p>
+        <h2 id="proof-h">What a rebuild looked like for someone else.</h2>
+        <p>The STORY Group had an aging Wix site: slow on a phone, thin on the homepage, and with no pages for the three areas the firm specializes in. The rebuild gave each one its own page, on a fast foundation the firm owns outright, with forms that capture the inquiries the old site couldn’t track.</p>
+        <div class="gauges">
+          <Gauge value={STORY.speedBefore} label="Mobile speed, before" variant="before" />
+          <span class="gauge-arrow" aria-hidden="true">→</span>
+          <Gauge value={STORY.speedAfter} label="Mobile speed, after" variant="after" />
+        </div>
+        <blockquote class="quote" style="padding-top:1.5rem"><p style="font-size:var(--step-1)">{STORY.quoteShort}</p><footer><span><strong>{STORY.person}</strong>{STORY.role}, {STORY.client}</span></footer></blockquote>
+        <a class="btn btn-marker" href="/work/the-story-group/" style="margin-top:1rem">Read the case study <span class="arrow">→</span></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section band-paper2" aria-labelledby="an-h">
+    <div class="wrap">
+      <div class="head"><p class="eyebrow">Under the design</p><h2 id="an-h">The decisions that make a page work.</h2></div>
+      <Anatomy />
+    </div>
+  </section>
+
+  <section class="section" aria-labelledby="price-h">
+    <div class="wrap two-col">
+      <div>
+        <p class="eyebrow">Pricing</p>
+        <h2 id="price-h">From $6,500. Here’s what moves the number.</h2>
+        <p class="lead">You get a fixed price before any work starts. These are the three things that set it.</p>
+        <p class="price-tag" style="margin-top:1rem"><small>from</small>$6,500 <small>CAD</small></p>
+      </div>
+      <ul class="ticks">
+        {moves.map(([t, d]) => <li><strong>{t}</strong>{d}</li>)}
+        <li><strong>Not sure a rebuild is the right start?</strong>A <a class="link" href="/services/growth-audit/">Growth Audit</a> works out the order of the job, and its $2,500 comes off the build.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section band-paper2" aria-labelledby="tl-h">
+    <div class="wrap">
+      <div class="head"><p class="eyebrow">Timeline</p><h2 id="tl-h">A handful of pages, usually six to eight weeks.</h2>
+        <p class="lead">A few hours of your time across the project, mostly early on. I build in the open, so you see it come together on a live link rather than waiting for a big reveal. If a date is going to slip, you hear it from me before the date.</p></div>
+    </div>
+  </section>
+</Service>

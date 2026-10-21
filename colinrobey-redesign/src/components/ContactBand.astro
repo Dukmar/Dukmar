@@ -1,0 +1,46 @@
+---
+// The closing ask on every page. Same Netlify form ("contact") as the live site, same field
+// names, so the existing notification + CRM wiring keeps working unchanged.
+import { AUTHOR, BUSINESS } from '../data/site';
+interface Props { heading?: string; body?: string; service?: string; messageLabel?: string; id?: string }
+const {
+  heading = 'Let’s see if I can help.',
+  body = 'Send me your website for a free scorecard, ask for a short call, or just send a note. Whatever’s easier. I read every one myself.',
+  service = 'General enquiry',
+  messageLabel = 'Anything you’d like me to know',
+  id = 'contact',
+} = Astro.props;
+---
+<section class="section band-pine" id={id} aria-labelledby={`${id}-h`}>
+  <div class="wrap cta-grid">
+    <div>
+      <p class="eyebrow">Get in touch</p>
+      <h2 id={`${id}-h`}>{heading}</h2>
+      <p class="lead" style="color:var(--on-pine-soft)">{body}</p>
+      <ul class="contact-lines">
+        <li><b>Email</b><a href={`mailto:${AUTHOR.email}`}>{AUTHOR.email}</a></li>
+        <li><b>Phone</b><a href={`tel:${BUSINESS.telephone}`}>{BUSINESS.telephoneDisplay}</a></li>
+        <li><b>Based</b><span>Burlington, Ontario</span></li>
+      </ul>
+      <p class="signature">— Colin</p>
+    </div>
+    <div class="form-card">
+      <form class="form" name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field" action="/success/">
+        <input type="hidden" name="form-name" value="contact" />
+        <input type="hidden" name="subject" value="🔔 New lead — colinrobey.ca (contact form)" />
+        <input type="hidden" name="service" value={service} />
+        <p class="hp" aria-hidden="true"><label>Leave this empty: <input name="bot-field" tabindex="-1" autocomplete="off" /></label></p>
+        <div class="field"><label for={`${id}-name`}>Name</label><input id={`${id}-name`} name="name" autocomplete="name" required /></div>
+        <div class="field"><label for={`${id}-email`}>Email</label><input id={`${id}-email`} type="email" name="email" autocomplete="email" required /></div>
+        <div class="field">
+          <label for={`${id}-website`}>Your website <span class="opt-txt">(optional, leave it blank if you don’t have one yet)</span></label>
+          <input id={`${id}-website`} type="text" name="website" inputmode="url" autocomplete="url" placeholder="yourbusiness.ca" />
+        </div>
+        <label class="check"><input type="checkbox" name="wants-call" value="yes" /><span>I’d rather have a short call<small>I’ll email you a couple of times that work.</small></span></label>
+        <div class="field"><label for={`${id}-message`}>{messageLabel} <span class="opt-txt">(optional)</span></label><textarea id={`${id}-message`} name="message"></textarea></div>
+        <button class="btn btn-pen" type="submit">Send it to Colin <span class="arrow">→</span></button>
+        <p class="small muted" style="margin:0">No newsletter, no auto-sequence. Just a reply from me, usually within a business day or two.</p>
+      </form>
+    </div>
+  </div>
+</section>

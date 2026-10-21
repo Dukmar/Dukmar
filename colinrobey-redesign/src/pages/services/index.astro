@@ -1,0 +1,104 @@
+---
+import Base from '../../layouts/Base.astro';
+import Ladder from '../../components/Ladder.astro';
+import PathFinder from '../../components/PathFinder.astro';
+import ContactBand from '../../components/ContactBand.astro';
+import { SERVICES, SITE } from '../../data/site';
+
+const rows: [string, boolean[]][] = [
+  ['Four grades + the three fixes I’d make first', [true, false, false, false]],
+  ['Every page read closely', [false, true, true, true]],
+  ['Live AI check: who gets named instead of you', [false, true, true, true]],
+  ['Prioritized fix list, yours to keep', [true, true, true, true]],
+  ['Lead flow traced, leaks found', [false, false, true, false]],
+  ['30/60/90-day plan', [false, false, true, false]],
+  ['A new custom site, owned outright', [false, false, false, true]],
+  ['90 days of tuning after launch', [false, false, false, true]],
+];
+const list = {
+  '@type': 'ItemList',
+  '@id': `${SITE}/services/#list`,
+  name: 'Services and pricing',
+  itemListElement: SERVICES.map((s, i) => ({ '@type': 'ListItem', position: i + 1, url: `${SITE}${s.href}`, name: `${s.name} (${s.price})` })),
+};
+---
+<Base
+  title="Website Services & Pricing, Burlington | Colin Robey"
+  description="Clear prices for small-business websites: a free scorecard, a $400 Website Diagnostic, a $2,500 Growth Audit, and a custom website build from $6,500. Each step credited to the next."
+  crumbs={[{ name: 'Services', href: '/services/' }]}
+  schema={[list]}
+>
+  <main id="main">
+    <section class="page-hero">
+      <div class="wrap">
+        <p class="eyebrow">Services &amp; pricing</p>
+        <h1>Real prices. Start with the cheap step.</h1>
+        <p class="lead">Four ways in, depending on what your site actually needs. Most people start at the bottom and only climb if the findings say so. What you pay at each step comes off the next one.</p>
+      </div>
+    </section>
+    <section class="section--tight" style="padding-top:0">
+      <div class="wrap"><Ladder /></div>
+    </section>
+
+    <section class="section band-paper2" aria-labelledby="cmp-h">
+      <div class="wrap">
+        <div class="head"><p class="eyebrow">Side by side</p><h2 id="cmp-h">What each one gets you.</h2></div>
+        <div style="overflow-x:auto; background:#fff; border:1px solid var(--line); border-radius:var(--radius)">
+          <table class="cmp" style="width:100%; border-collapse:collapse; min-width:640px">
+            <thead>
+              <tr>
+                <th scope="col" style="text-align:left; padding:1rem 1.25rem"><span class="sr-only">Feature</span></th>
+                {SERVICES.map((s) => <th scope="col" style="padding:1rem; text-align:center; font-family:var(--display); font-size:1.05rem; line-height:1.2">{s.name}<br /><span style="font:700 .9rem var(--body); color:var(--pen-deep)">{s.price}</span></th>)}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(([label, has]) => (
+                <tr style="border-top:1px solid var(--line)">
+                  <th scope="row" style="text-align:left; padding:.9rem 1.25rem; font-weight:600">{label}</th>
+                  {has.map((h) => <td style="text-align:center; padding:.9rem; font-weight:800; color:var(--good)">{h ? '✓' : <span style="color:var(--line)" aria-label="not included">—</span>}</td>)}
+                </tr>
+              ))}
+              <tr style="border-top:1px solid var(--line)">
+                <th scope="row" style="text-align:left; padding:.9rem 1.25rem; font-weight:600">Turnaround</th>
+                {SERVICES.map((s) => <td style="text-align:center; padding:.9rem; font-size:.92rem; color:var(--ink-soft)">{s.time}</td>)}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" aria-labelledby="finder-h">
+      <div class="wrap two-col" style="align-items:center">
+        <div>
+          <p class="eyebrow">Not sure where you sit?</p>
+          <h2 id="finder-h">Two questions. One honest answer.</h2>
+          <p class="lead">Tell me where you are and I’ll point you at the right first step.</p>
+        </div>
+        <PathFinder />
+      </div>
+    </section>
+
+    <section class="section--tight band-paper2" id="no-website" aria-labelledby="nw-h">
+      <div class="wrap two-col">
+        <div><h2 id="nw-h" style="font-size:var(--step-3)">No website yet?</h2></div>
+        <div>
+          <p class="lead">Then there’s nothing to score or diagnose, so the first rungs don’t apply. Start with a conversation instead: twenty minutes to work out what a first site needs to do for your business, and I’ll tell you what it would take. Building from scratch usually moves faster than a rebuild, because there’s nothing to unpick.</p>
+          <a class="btn btn-pen" href="/contact/">Ask for a twenty-minute call <span class="arrow">→</span></a>
+        </div>
+      </div>
+    </section>
+
+    <section class="section--tight" id="site-care" aria-labelledby="care-h">
+      <div class="wrap two-col">
+        <div><p class="eyebrow">After launch</p><h2 id="care-h" style="font-size:var(--step-3)">The Site Care Plan.</h2></div>
+        <div>
+          <p class="lead">Every build includes three months of hands-on support, and the site is yours from day one either way. After that you can run it yourself, or keep me on: a post or two a month in your voice, light updates and fixes, and a quarterly check on whether you’re still being found in Google and in AI answers.</p>
+          <p>It’s sized to your site, month to month, with 30 days’ notice. It isn’t something to decide up front, and I only bring it up with clients whose site I’ve built, once there’s something worth keeping current.</p>
+        </div>
+      </div>
+    </section>
+
+    <ContactBand service="General enquiry (services page)" />
+  </main>
+</Base>

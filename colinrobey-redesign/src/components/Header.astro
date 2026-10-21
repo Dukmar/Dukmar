@@ -1,0 +1,22 @@
+---
+const path = Astro.url.pathname;
+const links = [
+  { href: '/work/', label: 'Work' },
+  { href: '/services/', label: 'Services & pricing' },
+  { href: '/how-i-work/', label: 'How I work' },
+  { href: '/insights/', label: 'Insights' },
+];
+const isCurrent = (href: string) => path === href || (href !== '/' && path.startsWith(href));
+---
+<header class="site-header">
+  <div class="wrap">
+    <a class="brand" href="/" aria-label="Colin Robey, home">Colin Robey</a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Menu"><span></span></button>
+    <nav class="nav" id="site-nav" aria-label="Main">
+      {links.map((l) => (
+        <a href={l.href} aria-current={isCurrent(l.href) ? 'page' : undefined}>{l.label}</a>
+      ))}
+      <a class="btn btn-pen" href="/scorecard/">Free scorecard</a>
+    </nav>
+  </div>
+</header>

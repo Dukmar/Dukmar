@@ -1,0 +1,14 @@
+---
+// Real before/after of a client homepage, same slider mechanics as the hero demo.
+import { STORY } from '../data/site';
+interface Props { eager?: boolean }
+const { eager = false } = Astro.props;
+---
+<div class="ba" style="--split:50%">
+  <img src="/work/storygroup-before-1080.webp" srcset="/work/storygroup-before-720.webp 720w, /work/storygroup-before-1080.webp 1080w, /work/storygroup-before.webp 1440w" sizes="(max-width: 980px) 100vw, 680px" width="1440" height="1024" alt={`${STORY.client}’s old Wix homepage, before the rebuild`} loading={eager ? 'eager' : 'lazy'} decoding="async" />
+  <img class="ba-after" src="/work/storygroup-after-1080.webp" srcset="/work/storygroup-after-720.webp 720w, /work/storygroup-after-1080.webp 1080w, /work/storygroup-after.webp 1440w" sizes="(max-width: 980px) 100vw, 680px" width="1440" height="1024" alt={`The rebuilt storygroup.ca homepage, ${STORY.speedAfter}/100 mobile speed, up from ${STORY.speedBefore}`} loading={eager ? 'eager' : 'lazy'} decoding="async" />
+  <span class="ba-label ba-label--before">Before · Wix</span>
+  <span class="ba-label ba-label--after">After · custom build</span>
+  <input class="markup-range" type="range" min="0" max="100" value="50" aria-label="Drag to compare The STORY Group homepage before and after" />
+  <span class="markup-handle" aria-hidden="true"></span>
+</div>

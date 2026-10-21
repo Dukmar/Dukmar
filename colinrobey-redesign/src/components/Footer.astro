@@ -1,0 +1,45 @@
+---
+import { AUTHOR, BUSINESS, AREAS, SERVICES } from '../data/site';
+const year = 2026;
+---
+<footer class="site-footer">
+  <div class="wrap">
+    <p class="foot-big" aria-hidden="true">Let’s make yours<br />look as good as you are<span>.</span></p>
+    <div class="foot-grid">
+      <div>
+        <h2>Colin Robey</h2>
+        <p>Website design and AI-assisted marketing for small Canadian service businesses.</p>
+        <p>Burlington, Ontario<br />Serving Halton, Hamilton and Southern Ontario</p>
+        <p><a href={`mailto:${AUTHOR.email}`}>{AUTHOR.email}</a><br /><a href={`tel:${BUSINESS.telephone}`}>{BUSINESS.telephoneDisplay}</a></p>
+      </div>
+      <div>
+        <h2>Services</h2>
+        <ul>
+          {SERVICES.map((s) => <li><a href={s.href}>{s.name} <span style="opacity:.6">· {s.price}</span></a></li>)}
+          <li><a href="/services/#site-care">Site Care Plan</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Explore</h2>
+        <ul>
+          <li><a href="/work/the-story-group/">Case study: The STORY Group</a></li>
+          <li><a href="/how-i-work/">How I work</a></li>
+          <li><a href="/web-design-burlington/">Web design in Burlington</a></li>
+          <li><a href="/insights/">Insights</a></li>
+          <li><a href="/contact/">Contact</a></li>
+          <li><a href={AUTHOR.linkedin} rel="me noopener">LinkedIn</a></li>
+        </ul>
+      </div>
+      <div>
+        <h2>Where I work</h2>
+        <ul class="foot-areas">
+          {AREAS.map((a) => <li>{a.name}</li>)}
+        </ul>
+      </div>
+    </div>
+    <div class="foot-base">
+      <span>© {year} Colin Robey. Designed and built by me, on Astro, hosted on Netlify.</span>
+      <span><a href="https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fcolinrobey.ca%2F" rel="noopener">Test this site’s speed yourself</a> · <a href="/privacy/">Privacy</a> · <a href="/llms.txt">llms.txt</a></span>
+    </div>
+  </div>
+</footer>
