@@ -134,7 +134,7 @@ export const SERVICES: Service[] = [
     kicker: 'The build',
     blurb:
       'A fast, custom site designed around your business, built to be found in Google and in AI answers, and owned by you outright.',
-    bullets: ['Designed from scratch around your business', 'SEO and AI-search built in', 'Yours outright, no monthly platform fee', '90 days of hands-on support'],
+    bullets: ['Designed from scratch around your business', 'SEO and AI-search built in', 'Yours outright, no monthly platform subscription', '90 days of hands-on support'],
     time: 'Six to eight weeks',
   },
 ];
@@ -162,7 +162,7 @@ export type Faq = { q: string; a: string };
 export const HOME_FAQS: Faq[] = [
   {
     q: 'How much does a small business website cost in Canada?',
-    a: 'Mine start at $6,500 for a handful of pages, built custom and owned outright with no monthly platform fee. What moves the number is how many pages you need, how much of the writing falls to me, and whether anything has to connect to a system you already run. You get a fixed price before any work starts.',
+    a: 'Mine start at $6,500 for a handful of pages, built custom and owned outright with no monthly platform subscription. What moves the number is how many pages you need, how much of the writing falls to me, and whether anything has to connect to a system you already run. You get a fixed price before any work starts.',
   },
   {
     q: 'How long does a website redesign take?',
@@ -170,7 +170,11 @@ export const HOME_FAQS: Faq[] = [
   },
   {
     q: 'Do I own the website when it’s done?',
-    a: 'Yes. The code and the content are yours outright, with no monthly platform fee to keep it online. You’re not renting it, and you’re not locked into me to make changes later.',
+    a: 'Yes. The code and the content are yours outright, and you’re not locked into me to make changes later. There’s no monthly platform subscription to keep it online, the way there is with Wix or Squarespace.',
+  },
+  {
+    q: 'Are there any ongoing costs after launch?',
+    a: 'No monthly platform subscription. Most small-business sites run on a free hosting plan, so your only running cost is your domain, a few dollars a month at most. Email on your own domain, if you want it, is separate. If your site ever outgrows the free plan, upgrading is your call, and I’ll tell you before it gets close.',
   },
   {
     q: 'Will my new site show up in Google and in ChatGPT?',
@@ -193,7 +197,11 @@ export const HOME_FAQS: Faq[] = [
 export const REBUILD_FAQS: Faq[] = [
   {
     q: 'Do I own the site when it’s done?',
-    a: 'Yes. The code and the content are yours outright, with no monthly platform fee to keep it online. You’re not renting it, and you’re not locked into me to make changes later.',
+    a: 'Yes. The code and the content are yours outright, and you’re not locked into me to make changes later. There’s no monthly platform subscription to keep it online, the way there is with Wix or Squarespace.',
+  },
+  {
+    q: 'Are there any ongoing costs after launch?',
+    a: 'No monthly platform subscription. Most small-business sites run on a free hosting plan, so your only running cost is your domain, a few dollars a month at most. Email on your own domain, if you want it, is separate. If your site ever outgrows the free plan, upgrading is your call, and I’ll tell you before it gets close.',
   },
   {
     q: 'What do you need from me?',
@@ -205,7 +213,7 @@ export const REBUILD_FAQS: Faq[] = [
   },
   {
     q: 'How much does a small business website cost in Canada?',
-    a: 'Mine start at $6,500 for a handful of pages, built custom and owned outright with no monthly platform fee. What moves the number is how many pages you need, how much of the writing falls to me, and whether anything has to connect to a system you already run. You’ll have a fixed price before any work starts, and it doesn’t move unless you ask for something new.',
+    a: 'Mine start at $6,500 for a handful of pages, built custom and owned outright with no monthly platform subscription. What moves the number is how many pages you need, how much of the writing falls to me, and whether anything has to connect to a system you already run. You’ll have a fixed price before any work starts, and it doesn’t move unless you ask for something new.',
   },
   {
     q: 'How long does it take?',
@@ -305,7 +313,7 @@ export const LOCAL_FAQS: Faq[] = [
   },
   {
     q: 'How much does a website cost for a Burlington small business?',
-    a: 'My builds start at $6,500 for a handful of pages, custom-designed and owned outright with no monthly platform fee. You get a fixed price before work starts. If you’re not sure a rebuild is the right move, the free scorecard or the $400 Website Diagnostic tells you first.',
+    a: 'My builds start at $6,500 for a handful of pages, custom-designed and owned outright with no monthly platform subscription. You get a fixed price before work starts. If you’re not sure a rebuild is the right move, the free scorecard or the $400 Website Diagnostic tells you first.',
   },
   {
     q: 'Do you help with Google Business Profile and local search?',

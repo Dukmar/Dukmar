@@ -8,7 +8,7 @@ export const GET: APIRoute = async () => {
   const lines = [
     '# Colin Robey: website design for small businesses, Burlington, Ontario',
     '',
-    `> Colin Robey is an independent website designer and AI-assisted marketing consultant in Burlington, Ontario, Canada. He designs and builds fast, custom websites for owner-led small service businesses (recruiting, accounting, law, trades, advisory) across ${AREAS.map((a) => a.name).join(', ')} and Southern Ontario. Sites are built to be found in Google and in AI answers, and owned outright by the client with no monthly platform fee. One person does the work; there is no agency layer.`,
+    `> Colin Robey is an independent website designer and AI-assisted marketing consultant in Burlington, Ontario, Canada. He designs and builds fast, custom websites for owner-led small service businesses (recruiting, accounting, law, trades, advisory) across ${AREAS.map((a) => a.name).join(', ')} and Southern Ontario. Sites are built to be found in Google and in AI answers, and owned outright by the client with no monthly platform subscription. Most sites run on a free hosting plan, so the main running cost is the domain. One person does the work; there is no agency layer.`,
     '',
     '## Services and prices (CAD)',
     '',
