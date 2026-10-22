@@ -12,6 +12,8 @@
 - Kantar is a global study (33 markets). Whether Canada is one of them is unconfirmed. Under the Canadian-sources rule, decide whether a global study is fine for your audience.
 - The `voice-linkedin.md` reference (consulting-colinrobey-linkedin skill) isn't installed in the cloud session, so the draft was written without the seven shipped posts as calibration. Expect to add your own opener frame or aside at posting, as calibration rows 8 and 9 predict.
 
+- Opening line: five truthful hook options offered in chat (2026-10-22). Waiting on Colin's pick; the .txt still has the v1 opener.
+
 ## Needs the laptop
 - Posting to LinkedIn (manual, by Colin).
 - Moving `linkedin/draft-log/2026-10-22-linkedin-ai-trust-gap.md` into `~/.claude/skills/write-like-colin/drafts/` so `/voice-calibrate` can diff it against the live post.
@@ -20,3 +22,4 @@
 - Colin's stance on AI trust (his words, 2026-10-22): "Trust is the real problem and every new channel is looked at with apprehension." Useful for future AI-positioning posts.
 - Kantar's net-75% figure is about investment in *AI visibility* (being recommended by AI assistants), not AI tools in general. It's easy to misquote. Source: Bizcommunity and Research Live headlines, 2026-10.
 - The default cloud environment network policy blocks WebFetch and curl to general news and government sites (www.pm.gc.ca was refused with a 403 from the proxy), so source checks need the laptop or a wider allowlist. Source: this session.
+- Colin wants stronger openings on his LinkedIn posts (his words, 2026-10-22): "I need better exciting openings to have people read my posts. But still truthful." The hook has to land before LinkedIn's "see more" cut, and every number has to stay exact (for example a net 75% is not "three quarters of marketers").
