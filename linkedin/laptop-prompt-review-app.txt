@@ -1,0 +1,8 @@
+Add one post to my LinkedIn review app (my own profile, cr-colin-post-review.netlify.app) from ~/Projects/linkedin-review. Follow consulting-colinrobey-linkedin Step 7 and read that project's PROJECT_STATUS.md first.
+
+1. Fetch the copy: in ~/Projects/Dukmar run git fetch && git switch claude/linkedin-ai-trust-gap. The post is linkedin/2026-10-22-ai-trust-gap.txt. That is my approved v4 text: use it byte-identical, curly apostrophes included, and don't reword anything.
+2. Slug ai-trust-gap. Source is Kantar Media Reactions 2026, checked on Kantar's own page 2026-10-22: a net 75% of marketers plan to increase investment in visibility in AI assistants in 2027, including paid ads; 73% of consumers use AI assistants; 33% use them to research brands and products; 24% trust brand recommendations from AI assistants. First-comment link if one is wanted: https://www.kantar.com/inspiration/advertising-media/media-reactions-2026
+3. Add it the way the last Colin batch was done (new batch file or appended to the current one, whichever matches). Snapshot to versions/ before editing.
+4. Run the Step 5 gates and report what they flag, but don't change the copy without asking me.
+5. Build with python3 build.py batches/<batch>.json --out dist-colin, deploy with ./deploy-colin.sh, and send me the review link.
+6. Copy linkedin/draft-log/2026-10-22-linkedin-ai-trust-gap.md from the Dukmar branch into ~/.claude/skills/write-like-colin/drafts/ (v1 to v4; v4 is my own rewrite).

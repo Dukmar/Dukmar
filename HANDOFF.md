@@ -8,12 +8,17 @@
 - Cut: the "17% have formal processes for how AI represents their brand" figure. It came from an unnamed survey and couldn't be traced.
 
 ## Open
+- `spend more next year` is correct only if the post goes up in 2026. If it slips into 2027, change it to "this year".
 - Kantar is a global study (33 markets). Whether Canada is one of them is unconfirmed. Under the Canadian-sources rule, decide whether a global study is fine for your audience.
 - The `voice-linkedin.md` reference (consulting-colinrobey-linkedin skill) isn't installed in the cloud session, so the draft was written without the seven shipped posts as calibration. Expect to add your own opener frame or aside at posting, as calibration rows 8 and 9 predict.
 
-- Opening line: Colin chose the personal credit-card angle; second line is his "Is that where AI is now?"; the .txt holds v3 (2026-10-22).
+- The .txt now holds v4, Colin's own rewrite (2026-10-22). He asked for it to go into his LinkedIn post review app.
+- The review app (`~/Projects/linkedin-review`, deployed to cr-colin-post-review.netlify.app via `./deploy-colin.sh`) exists only on the laptop. It has no GitHub repo, and deploys are laptop-only. Run the prompt in `linkedin/laptop-prompt-review-app.txt`.
+
+- Two other repos were attached read-only to find the review app: `Dukmar/linkedin-cockpit` (the shelved comment-drafting app, not the review app) and `Dukmar/claude-config` (skills; it points to `~/Projects/linkedin-review`). Nothing was changed in either.
 
 ## Needs the laptop
+- Loading v4 into the LinkedIn review app and deploying it: `linkedin/laptop-prompt-review-app.txt`.
 - Posting to LinkedIn (manual, by Colin).
 - Moving `linkedin/draft-log/2026-10-22-linkedin-ai-trust-gap.md` into `~/.claude/skills/write-like-colin/drafts/` so `/voice-calibrate` can diff it against the live post.
 
