@@ -18,3 +18,13 @@ Kantar's Media Reactions study asked both sides. A net 75% of marketers plan to 
 In saying that, I don't think the gap is unusual. Every new channel gets looked at with apprehension at first - buying online, reviews from strangers, ads in your social feed. People came around on all of them. It took a while, and I'd guess AI will be the same.
 
 So if you're putting money into AI visibility, I'd put some time into the trust side too. Start by asking ChatGPT about your own business and reading what it tells people.
+
+## v2 [2026-10-22 17:00] — "Let’s make it personal: I remember the days when I hesitated to put my credit card number on a website. Let’s go with that angle."
+
+I remember the days when I hesitated to put my credit card number on a website. I think a lot of people feel that way about AI right now.
+
+Kantar's Media Reactions study asked both sides. A net 75% of marketers plan to spend more next year on showing up in AI assistants like ChatGPT. On the consumer side, about a third use those assistants to research brands and products, and about a quarter trust what they recommend.
+
+Trust is the real problem here. In saying that, I don't think it's unusual. Every new channel gets looked at with apprehension at first. People came around on online shopping, reviews from strangers and ads in their social feed. It took a while, and I'd guess AI will be the same.
+
+So if you're putting money into AI visibility, I'd put some time into the trust side too. Start by asking ChatGPT about your own business and reading what it tells people.

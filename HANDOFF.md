@@ -12,7 +12,7 @@
 - Kantar is a global study (33 markets). Whether Canada is one of them is unconfirmed. Under the Canadian-sources rule, decide whether a global study is fine for your audience.
 - The `voice-linkedin.md` reference (consulting-colinrobey-linkedin skill) isn't installed in the cloud session, so the draft was written without the seven shipped posts as calibration. Expect to add your own opener frame or aside at posting, as calibration rows 8 and 9 predict.
 
-- Opening line: five truthful hook options offered in chat (2026-10-22). Waiting on Colin's pick; the .txt still has the v1 opener.
+- Opening line: Colin chose the personal credit-card angle; the .txt now holds v2 with that opener (2026-10-22).
 
 ## Needs the laptop
 - Posting to LinkedIn (manual, by Colin).
