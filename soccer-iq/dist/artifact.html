@@ -49,6 +49,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .flabel.opt { background: var(--chalk); color: var(--ink); font-family: var(--display); font-size: 18px; width: 30px; height: 30px; line-height: 30px; text-align: center; border-radius: 50%; border: 3px solid var(--cone); }
 .flabel.think { background: #fff; color: var(--ink); font-family: var(--marker); font-weight: 400; font-size: 14px; padding: 6px 10px; border-radius: 14px; max-width: 200px; white-space: normal; width: max-content; box-shadow: 0 3px 10px rgba(0,0,0,0.25); }
 .flabel.think::after { content: ''; position: absolute; left: 50%; bottom: -7px; margin-left: -7px; border: 7px solid transparent; border-bottom: 0; border-top-color: #fff; }
+.flabel.talk { background: #fff; color: var(--ink); font-family: var(--body); font-weight: 700; font-size: 14px; line-height: 1.3; padding: 6px 11px; border-radius: 12px; max-width: 220px; white-space: normal; width: max-content; box-shadow: 0 3px 10px rgba(0,0,0,0.25); border: 2px solid var(--pinnie); animation: pop 0.3s ease-out; }
+.flabel.talk::after { content: ''; position: absolute; left: 22px; bottom: -8px; border: 8px solid transparent; border-bottom: 0; border-left: 0; border-top-color: var(--pinnie); }
 .flabel.call { background: var(--cone); color: #fff; font-family: var(--display); font-size: 20px; letter-spacing: 0.04em; padding: 3px 10px; border-radius: 10px; transform-origin: 50% 100%; animation: pop 0.35s ease-out; }
 .flabel.good { background: var(--good); color: var(--ink); font-size: 13px; padding: 3px 8px; border-radius: 8px; }
 .flabel.bad { background: var(--bad); color: var(--ink); font-size: 13px; padding: 3px 8px; border-radius: 8px; }
@@ -243,6 +245,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   };
+  // personalise a line: {name} / {NAME} = her name, {team} / {TEAM} = her team colour
+  PIQ.fill = function (s) {
+    var prof = PIQ.profile ? PIQ.profile() : {};
+    var name = (prof && prof.name) || 'superstar';
+    var team = PIQ.teamWord || 'blue';
+    return String(s).replace(/\{name\}/g, name).replace(/\{NAME\}/g, name.toUpperCase())
+      .replace(/\{team\}/g, team).replace(/\{TEAM\}/g, team.toUpperCase());
+  };
+  // a player says something (speech bubble that fades after a few seconds)
+  PIQ.say = function (stage, id, text, secs) {
+    if (!stage || !stage.players[id]) return null;
+    return stage.label(id, PIQ.esc(PIQ.fill(text)), 'talk', { ttl: secs || 3.2 });
+  };
   // distance from point p to segment ab (all [x,z])
   PIQ.segDist = function (p, a, b) {
     var abx = b[0] - a[0], abz = b[1] - a[1];
@@ -250,6 +265,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var t = PIQ.clamp(((p[0] - a[0]) * abx + (p[1] - a[1]) * abz) / len2, 0, 1);
     return PIQ.dist(p, [a[0] + abx * t, a[1] + abz * t]);
   };
+
+  // a real keyboard is likely (Mac) rather than a phone or tablet
+  PIQ.hasKeys = !('ontouchstart' in window) || window.matchMedia && window.matchMedia('(pointer: fine)').matches;
 
   // ---------- storage (per-device progress; never required) ----------
   var KEY = 'pitchiq.v1';
@@ -330,7 +348,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     good: function () { tone(660, 0.12, 'sine', 0.18); tone(880, 0.18, 'sine', 0.18, 0.1); tone(1320, 0.25, 'sine', 0.14, 0.2); },
     ok: function () { tone(520, 0.14, 'sine', 0.16); tone(660, 0.2, 'sine', 0.14, 0.12); },
     bad: function () { tone(220, 0.22, 'square', 0.08); tone(180, 0.28, 'square', 0.07, 0.15); },
-    cheer: function () { noise(1.6, 0.18, 1400, 0, true); noise(1.4, 0.12, 2600, 0.15, true); },
+    cheer: function () { if (PIQ.cheerHook) PIQ.cheerHook(); noise(1.6, 0.18, 1400, 0, true); noise(1.4, 0.12, 2600, 0.15, true); },
     levelUp: function () { [523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.2, 'triangle', 0.16, i * 0.11); }); }
   };
 })();
@@ -343,8 +361,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   'use strict';
   var PIQ = window.PIQ;
 
-  // Field dimensions: mid-range values from the Peel Halton 2026 7v7 spec
-  // (30–36 m × 40–55 m, 16 × 6 ft goals) and Ontario's adapted laws (see RESEARCH.md).
+  // Field dimensions: mid-range values from Ontario Soccer's 7v7 laws (April 2026):
+  // 30–36 m × 40–55 m, 4.8 × 1.8 m goals, no separate goal area (see RESEARCH.md).
   PIQ.FIELD = {
     L: 50,            // touchline length (goal line to goal line)
     W: 34,            // goal line width (touchline to touchline)
@@ -439,7 +457,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       [-1, 1].forEach(function (t) {
         // ring angle a points along world (cos a, 0, -sin a) after the -90deg X rotation
         var start = s > 0 ? (t > 0 ? Math.PI / 2 : Math.PI) : (t > 0 ? 0 : Math.PI * 1.5);
-        addArc(g, gx, t * hz, 1, start, Math.PI / 2, lw, mat);
+        addArc(g, gx, t * hz, 0.5, start, Math.PI / 2, lw, mat); // Ontario 7v7 corner area: 0.5 m
       });
       // retreat line: dashed, pale blue so it reads as a different kind of line
       var bo = gx - s * F.retreat;
@@ -491,6 +509,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
     var net = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45 }));
     g.add(net);
+    g.userData.net = net;
     g.position.set(side * (F.L / 2), 0, 0);
     if (side < 0) g.rotation.y = Math.PI;
     return g;
@@ -642,8 +661,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     pitch.name = 'pitch';
     scene.add(pitch);
     scene.add(buildLines(F));
-    scene.add(buildGoal(F, 1));
-    scene.add(buildGoal(F, -1));
+    var ourGoal = buildGoal(F, -1), theirGoal = buildGoal(F, 1);
+    scene.add(ourGoal);
+    scene.add(theirGoal);
     scene.add(buildSurroundings(F));
 
     var hemi = new THREE.HemisphereLight(0xdff1ff, 0x3f7a3a, 0.75);
@@ -651,7 +671,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var sun = new THREE.DirectionalLight(0xfff4e0, 0.95);
     sun.position.set(-40, 80, 30);
     scene.add(sun);
-    return { pitch: pitch };
+    return { pitch: pitch, goals: [ourGoal, theirGoal] };
   };
 })();
 
@@ -663,7 +683,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   var PIQ = window.PIQ;
 
   var SKIN = [0xf1c7a5, 0xe0ac86, 0xc68a5e, 0x9a6440, 0x6e4529, 0xf6d6bd];
-  var HAIR = [0x2b1c12, 0x4a2f1b, 0x7a4a24, 0xc99a4b, 0xe0c27a, 0x111111, 0x8a3b1e];
+  var HAIR = [0x2b1c12, 0x4a2f1b, 0x7a4a24, 0xd8a94e, 0xedd08a, 0x141414, 0xa8471f, 0x5b3a22];
 
   PIQ.TEAMS = {
     home: { name: 'Us', shirt: 0x2f5bea, shorts: 0x1b2a55, socks: 0x2f5bea, text: '#ffffff', keeper: 0x19c37d },
@@ -708,8 +728,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       shoe: new THREE.BoxGeometry(0.11, 0.08, 0.22),
       arm: new THREE.CylinderGeometry(0.05, 0.045, 0.48, 8),
       head: new THREE.SphereGeometry(0.15, 16, 12),
-      hair: new THREE.SphereGeometry(0.158, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.62),
-      pony: new THREE.SphereGeometry(0.07, 10, 8),
+      hair: new THREE.SphereGeometry(0.168, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.6),
+      hairBack: new THREE.SphereGeometry(0.17, 16, 12, Math.PI * 0.6, Math.PI * 0.8, Math.PI * 0.35, Math.PI * 0.4),
+      longHair: new THREE.CylinderGeometry(0.16, 0.17, 0.3, 14, 1, true, Math.PI * 0.62, Math.PI * 0.76),
+      pony: new THREE.SphereGeometry(0.075, 10, 8),
+      bun: new THREE.SphereGeometry(0.085, 10, 8),
       shadow: new THREE.CircleGeometry(0.42, 20),
       ring: new THREE.RingGeometry(0.5, 0.62, 32),
       hit: new THREE.CylinderGeometry(0.55, 0.55, 1.6, 8)
@@ -738,16 +761,18 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var G = geos();
     var team = PIQ.TEAMS[opts.team] || PIQ.TEAMS.home;
     var isGK = opts.role === 'GK';
-    var shirtColor = isGK ? team.keeper : team.shirt;
+    // keepers wear the team colour here so it's always clear who is on which team;
+    // bright gloves mark them out (real 7v7 keepers wear a different colour)
+    var shirtColor = team.shirt;
     var seed = (opts.num || 1) * 7 + (opts.team === 'away' ? 3 : 0);
     var skin = new THREE.MeshLambertMaterial({ color: SKIN[seed % SKIN.length] });
     var hairMat = new THREE.MeshLambertMaterial({ color: HAIR[(seed * 3) % HAIR.length] });
     var shirtMat = new THREE.MeshLambertMaterial({ map: shirtTexture(shirtColor, opts.num || '', team.text) });
     var plainShirt = new THREE.MeshLambertMaterial({ color: shirtColor });
-    var shortsMat = new THREE.MeshLambertMaterial({ color: isGK ? 0x222222 : team.shorts });
-    var sockMat = new THREE.MeshLambertMaterial({ color: isGK ? 0x222222 : team.socks });
+    var shortsMat = new THREE.MeshLambertMaterial({ color: team.shorts });
+    var sockMat = new THREE.MeshLambertMaterial({ color: team.socks });
     var shoeMat = new THREE.MeshLambertMaterial({ color: 0x15151a });
-    var gloveMat = new THREE.MeshLambertMaterial({ color: 0xf2f2f2 });
+    var gloveMat = new THREE.MeshLambertMaterial({ color: 0xd7f24a, emissive: 0x2a3000 });
 
     var root = new THREE.Group();
     var body = new THREE.Group(); // bobs while running
@@ -773,7 +798,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       var sleeve = new THREE.Mesh(G.arm, plainShirt); sleeve.scale.set(1.15, 0.35, 1.15); sleeve.position.y = -0.07; pivot.add(sleeve);
       var arm = new THREE.Mesh(G.arm, skin); arm.position.y = -0.24; pivot.add(arm);
       if (isGK) {
-        var glove = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), gloveMat);
+        var glove = new THREE.Mesh(new THREE.SphereGeometry(0.095, 8, 6), gloveMat);
         glove.position.y = -0.5; pivot.add(glove);
       }
       pivot.rotation.z = s * 0.12;
@@ -783,11 +808,32 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var head = new THREE.Group();
     head.position.y = hips + 0.8;
     head.add(new THREE.Mesh(G.head, skin));
-    var hair = new THREE.Mesh(G.hair, hairMat); hair.rotation.x = -0.35; hair.position.set(0, 0.012, -0.012); head.add(hair);
+    // hair: a full cap plus one of five styles, picked from the shirt number
+    var hair = new THREE.Mesh(G.hair, hairMat); hair.rotation.x = -0.4; hair.position.set(0, 0.015, -0.015); head.add(hair);
+    var back = new THREE.Mesh(G.hairBack, hairMat); back.rotation.y = Math.PI; head.add(back);
     var pony = new THREE.Group();
-    pony.position.set(0, 0.06, -0.15);
-    var p1 = new THREE.Mesh(G.pony, hairMat); pony.add(p1);
-    var p2 = new THREE.Mesh(G.pony, hairMat); p2.scale.set(0.85, 1.5, 0.85); p2.position.set(0, -0.11, -0.04); pony.add(p2);
+    var style = (seed * 5 + 1) % 5;
+    if (style === 0 || style === 4) { // high ponytail (4: with a bright scrunchie)
+      pony.position.set(0, 0.08, -0.16);
+      pony.add(new THREE.Mesh(G.pony, hairMat));
+      var tail = new THREE.Mesh(G.pony, hairMat); tail.scale.set(0.9, 2.2, 0.9); tail.position.set(0, -0.15, -0.05); pony.add(tail);
+      if (style === 4) {
+        var tie = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.022, 6, 12), new THREE.MeshLambertMaterial({ color: opts.team === 'away' ? 0xffffff : 0xffe14d }));
+        tie.position.set(0, -0.02, -0.02); tie.rotation.x = Math.PI / 2; pony.add(tie);
+      }
+    } else if (style === 1) { // two pigtails
+      pony.position.set(0, 0.02, -0.08);
+      [-1, 1].forEach(function (s) {
+        var pt = new THREE.Mesh(G.pony, hairMat); pt.scale.set(0.8, 1.9, 0.8); pt.position.set(s * 0.15, -0.1, -0.02); pony.add(pt);
+      });
+    } else if (style === 2) { // long hair down the back
+      var lh = new THREE.Mesh(G.longHair, hairMat); lh.position.set(0, -0.12, 0); head.add(lh);
+      pony.position.set(0, -0.16, -0.12);
+      var tip = new THREE.Mesh(G.pony, hairMat); tip.scale.set(1.9, 0.9, 0.7); pony.add(tip);
+    } else { // bun on top
+      pony.position.set(0, 0.16, -0.06);
+      pony.add(new THREE.Mesh(G.bun, hairMat));
+    }
     head.add(pony);
     body.add(head);
 
@@ -885,6 +931,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   }
 
   PIQ.FIG_SCALE = 1.35; // players drawn a bit larger than life so they read on a phone
+  PIQ.HEAD_TOP = 2.0 * PIQ.FIG_SCALE; // top of the tallest hairstyle, for placing bubbles
   PIQ.BALL_R = 0.21;    // same for the ball (a real size 4 is about 0.1 m)
   PIQ.makeBall = function () {
     var R = PIQ.BALL_R;
@@ -915,6 +962,184 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     b.mesh.position.y = PIQ.BALL_R + b.h;
     var s = 0.45 * Math.max(0.4, 1 - b.h / 6);
     b.shadow.scale.set(s, s, s);
+  };
+})();
+
+/* js/crowd.js */
+/* Pitch IQ — fans on the sidelines, team-coloured goal ends, and team colours
+   on the nets so it's always clear which end belongs to which team.
+   Fans are instanced meshes (a handful of draw calls for ~60 people), which keeps
+   older Macs happy. */
+(function () {
+  'use strict';
+  var PIQ = window.PIQ;
+  var SKIN = [0xf1c7a5, 0xe0ac86, 0xc68a5e, 0x9a6440, 0x6e4529, 0xf6d6bd];
+  var HAIR = [0x2b1c12, 0x4a2f1b, 0x7a4a24, 0xd8a94e, 0x9a9a9a, 0x141414, 0xa8471f];
+  var OTHER = [0x3a7bd5, 0x7f8c8d, 0x2c3e50, 0xf39c12, 0x16a085, 0xecf0f1, 0x8e5a2b];
+
+  function Crowd(scene) {
+    var F = PIQ.FIELD;
+    this.fans = [];
+    var self = this;
+    function add(x, z) {
+      var r = Math.random();
+      self.fans.push({
+        x: x + (Math.random() - 0.5) * 0.5, z: z + (Math.random() - 0.5) * 0.5,
+        h: Math.atan2(-x * 0.3, -z), s: 1.15 + Math.random() * 0.5,
+        team: r < 0.55 ? 'home' : r < 0.78 ? 'away' : 'other',
+        other: PIQ.pick(OTHER), skin: PIQ.pick(SKIN), hair: PIQ.pick(HAIR),
+        ph: Math.random() * 6.28, jump: 0.7 + Math.random() * 0.6
+      });
+    }
+    var hz = F.W / 2, hx = F.L / 2;
+    // two rows along the far touchline, behind the boards (gaps behind the benches)
+    [hz + 6.3, hz + 7.7].forEach(function (d, row) {
+      for (var x = -hx + 0.5 + row * 0.8; x < hx; x += 1.7) {
+        if (Math.abs(Math.abs(x) - 8) < 3.2 && row === 0) continue;
+        add(x, -d);
+      }
+    });
+    // a row behind each goal
+    [-1, 1].forEach(function (s) {
+      for (var z = -11; z <= 11; z += 1.9) {
+        var f = { x: s * (hx + 6.6), z: z };
+        add(f.x, f.z);
+        self.fans[self.fans.length - 1].h = s > 0 ? -Math.PI / 2 : Math.PI / 2;
+      }
+    });
+    var n = this.fans.length;
+    function inst(geo, color) {
+      var m = new THREE.InstancedMesh(geo, new THREE.MeshLambertMaterial({ color: 0xffffff }), n);
+      m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      m.frustumCulled = false;
+      scene.add(m);
+      return m;
+    }
+    this.legs = inst(new THREE.CylinderGeometry(0.11, 0.1, 0.8, 8));
+    this.body = inst(new THREE.CylinderGeometry(0.21, 0.24, 0.62, 10));
+    this.head = inst(new THREE.SphereGeometry(0.15, 12, 10));
+    this.hairM = inst(new THREE.SphereGeometry(0.165, 12, 10, 0, Math.PI * 2, 0, Math.PI * 0.6));
+    this.armL = inst(new THREE.CylinderGeometry(0.05, 0.05, 0.55, 6));
+    this.armR = inst(new THREE.CylinderGeometry(0.05, 0.05, 0.55, 6));
+    var c = new THREE.Color();
+    for (var i = 0; i < n; i++) {
+      var f = this.fans[i];
+      this.legs.setColorAt(i, c.setHex(0x2a2f3a));
+      this.head.setColorAt(i, c.setHex(f.skin));
+      this.hairM.setColorAt(i, c.setHex(f.hair));
+    }
+    this.cheerT = 0;
+    this.t = 0;
+    this.recolor();
+    this._m = new THREE.Matrix4(); this._b = new THREE.Matrix4(); this._l = new THREE.Matrix4();
+    this._q = new THREE.Quaternion(); this._v = new THREE.Vector3(); this._s = new THREE.Vector3(); this._e = new THREE.Euler();
+    this.update(0);
+  }
+
+  Crowd.prototype.recolor = function () {
+    var c = new THREE.Color();
+    for (var i = 0; i < this.fans.length; i++) {
+      var f = this.fans[i];
+      var col = f.team === 'home' ? PIQ.TEAMS.home.shirt : f.team === 'away' ? PIQ.TEAMS.away.shirt : f.other;
+      this.body.setColorAt(i, c.setHex(col));
+      this.armL.setColorAt(i, c.setHex(col));
+      this.armR.setColorAt(i, c.setHex(col));
+    }
+    [this.body, this.armL, this.armR, this.legs, this.head, this.hairM].forEach(function (m) { if (m.instanceColor) m.instanceColor.needsUpdate = true; });
+  };
+
+  Crowd.prototype.cheer = function (secs) { this.cheerT = Math.max(this.cheerT, secs || 2.5); };
+
+  // a home fan's position, for shouting
+  Crowd.prototype.someFan = function () {
+    var home = this.fans.filter(function (f) { return f.team === 'home'; });
+    var f = PIQ.pick(home.length ? home : this.fans);
+    return [f.x, f.z, f.s];
+  };
+
+  Crowd.prototype.update = function (dt) {
+    this.t += dt;
+    var cheering = this.cheerT > 0;
+    if (cheering) this.cheerT -= dt;
+    // idle crowds barely move: only redraw every few frames to save older machines
+    this._skip = (this._skip || 0) + 1;
+    if (!cheering && !this._wasCheering && this._skip % 4 !== 0 && dt > 0) return;
+    this._wasCheering = cheering;
+    var t = this.t, M = this._m, B = this._b, L = this._l, q = this._q, v = this._v, sc = this._s, e = this._e;
+    var amt = cheering ? Math.min(1, this.cheerT) : 0;
+    var i;
+    function put(mesh, x, y, z, rx, rz) {
+      q.setFromEuler(e.set(rx || 0, 0, rz || 0));
+      L.compose(v.set(x, y, z), q, sc.set(1, 1, 1));
+      M.multiplyMatrices(B, L);
+      mesh.setMatrixAt(i, M);
+    }
+    for (i = 0; i < this.fans.length; i++) {
+      var f = this.fans[i];
+      var hop = amt * Math.abs(Math.sin(t * 7 * f.jump + f.ph)) * 0.35;
+      var sway = Math.sin(t * 1.3 + f.ph) * 0.04;
+      q.setFromEuler(e.set(0, f.h + sway, 0));
+      B.compose(v.set(f.x, hop, f.z), q, sc.set(f.s, f.s, f.s));
+      put(this.legs, 0, 0.4, 0);
+      put(this.body, 0, 1.1, 0);
+      put(this.head, 0, 1.58, 0);
+      put(this.hairM, 0, 1.6, -0.015, -0.4);
+      var up = amt > 0 ? Math.PI * 0.85 + Math.sin(t * 9 + f.ph) * 0.25 * amt : 0.12;
+      // arm cylinders pivot at the shoulder: offset half a length along the rotated arm
+      for (var k = -1; k <= 1; k += 2) {
+        var ang = k * up;
+        put(k < 0 ? this.armL : this.armR, k * 0.25 + Math.sin(ang) * 0.27, 1.35 - Math.cos(ang) * 0.27, 0, 0, ang);
+      }
+    }
+    [this.legs, this.body, this.head, this.hairM, this.armL, this.armR].forEach(function (m) { m.instanceMatrix.needsUpdate = true; });
+  };
+
+  PIQ.Crowd = Crowd;
+
+  // ---------- team ends: banners behind each goal, nets in team colours ----------
+  function bannerTex(text, color) {
+    return PIQ.canvasTex(1024, 96, function (g, w, h) {
+      g.fillStyle = '#' + ('000000' + color.toString(16)).slice(-6);
+      g.fillRect(0, 0, w, h);
+      g.fillStyle = 'rgba(255,255,255,0.18)';
+      for (var x = 0; x < w; x += 64) g.fillRect(x, 0, 32, 8);
+      g.fillStyle = '#ffffff';
+      g.font = 'bold 60px Arial, Helvetica, sans-serif';
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(text + '   •   ' + text + '   •   ' + text, w / 2, h / 2 + 4);
+    });
+  }
+
+  PIQ.TeamEnds = function (scene, goals) {
+    var F = PIQ.FIELD;
+    this.goals = goals;
+    this.banners = [];
+    var self = this;
+    [-1, 1].forEach(function (s) {
+      var m = new THREE.Mesh(new THREE.PlaneGeometry(18, 1.6), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+      m.position.set(s * (F.L / 2 + 4.8), 0.95, 0);
+      m.rotation.y = s < 0 ? Math.PI / 2 : -Math.PI / 2;
+      scene.add(m);
+      self.banners.push(m);
+    });
+    this.recolor();
+  };
+  PIQ.TeamEnds.prototype.recolor = function () {
+    var home = PIQ.TEAMS.home.shirt, away = PIQ.TEAMS.away.shirt;
+    var word = (PIQ.teamWord || 'our').toUpperCase();
+    var specs = [['OUR GOAL', home], ['THEIR GOAL', away]];
+    this.banners.forEach(function (m, i) {
+      if (m.material.map) m.material.map.dispose();
+      m.material.map = bannerTex(specs[i][0], specs[i][1]);
+      m.material.needsUpdate = true;
+    });
+    // nets: ours in our colour, theirs in theirs
+    this.goals.forEach(function (g, i) {
+      var net = g.userData.net;
+      if (net) net.material.color.setHex(i === 0 ? home : away).lerp(new THREE.Color(0xffffff), 0.35);
+      if (net) net.material.opacity = 0.7;
+    });
+    return word;
   };
 })();
 
@@ -951,7 +1176,16 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 900);
-    PIQ.buildWorld(this.scene);
+    var world = PIQ.buildWorld(this.scene);
+    this.crowd = new PIQ.Crowd(this.scene);
+    this.ends = new PIQ.TeamEnds(this.scene, world.goals);
+    PIQ.cheerHook = function () { self.cheer(); };
+    // a ring in the team's colour under whoever has the ball
+    this.ownerRing = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.18, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false }));
+    this.ownerRing.rotation.x = -Math.PI / 2;
+    this.ownerRing.position.y = 0.017;
+    this.ownerRing.visible = false;
+    this.scene.add(this.ownerRing);
 
     this.dyn = new THREE.Group();   // players + ball
     this.annot = new THREE.Group(); // arrows, zones, links
@@ -992,6 +1226,21 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     window.requestAnimationFrame(loop);
     document.addEventListener('visibilitychange', function () { self.clock.getDelta(); });
   }
+
+  // recolour crowd, banners and nets after a team colour change
+  Stage.prototype.refreshTeams = function () {
+    this.crowd.recolor();
+    this.ends.recolor();
+  };
+
+  // fans jump and wave; sometimes one shouts
+  Stage.prototype.cheer = function () {
+    this.crowd.cheer(2.6);
+    if (Math.random() < 0.7) {
+      var f = this.crowd.someFan();
+      this.label([f[0], f[1]], PIQ.fill(PIQ.pick(['GO {TEAM}!', 'YES!', 'WOO HOO!', 'GO {NAME}!', 'WHAT A PLAY!'])), 'call', { y: 2.4 * f[2] + 0.4, ttl: 2.2 });
+    }
+  };
 
   Stage.prototype.setQuality = function (q) {
     this.quality = q;
@@ -1161,7 +1410,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     this.ball.draggable = false;
     this.ball.obj.visible = true;
     PIQ.setBallPos(this.ball, 0, 0, 0);
-    this.handlers = { pick: null, ground: null, dragEnd: null, dragMove: null, groundDrag: null };
+    this.handlers = { pick: null, ground: null, dragEnd: null, dragMove: null, groundDrag: null, keyMove: null, enter: null };
+    this.keyPlayer = null;
     this.pov = null;
     this.autoSpin = 0;
   };
@@ -1402,7 +1652,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     el.className = 'flabel ' + (cls || 'tag');
     el.innerHTML = html;
     this.labelLayer.appendChild(el);
-    var l = { el: el, target: target, y: opts.y != null ? opts.y : (cls === 'you' ? 2.05 : 2.3), ttl: opts.ttl || 0, born: this.time || 0 };
+    var l = { el: el, target: target, y: opts.y != null ? opts.y : PIQ.HEAD_TOP + 0.25, ttl: opts.ttl || 0, born: this.time || 0, you: cls === 'you' };
+    if (cls === 'talk' && typeof target === 'string') {
+      // one speech bubble per player at a time
+      var self = this;
+      this.labels.filter(function (x) { return x.target === target && /\btalk\b/.test(x.el.className); }).forEach(function (x) { self.removeLabel(x); });
+    }
     this.labels.push(l);
     return l;
   };
@@ -1423,7 +1678,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   Stage.prototype._updateLabels = function () {
     var cam = this.camera, w = this.w, h = this.h, self = this, v = new THREE.Vector3();
     var dead = [];
-    this.labels.forEach(function (l) {
+    var stack = {}; // pixels already used above each player, so bubbles never cover a head or each other
+    var order = this.labels.slice().sort(function (a, b) { return (b.you ? 1 : 0) - (a.you ? 1 : 0); });
+    order.forEach(function (l) {
       var pos;
       if (l.target === 'ball') pos = [self.ball.pos[0], self.ball.pos[1]];
       else if (typeof l.target === 'string') {
@@ -1435,6 +1692,11 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       if (v.z > 1 || v.z < -1) { l.el.style.display = 'none'; return; }
       l.el.style.display = '';
       var x = (v.x * 0.5 + 0.5) * w, y = (-v.y * 0.5 + 0.5) * h;
+      if (typeof l.target === 'string') {
+        var used = stack[l.target] || 0;
+        y -= used;
+        stack[l.target] = used + (l.el.offsetHeight || 20) + 6;
+      }
       l.el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) translate(-50%,-100%)';
       if (l.ttl && self.time - l.born > l.ttl) dead.push(l);
     });
@@ -1568,6 +1830,19 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       t.z = PIQ.clamp(t.z, -F.W / 2 - 10, F.W / 2 + 10);
     }
 
+    // arrow keys / WASD move the player the current screen hands to keyPlayer
+    var KEYMAP = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Up: 'up', Down: 'down', Left: 'left', Right: 'right', w: 'up', s: 'down', a: 'left', d: 'right', W: 'up', S: 'down', A: 'left', D: 'right' };
+    self.keys = {};
+    window.addEventListener('keydown', function (e) {
+      var tag = e.target && e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      var k = KEYMAP[e.key];
+      if (k && self.keyPlayer) { self.keys[k] = true; e.preventDefault(); }
+      if (e.key === 'Enter' && self.handlers.enter && tag !== 'BUTTON') { e.preventDefault(); self.handlers.enter(); }
+    });
+    window.addEventListener('keyup', function (e) { var k = KEYMAP[e.key]; if (k) self.keys[k] = false; });
+    window.addEventListener('blur', function () { self.keys = {}; });
+
     c.addEventListener('mousedown', function (e) { if (e.button === 2 || e.shiftKey) { st = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, mode: 'pan', moved: true }; return; } start(e.clientX, e.clientY); });
     window.addEventListener('mousemove', function (e) {
       if (st && st.mode === 'pan') { pan(e.clientX - st.x, e.clientY - st.y); st.x = e.clientX; st.y = e.clientY; return; }
@@ -1603,6 +1878,46 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       e.preventDefault();
       if (e.touches.length === 0) { if (!pinch) end(); pinch = null; st = null; self.dragging = false; }
     }, { passive: false });
+  };
+
+  Stage.prototype._keyMove = function (dt) {
+    var k = this.keys;
+    if (!this.keyPlayer || !k) return;
+    var fwd = (k.up ? 1 : 0) - (k.down ? 1 : 0), side = (k.right ? 1 : 0) - (k.left ? 1 : 0);
+    if (!fwd && !side) return;
+    var obj = this.keyPlayer === 'ball' ? this.ball : this.players[this.keyPlayer];
+    if (!obj) return;
+    // "up" means away from the camera, whichever way it is looking
+    var d = new THREE.Vector3();
+    this.camera.getWorldDirection(d);
+    d.y = 0;
+    if (d.lengthSq() < 1e-6) d.set(-Math.sin(this.rig.theta), 0, -Math.cos(this.rig.theta));
+    d.normalize();
+    var mx = d.x * fwd - d.z * side, mz = d.z * fwd + d.x * side;
+    var len = Math.sqrt(mx * mx + mz * mz) || 1;
+    var step = 6.5 * dt;
+    var F = PIQ.FIELD;
+    var nx = PIQ.clamp(obj.pos[0] + mx / len * step, -F.L / 2 - 1, F.L / 2 + 1);
+    var nz = PIQ.clamp(obj.pos[1] + mz / len * step, -F.W / 2 - 1, F.W / 2 + 1);
+    if (obj.isBall) PIQ.setBallPos(obj, nx, nz, 0);
+    else {
+      obj.target = null;
+      obj.heading = Math.atan2(mx, mz);
+      obj.speed = 6; obj._dragSpeedT = 0.12;
+      PIQ.setPlayerPos(obj, nx, nz);
+    }
+    if (this.handlers.dragMove) this.handlers.dragMove(obj);
+    if (this.handlers.keyMove) this.handlers.keyMove(obj);
+  };
+
+  Stage.prototype._updateOwnerRing = function () {
+    var o = this.ball.owner, r = this.ownerRing;
+    if (!o || !o.obj.visible || this.ballTween || !this.ball.obj.visible) { r.visible = false; return; }
+    r.visible = true;
+    r.position.x = o.pos[0]; r.position.z = o.pos[1];
+    r.material.color.setHex((PIQ.TEAMS[o.team] || PIQ.TEAMS.home).shirt);
+    var s = 1 + Math.sin((this.time || 0) * 5) * 0.06;
+    r.scale.set(s, s, s);
   };
 
   Stage.prototype._carryBall = function () {
@@ -1662,6 +1977,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var pulse = 0.85 + Math.sin(t * 4) * 0.15;
     this.annot.children.forEach(function (g) { if (g.userData.pulse) g.scale.set(pulse, 1, pulse); });
 
+    this._keyMove(Math.min(dt / (this.speedScale || 1), 0.1));
+    this._updateOwnerRing();
+    this.crowd.update(dt);
     this._updateLinks();
     this._applyCamera(dt);
     this._updateLabels();
@@ -1742,6 +2060,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     stage.clear();
     var prof = PIQ.profile ? PIQ.profile() : { number: 10 };
     var youRole = spec.you || null;
+    stage.youId = youRole;
     var used = {};
     var home = spec.home || {};
     if (youRole) used[prof.number] = youRole;
@@ -2256,7 +2575,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
               pass: { from: 'GK', to: 'LD', delay: 0.3, dur: 1 }, arrows: [['GK', 'LD', 'pass']] },
             { say: 'Once the ball is touched, they can come forward again, so our defender takes a good first touch and looks up.',
               move: { 'away:M1': [-11, -9] }, dribble: { who: 'LD', to: [-13, -11] }, dur: 1.2 },
-            { say: 'Your league may also have rules about whether the keeper can punt or drop-kick it. Ask your coach!',
+            { say: 'Ontario\'s rules recommend that keepers don\'t drop-kick it up the field (some clubs allow it). A short, safe pass builds better habits anyway.',
               think: { GK: 'Short and safe is my plan.' } }
           ]
         },
@@ -2270,7 +2589,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
           beats: [
             { say: 'The ball rolled out over the sideline off their player. In Ontario 7v7 there are <b>no throw-ins</b>. Instead you take a <b>kick-in</b>: a pass-in or a dribble-in.',
               whistle: true },
-            { say: 'Put the ball still, on or just behind the sideline. The other team has to back off a few steps. Your league says exactly how far.',
+            { say: 'Put the ball still, on the sideline where it went out. The other team has to stand at least <b>3 metres</b> away.',
               move: { RW: [3, 17.6] }, zones: [{ at: [3, 17], r: 3, color: YEL }], dur: 1 },
             { say: 'Be quick! A teammate gets open by moving away, then coming back toward the ball.',
               move: { CM: [4, 8.5] }, arrows: [['CM', [4, 8.5], 'run']], dur: 0.9 },
@@ -2322,13 +2641,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
             ball: [8, 1], camera: { target: [10, 0], dist: 28, theta: 0.15, phi: 0.95 }
           },
           beats: [
-            { say: 'Our centre mid got fouled. That\'s a <b>free kick</b> for us, from where the foul happened.',
+            { say: 'Our centre mid got fouled. That\'s a <b>free kick</b> for us, from where the foul happened. In 7v7 every free kick is <b>indirect</b>: someone else has to touch it before it can go in the net.',
               whistle: true, rings: { CM: YEL } },
             { say: 'Smart move: if the other team isn\'t ready, take it <b>quickly</b>! Their players are still walking back.',
               pass: { from: 'CM', to: 'LW', delay: 0.4 }, move: { 'away:M1': [11, -7], 'away:D1': [15, -7] }, dur: 1.6 },
             { say: 'Our left wing has space to attack while they\'re still sorting themselves out.',
               dribble: { who: 'LW', to: [17, -10] }, dur: 1.4 },
-            { say: 'When <b>they</b> get a free kick near our goal, a couple of us stand together as a <b>wall</b>, back the distance the ref says. Everyone else marks a player or guards the space.',
+            { say: 'When <b>they</b> get a free kick near our goal, we stand <b>5 metres</b> back. A few of us can stand together as a <b>wall</b>, and everyone else marks a player. Remember: their kicker has to pass to a teammate before anyone can score.',
               cam: 'broadcast', think: { GK: 'I\'ll set the wall!' } }
           ]
         }
@@ -2510,6 +2829,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     { id: 'q62', lesson: 'restarts-2', q: 'Can you score straight from a kick-in?', a: ['No, someone else has to touch it first', 'Yes, always', 'Only on Tuesdays', 'Only if it\'s a dribble-in'], c: 0, why: 'A goal can\'t come <b>straight</b> from a kick-in.' },
     { id: 'q63', lesson: 'restarts-3', q: 'Why are short corners smart at your age?', a: ['A pass along the ground is easier than a high ball that needs a header', 'They\'re the only legal corner', 'The ref prefers them', 'They are worth two goals'], c: 0, why: 'Canada Soccer\'s guidelines say heading isn\'t taught in training at U10–U11, and coaches are asked to use <b>short corners</b>.' },
     { id: 'q64', lesson: 'restarts-4', q: 'You take the kick-off. What\'s usually the smartest first pass?', a: ['Pass back to a teammate and keep the ball', 'Shoot from the centre spot', 'Kick it out of bounds', 'Kick it as high as you can'], c: 0, why: 'You <b>can</b> score from a kick-off, but keeping the ball is usually smarter.' },
+    { id: 'q66', lesson: 'restarts-5', q: 'Can you score straight from a free kick in 7v7?', a: ['No: someone else has to touch it first', 'Yes, from anywhere', 'Only from the halfway line', 'Only if the keeper is looking'], c: 0, why: 'In Ontario 7v7 every free kick is <b>indirect</b>, except a penalty kick.' },
+    { id: 'q67', lesson: 'restarts-2', q: 'How far back must the other team stand when you take a kick-in?', a: ['At least 3 metres', 'Right next to the ball', '20 metres', 'Behind the retreat line'], c: 0, why: 'Ontario\'s 7v7 rules say opponents stand at least <b>3 metres</b> away from a pass-in or dribble-in.' },
+    { id: 'q68', lesson: 'shape-1', q: 'Our keeper has the ball and they\'ve retreated. When can they come forward again?', a: ['When one of our players touches the ball, or it crosses the line', 'Straight away', 'After 10 seconds', 'Only at half-time'], c: 0, why: 'They stay behind the retreat line until one of our players touches the ball, the ball crosses the line, or it goes out.' },
     { id: 'q65', lesson: 'restarts-5', q: 'You get a free kick and the other team isn\'t ready. What\'s smart?', a: ['Take it quickly', 'Wait for everyone to be ready', 'Ask for a timeout', 'Kick it to the other team'], c: 0, why: 'A <b>quick free kick</b> catches the other team out of position.' },
 
     // ---------- keeper ----------
@@ -2706,35 +3028,115 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       options: [
         { key: 'A', type: 'pass', to: 'LD', grade: 'best', why: 'Rolled out wide to a defender: safe, easy to control, away from danger.' },
         { key: 'B', type: 'pass', to: 'CM', grade: 'bad', why: 'An opponent is right near our centre mid. Losing it in the middle in front of our goal is dangerous.' },
-        { key: 'C', type: 'punt', to: [10, 0], grade: 'ok', why: 'Some leagues allow punts, but a long kick is often a 50/50 ball. A roll keeps it.' }
+        { key: 'C', type: 'punt', to: [10, 0], grade: 'ok', why: 'Ontario recommends that keepers don\'t drop-kick, and a long kick is often a 50/50 ball. A roll keeps it.' }
       ] }
   ];
 })();
 
 /* js/content/rules.js */
 /* Pitch IQ — 7v7 rules as played in Halton (Ontario Soccer U10–U11).
-   check: true marks rules that differ between clubs or that I could not confirm
-   from a primary page. Sources are listed in RESEARCH.md. */
+   Checked against Ontario Soccer's Adapted Match Formats Laws (April 30, 2026) and the
+   Peel Halton, Oakville and Burlington rule sheets. check: true marks rules that differ
+   between clubs. Sources are listed in RESEARCH.md. */
 (function () {
   'use strict';
   var PIQ = window.PIQ;
   PIQ.RULES = [
-    { t: 'Who plays', d: 'Seven a side: six players and a keeper. In Ontario this is the U10 and U11 game. Burlington Soccer Club\'s house league moves U11 to 9v9, so check your club.', check: true },
-    { t: 'The field', d: 'About 30–36 m wide and 40–55 m long, with 16 × 6 ft goals and a size 4 ball. Parks vary.' },
-    { t: 'How long', d: 'Usually two halves of 25 minutes. Lots of subs, and everyone gets fair playing time.' },
+    { t: 'Who plays', d: 'Seven a side: six players and a keeper. In Ontario and in Peel Halton district play this is the U10 and U11 game. Burlington Soccer Club\'s house league is different: U9 and U10 play 7v7, but U11 moves up to 9v9 with throw-ins.', check: true },
+    { t: 'The field', d: '30–36 m wide and 40–55 m long, 16 × 6 ft goals, size 4 ball. The penalty area is 20–24 m wide and 10–12 m deep, and there is no separate small box in front of goal.' },
+    { t: 'How long', d: 'Two 25-minute halves (or four 12.5-minute quarters) with a 5-minute half-time. Unlimited subs at any stoppage. Oakville and Burlington give everyone equal playing time, and Oakville rotates every player through every position.' },
     { t: 'No offside', d: 'There\'s no offside in 7v7. You can stand anywhere, so stand somewhere smart.' },
-    { t: 'Retreat line', d: 'On our goal kicks, or when our keeper has the ball in her hands, the other team must get behind the retreat line (the one-third line at U10–U11). They can come forward once one of our players touches the ball, or it crosses the line or goes out. If our keeper plays it before they\'ve retreated, play just goes on.', lesson: 'shape-1' },
-    { t: 'Kick-ins, not throw-ins', d: 'When the ball goes over the sideline, the other team restarts with a pass-in or dribble-in from the line. The ball must be still. You can\'t score straight from a kick-in. Opponents back off a few metres (club rule sheets say 3 m or 2 yards).', check: true, lesson: 'restarts-2' },
-    { t: 'Goal kicks', d: 'When the attacking team knocks the ball over the goal line, the defending team restarts with a goal kick near its own goal. The retreat line applies.', lesson: 'restarts-1' },
-    { t: 'Corners', d: 'If a defender knocks it over her own goal line, the other team gets a corner kick. Short corners are encouraged at this age.', lesson: 'restarts-3' },
-    { t: 'Kick-off', d: 'Everyone starts in their own half. A goal can be scored straight from a kick-off.', lesson: 'restarts-4' },
-    { t: 'Free kicks', d: 'Given for fouls like tripping, pushing or handballs. Older Ontario rules made all 7v7 free kicks indirect except penalties, with opponents 5 m back. Newer rules follow the full Laws "where applicable", so ask your coach.', check: true, lesson: 'restarts-5' },
-    { t: 'Penalty kicks', d: 'Taken from the penalty mark, 8 m from goal.' },
-    { t: 'Keeper kicks', d: 'Ontario recommends against drop kicks. Some clubs (like Oakville at U10–U11) allow them but want teams to play out from the back.', check: true },
-    { t: 'Heading', d: 'Canada Soccer\'s 2025 guidelines: heading is not taught in training at U10–U11, and coaches should use short corners and free kicks so it rarely happens in games.' },
-    { t: 'No scores', d: 'Ontario grassroots soccer doesn\'t keep scores or standings through U13. It\'s about learning and having fun.' },
-    { t: 'One referee', d: 'One referee, no assistants. Play until you hear the whistle.' }
+    { t: 'Retreat line', d: 'On our goal kicks, when our keeper has the ball in her hands, and on our free kicks in our own third, the other team must get behind the retreat line (the one-third line). They can come forward once one of our players touches the ball, or it crosses the line or goes out. If our keeper plays it before they\'ve retreated, play just goes on.', lesson: 'shape-1' },
+    { t: 'Kick-ins, not throw-ins', d: 'When the ball goes over the sideline, the other team restarts with a pass-in or dribble-in from where it went out. The ball must be still, and opponents stand at least 3 metres away. You can\'t score straight from a kick-in.', lesson: 'restarts-2' },
+    { t: 'Goal kicks', d: 'Taken from anywhere in the penalty area after the attacking team knocks the ball over the goal line. The retreat line applies. Ontario lets you score straight from a goal kick; Oakville doesn\'t, and has the keeper take every goal kick for practice.', check: true, lesson: 'restarts-1' },
+    { t: 'Corners', d: 'If a defender knocks it over her own goal line, the other team gets a corner kick from the corner nearest where it went out. Opponents stand 5 metres back. Short corners are encouraged at this age.', lesson: 'restarts-3' },
+    { t: 'Kick-off', d: 'Everyone starts in their own half and the other team stands 5 metres back. A goal can be scored straight from a kick-off.', lesson: 'restarts-4' },
+    { t: 'Free kicks', d: 'Every free kick in 7v7 is indirect: someone else has to touch the ball before it can go in. Opponents stand 5 metres back. If three or more defenders make a wall, attackers stay 1 metre away from it.', lesson: 'restarts-5' },
+    { t: 'Penalty kicks', d: 'Fouls like tripping, pushing or a handball inside the box give a penalty kick. Ontario puts the penalty mark 8 m from goal; Oakville\'s house league sheet says 9 m.', check: true },
+    { t: 'Keeper\'s hands', d: 'The keeper can use her hands only in her own box. She can\'t pick up a ball a teammate deliberately kicks back to her, or one straight from a teammate\'s kick-in.' },
+    { t: 'Keeper kicks', d: 'Ontario recommends that keepers don\'t drop-kick. Oakville allows drop kicks but encourages playing out from the back.', check: true },
+    { t: 'Heading', d: 'Canada Soccer\'s guidelines: heading is not taught in training at U10–U11, and coaches should use short corners and free kicks so it rarely happens in games.' },
+    { t: 'No scores', d: 'No scores or standings at U10–U11 (Ontario, Peel Halton, Oakville and Burlington). It\'s about learning and having fun.' },
+    { t: 'One referee', d: 'One referee, no assistants. Referees explain fouls to players and avoid yellow and red cards. Play until you hear the whistle.' }
   ];
+})();
+
+/* js/content/talk.js */
+/* Pitch IQ — what the players say to her. {name} is her name, {team} her team colour.
+   lessons: lessonId -> [[step, playerId, line, delaySeconds?]] (steps count from 0).
+   The pools are used by the games, the quiz, the home screen and the tactics board. */
+(function () {
+  'use strict';
+  var PIQ = window.PIQ;
+
+  PIQ.TALK = {
+    lessons: {
+      'field-1': [[0, 'GK', 'Hi {name}! I\'m your keeper. We attack that way!'], [1, 'CM', 'Three thirds. Easy to remember!'], [3, 'LD', 'That line gives us room to pass, {name}.'], [4, 'GK', 'Only I get to use my hands, and only in here.'], [5, 'RW', 'Let\'s get smart, {name}!']],
+      'field-2': [[1, 'GK', 'I\'ve got your back, {name}!'], [2, 'LD', 'We defend first, then spread out wide.'], [3, 'LW', 'Wide on the left, that\'s me!'], [5, 'ST', 'Pass it up to me, {name}!'], [6, 'RD', 'Every position is fun. Try them all!']],
+      'field-3': [[0, 'LW', 'Everyone to the ball!'], [2, 'RW', 'Spread out! I\'ll go wide.'], [3, 'ST', 'I\'ll stay high, {name}.'], [4, 'CM', 'See? Lots of passes now!']],
+      'shape-1': [[0, 'GK', 'Back up! Retreat line!'], [1, 'RD', 'Splitting wide, {name}!'], [2, 'CM', 'Keeper, I\'m here!'], [3, 'GK', 'Rolling it out wide. Safe!'], [4, 'RW', 'I\'m open down the line!']],
+      'shape-2': [[0, 'CM', 'Everybody up with me!'], [1, 'LD', 'Up, but behind the ball.'], [2, 'GK', 'I\'m coming up too!'], [4, 'LW', 'Over here, {name}!']],
+      'shape-3': [[0, 'RW', 'Get in the box, team!'], [1, 'LW', 'Back post! Back post!'], [2, 'CM', 'I\'ll wait at the top of the box.'], [4, 'LW', 'GOAL! Did you see that, {name}?', 2.2]],
+      'shape-4': [[0, 'RW', 'Slide over, team!'], [1, 'LW', 'I\'m tucking in to help.'], [3, 'LW', 'My turn to press!', 1], [4, 'CM', 'Together, like a windshield wiper!']],
+      'attack-1': [[0, 'CM', 'I can\'t pass to you there, {name}!'], [1, 'CM', 'Move into the open space!'], [2, 'CM', 'There you go, {name}!']],
+      'attack-2': [[0, 'LD', 'Help! Who can I pass to?'], [1, 'CM', 'I\'m here inside!'], [2, 'ST', 'New angle, over here!', 1], [3, 'CM', 'Triangles everywhere, {name}!']],
+      'attack-3': [[0, 'LD', 'Ball\'s coming, {name}! Have a look first!'], [2, 'LD', 'Smart look, {name}!'], [4, 'ST', 'You saw it before it happened!']],
+      'attack-4': [[0, 'ST', 'Your call, {name}!'], [2, 'RW', 'I\'m open, {name}!'], [4, 'RW', 'Thanks, {name}!', 1.6]],
+      'attack-5': [[0, 'RD', 'Ready, {name}? Open up!'], [2, 'ST', 'Great first touch!', 1.5], [3, 'RD', 'Can\'t turn? Pass it back to me!']],
+      'attack-6': [[0, 'ST', 'Two of us, one of her. Let\'s go!'], [2, 'ST', 'Wall pass, here!'], [3, 'ST', 'One-two! Go, go, go!']],
+      'attack-7': [[1, 'LW', 'Psst! I\'m all alone over here!'], [4, 'LW', 'Thanks for the switch!']],
+      'defend-1': [[0, 'GK', 'Watch your player, {name}!'], [2, 'GK', 'Get goal-side, {name}! Quick!'], [3, 'GK', 'Perfect. Now you\'re protecting our goal.']],
+      'defend-2': [[0, 'RW', 'I\'ll press her!'], [1, 'RD', 'I\'m right behind you!'], [2, 'LD', 'I\'m tucked in. Middle\'s covered.']],
+      'defend-3': [[0, 'GK', 'Too many gaps, team!'], [1, 'GK', 'Squeeze! Squeeze!'], [2, 'CM', 'Nothing gets through the middle now!']],
+      'defend-4': [[0, 'GK', 'Stay on your feet, {name}!'], [2, 'GK', 'Show her the sideline!'], [3, 'GK', 'Great defending, {name}!', 1.2]],
+      'defend-5': [[0, 'GK', 'Get back, {name}! Get back!'], [3, 'GK', 'Thanks for running back, {name}!']],
+      'switch-1': [[1, 'ST', 'Look up, {name}! I\'m going!', 0.6], [3, 'ST', 'Great pass!', 1]],
+      'switch-2': [[0, 'RW', 'Don\'t worry, {name}! Win it back!'], [2, 'LD', 'We\'re getting back!'], [3, 'LD', 'Nice pressing, team!', 0.8]],
+      'restarts-1': [[1, 'GK', 'Back up, please!'], [2, 'LD', 'Keeper, to me!'], [3, 'LD', 'Good touch, then look up.']],
+      'restarts-2': [[1, 'RW', 'Quick, before they\'re ready!'], [2, 'CM', 'I\'m coming toward you!'], [4, 'CM', 'Your turn next time, {name}!']],
+      'restarts-3': [[0, 'RW', 'Corner for us!'], [2, 'CM', 'Short corner, to me!'], [4, 'GK', 'I\'ll take care of the space in front of goal.']],
+      'restarts-4': [[0, 'ST', 'Ready, {name}? Kick-off!'], [2, 'CM', 'Got it. Now spread out!']],
+      'restarts-5': [[1, 'CM', 'Quick, they\'re not ready!'], [2, 'LW', 'Thanks! I\'m off!']],
+      'keeper-1': [[0, 'LD', 'You\'ve got this, {name}!'], [2, 'LD', 'Smaller goal. Smart!'], [4, 'LD', 'WHAT A SAVE, {name}!', 1.2]],
+      'keeper-2': [[1, 'LD', 'Keeper, out wide to me!'], [3, 'LD', 'Nice roll, {name}!']],
+      'keeper-3': [[0, 'RD', 'Tell us what you see, {name}!']],
+      'lead-1': [[5, 'CM', 'Thanks for the warning!', 0.8]],
+      'lead-2': [[1, 'LW', 'Thanks, {name}. Next one!', 0.8], [3, 'LW', 'Going wide!'], [5, 'ST', 'Great game, {name}!']]
+    },
+    ambient: ['Pass it, {name}!', 'Let\'s go, {team}!', 'Spread out!', 'Nice touch!', 'I\'m open!', 'Time!', 'Over here!', 'Great pass!', 'Get wide!', 'Hi {name}!', 'Ready to learn, {name}?', 'Heads up!', 'Unlucky! Next one!', 'Talk to me!'],
+    lessonStart: ['Hi {name}! Watch this one.', '{name}, let\'s learn this together!', 'Ready, {name}? Here we go!', 'This one\'s really useful, {name}.'],
+    lessonEnd: ['Nice work, {name}!', 'You\'re getting smarter every lesson!', 'High five, {name}!', 'Coach would be proud!'],
+    spotStart: ['Where should you be, {name}?', 'Find the smart spot, {name}!', 'Take your time, {name}.', 'Where\'s the ball? Where are we?'],
+    spotGreat: ['Perfect spot, {name}! Here it comes!', 'Yes! Exactly right!', 'Smart, {name}!'],
+    spotOk: ['Close enough, {name}!', 'Nearly there!', 'Good thinking!'],
+    spotMiss: ['Over here next time, {name}!', 'Try that green spot!', 'No worries, now you know!'],
+    mistakeFound: ['Oops, that was me! Thanks, {name}!', 'My bad! Moving now.', 'Good eye, {name}!'],
+    mistakeNotMe: ['Not me, {name}! I\'m OK here.', 'I\'m in the right spot!'],
+    mistakeWas: ['Oops, it was me!', 'It was me! Moving now.'],
+    decideStart: ['Your call, {name}!', 'What\'s the smart play?', 'Look before you choose!'],
+    decideBest: ['Great choice, {name}!', 'Yes! Smart play!', 'Love it, {name}!'],
+    decideOk: ['That works, {name}.', 'Safe choice!'],
+    decideBad: ['Ooh, risky, {name}!', 'Next time, look again!'],
+    keeperStart: ['We trust you, {name}!', 'You\'ve got this, keeper!'],
+    keeperSave: ['WHAT A SAVE, {name}!', 'Great hands!', 'Yes, keeper!'],
+    keeperGoal: ['Shake it off, {name}!', 'Next one\'s yours!', 'Unlucky, keeper!'],
+    quizRight: ['Yes, {name}!', 'You know it!', 'Smart!', 'Nailed it, {name}!'],
+    quizWrong: ['No worries, {name}. Now you know!', 'Good try!', 'You\'ll get the next one!'],
+    boardPick: ['Move me anywhere, {name}!', 'Where do you want me?', 'Drag me, or use the arrow keys!']
+  };
+
+  // a teammate (not "you") says a line from a pool; who = preferred player id
+  PIQ.chat = function (stage, pool, who, secs) {
+    var lines = PIQ.TALK[pool];
+    if (!lines || !stage) return null;
+    var id = who;
+    if (!id || !stage.players[id]) {
+      var mates = stage.list.filter(function (p) { return p.team === 'home' && p.id !== stage.youId && p.obj.visible; });
+      if (!mates.length) return null;
+      id = PIQ.pick(mates).id;
+    }
+    return PIQ.say(stage, id, PIQ.pick(lines), secs);
+  };
 })();
 
 /* js/player.js */
@@ -2765,6 +3167,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     this.i = -1;
     this.snaps = [];
     this.rings = [];
+    this.talk = (PIQ.TALK && PIQ.TALK.lessons[lesson.id]) || [];
     PIQ.buildScene(stage, lesson.scene, { instantCamera: true });
     if (lesson.scene.camera) stage.setCamera(lesson.scene.camera, true);
   }
@@ -2781,12 +3184,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     } else {
       // going forward: capture the state at the start of each beat on the way
       for (var k = this.i + 1; k <= i; k++) {
-        if (k < i) { this.snaps[k] = st.snapshot(); this._run(this.lesson.beats[k], true); st.finishAll(); }
+        if (k < i) { this.snaps[k] = st.snapshot(); this._run(this.lesson.beats[k], true, k); st.finishAll(); }
       }
       this.snaps[i] = st.snapshot();
     }
     this.i = i;
-    this._run(this.lesson.beats[i], false);
+    this._run(this.lesson.beats[i], false, i);
     if (this.hooks.onBeat) this.hooks.onBeat(i, this.lesson.beats[i]);
   };
   LessonPlayer.prototype.next = function () { this.go(this.i + 1); };
@@ -2802,7 +3205,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     if (this._scanTimer) { clearInterval(this._scanTimer); this._scanTimer = null; }
   };
 
-  LessonPlayer.prototype._run = function (b, silent) {
+  LessonPlayer.prototype._run = function (b, silent, idx) {
     var st = this.stage, self = this;
     var P = function (ref) { return PIQ.pt(st, ref); };
     this._clearBeat();
@@ -2844,6 +3247,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       labels(b.think, 'think');
       labels(b.calls, 'call');
       (b.notes || []).forEach(function (n) { st.label(n[0], n[1], n[2] || 'tag', { y: n[3] || 0.6 }); });
+      // players talking to her
+      this.talk.forEach(function (t) {
+        if (t[0] !== idx) return;
+        st.after(t[3] != null ? t[3] : 0.25, function () { PIQ.say(st, t[1], t[2], 3.6); });
+      });
+      if (idx === 0 && !this.talk.some(function (t) { return t[0] === 0; })) st.after(0.4, function () { PIQ.chat(st, 'lessonStart'); });
     }
     if (b.rings) Object.keys(b.rings).forEach(function (id) {
       var p = st.players[id];
@@ -2963,15 +3372,20 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         me.faceBall = true;
         // tapping the ground also moves you there (handy on small screens)
         stage.on('ground', function (g) { if (!locked) stage.moveTo(sc.you, g, 0.5); });
+        stage.keyPlayer = sc.you;
+        stage.on('enter', function () { var b = document.getElementById('so-lock'); if (b) b.click(); });
         var locked = false;
+        stage.after(0.6, function () { PIQ.chat(stage, 'spotStart', stage.ball.owner && stage.ball.owner.team === 'home' && stage.ball.owner.id !== sc.you ? stage.ball.owner.id : null); });
         s.innerHTML = '<div class="eyebrow">Puzzle ' + (idx + 1) + ' of ' + round.length + ' &middot; ' + sc.title + '</div>' +
-          '<p class="caption">' + sc.prompt + '</p><p class="small">Drag yourself (or tap the field), then lock it in.</p>' +
+          '<p class="caption">' + sc.prompt + '</p><p class="small">Drag yourself (or tap the field), then lock it in.' + (PIQ.hasKeys ? ' Arrow keys move you too; Enter locks it in.' : '') + '</p>' +
           '<div class="row end"><button class="btn" id="so-lock">Lock it in</button></div>';
         s._fit();
         s.querySelector('#so-lock').onclick = function () {
           if (locked) return;
           locked = true;
           stage.setDraggable([sc.you], false);
+          stage.keyPlayer = null;
+          stage.on('enter', function () { var b = document.getElementById('so-next'); if (b) b.click(); });
           reveal(sc, me);
         };
       }
@@ -2995,6 +3409,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
           stage.arrow(me.pos, sc.best, 'run', { color: PIQ.COLORS.good, startCut: 0.6, endCut: 0.2 });
           stage.label(sc.best, 'Best spot', 'good', { y: 0.4 });
         }
+        var passer = stage.ball.owner && stage.ball.owner.team === 'home' && stage.ball.owner.id !== sc.you ? stage.ball.owner.id : null;
+        PIQ.chat(stage, stars === 3 ? 'spotGreat' : stars === 2 ? 'spotOk' : 'spotMiss', passer, 3.4);
+        if (stars === 3) stage.cheer();
         if (stars >= 2) { PIQ.sfx.good(); App.bigmsg(stars === 3 ? 'Spot on!' : 'Close!'); }
         else if (stars === 1) PIQ.sfx.ok();
         else PIQ.sfx.bad();
@@ -3077,6 +3494,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         var sc = round[idx];
         PIQ.buildScene(stage, sc.scene, { instantCamera: true });
         var answered = false;
+        stage.on('enter', null);
         s.innerHTML = '<div class="eyebrow">Scene ' + (idx + 1) + ' of ' + round.length + '</div>' +
           '<p class="caption">' + PIQ.teamText(sc.prompt) + '</p><p class="small">Tap one of our players. Spin the field with your finger to look around.</p>';
         s._fit();
@@ -3086,23 +3504,25 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
           answered = true;
           var ok = p.id === sc.wrong;
           var w = stage.players[sc.wrong];
-          if (ok) { score++; PIQ.sfx.good(); App.bigmsg('Found it!'); }
+          if (ok) { score++; PIQ.sfx.good(); App.bigmsg('Found it!'); stage.cheer(); PIQ.chat(stage, 'mistakeFound', sc.wrong, 3.4); }
           else {
             PIQ.sfx.bad();
             PIQ.setRing(p, PIQ.COLORS.info, true);
-            stage.label(p.id, 'She\'s OK', 'tag');
+            PIQ.chat(stage, 'mistakeNotMe', p.id, 3);
+            stage.after(1, function () { PIQ.chat(stage, 'mistakeWas', sc.wrong, 3); });
           }
           document.getElementById('mk-score').innerHTML = '<b>' + score + '</b> / ' + round.length;
           PIQ.setRing(w, PIQ.COLORS.bad, true);
-          stage.label(sc.wrong, 'Out of position', 'bad');
+          stage.label(sc.wrong, 'Out of position', 'bad', { ttl: 1.2 });
           stage.after(1.2, function () {
             stage.arrow(w.pos, sc.fix, 'run', { color: PIQ.COLORS.good, startCut: 0.6, endCut: 0.2 });
             stage.moveTo(sc.wrong, sc.fix, 1.4);
           });
-          stage.after(2.8, function () { PIQ.setRing(w, PIQ.COLORS.good, true); stage.clearLabels(); stage.label(sc.wrong, 'Fixed', 'good'); });
+          stage.after(2.8, function () { PIQ.setRing(w, PIQ.COLORS.good, true); stage.label(sc.wrong, 'Fixed', 'good', { ttl: 3 }); });
           s.innerHTML = '<div class="eyebrow">' + (ok ? 'Yes!' : 'Not that one.') + '</div><p class="caption">' + PIQ.teamText(sc.explain) + '</p>' +
             '<div class="row end"><button class="btn" id="mk-next">' + (idx < round.length - 1 ? 'Next ' : 'Finish ') + I.next + '</button></div>';
           s._fit();
+          stage.on('enter', function () { var b = document.getElementById('mk-next'); if (b) b.click(); });
           s.querySelector('#mk-next').onclick = function () {
             PIQ.sfx.tap();
             idx++;
@@ -3179,9 +3599,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         opts.forEach(function (o) {
           var w = where(o);
           if (o.type === 'dribble' || o.runner) stage.zone(w, 1.6, { color: PIQ.COLORS.zone, pulse: true });
-          stage.label(o.type === 'pass' && !o.runner ? o.to : w, o.key, 'opt', { y: o.type === 'pass' && !o.runner ? 2.6 : 0.8 });
+          stage.label(o.type === 'pass' && !o.runner ? o.to : w, o.key, 'opt', o.type === 'pass' && !o.runner ? {} : { y: 0.8 });
         });
         var answered = false;
+        stage.after(0.5, function () { PIQ.chat(stage, 'decideStart'); });
         s.innerHTML = '<div class="eyebrow">Decision ' + (idx + 1) + ' of ' + round.length + '</div><p class="caption">' + sc.prompt + '</p>' +
           '<div class="answers">' + opts.map(function (o) { return '<button class="answer" data-k="' + o.key + '"><span class="k">' + o.key + '</span><span>' + optLabel(o) + '</span></button>'; }).join('') + '</div>';
         s._fit();
@@ -3228,6 +3649,9 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
           else { streak = 0; PIQ.sfx.bad(); }
           if (streak >= 5) PIQ.award('decider');
           score += pts;
+          var speaker = o.type === 'pass' && !o.runner ? o.to : o.runner || null;
+          stage.after(0.9, function () { PIQ.chat(stage, o.grade === 'best' ? 'decideBest' : o.grade === 'ok' ? 'decideOk' : 'decideBad', o.grade === 'bad' ? null : speaker); });
+          if (o.grade === 'best') stage.after(0.9, function () { stage.cheer(); });
           document.getElementById('dc-score').innerHTML = '<b>' + score + '</b> pts';
           act(o);
           var bestO = opts.filter(function (x) { return x.grade === 'best'; })[0];
@@ -3320,7 +3744,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       App.leave();
       App.setCurrent({ destroy: function () { alive = false; } });
       App.topbar('Keeper Hero', back, '<span class="chip" id="kp-score">Saves <b>0</b></span>');
-      var s = App.sheet('<div class="eyebrow">You\'re the keeper</div><p class="caption">The attacker dribbles, then shoots. <b>Drag anywhere</b> on the field to move. Stand between the ball and the middle of the goal, a few steps off your line.</p>' +
+      var s = App.sheet('<div class="eyebrow">You\'re the keeper</div><p class="caption">The attacker dribbles, then shoots. <b>Drag anywhere</b> on the field to move' + (PIQ.hasKeys ? ' (or use the arrow keys)' : '') + '. Stand between the ball and the middle of the goal, a few steps off your line.</p>' +
         '<div class="row end"><button class="btn" id="kp-go">Start ' + I.next + '</button></div>', 'mini');
 
       PIQ.buildScene(stage, {
@@ -3339,6 +3763,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       }
       stage.on('groundDrag', function (g) { steer(g); });
       stage.on('ground', function (g) { steer(g); });
+      // arrow keys move the keeper directly; keep the finger target in step
+      stage.keyPlayer = 'GK';
+      stage.on('keyMove', function () { aim.x = PIQ.clamp(gk.pos[0], GX + 0.3, GX + 10); aim.z = PIQ.clamp(gk.pos[1], -9, 9); });
+      stage.on('enter', function () { var b = document.getElementById('kp-next') || document.getElementById('kp-go'); if (b) b.click(); });
 
       // keeper chases the finger at a keeper's speed
       var lastT = Date.now();
@@ -3346,6 +3774,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         if (!alive) { clearInterval(speedTimer); return; }
         var now = Date.now(), dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
         if (phase === 'idle' || phase === 'done') return;
+        if (stage.keys && (stage.keys.up || stage.keys.down || stage.keys.left || stage.keys.right)) return;
         var dx = aim.x - gk.pos[0], dz = aim.z - gk.pos[1];
         var d = Math.sqrt(dx * dx + dz * dz);
         var max = 6.5 * dt;
@@ -3405,9 +3834,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
             stage.after(0.7, function () { gk.body.rotation.z = 0; });
             stage.giveBall('GK');
             PIQ.sfx.good();
+            stage.cheer();
+            PIQ.chat(stage, 'keeperSave', null, 3);
             App.bigmsg(PIQ.pick(['Save!', 'Great hands!', 'Denied!']));
           } else {
             PIQ.sfx.bad();
+            PIQ.chat(stage, 'keeperGoal', null, 3);
             App.bigmsg('Goal');
           }
           score();
@@ -3440,6 +3872,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 
       function finish() {
         phase = 'done';
+        stage.keyPlayer = null;
         var best = PIQ.saveBest('keeper', saves);
         if (saves >= 8) PIQ.award('keeper');
         PIQ.addXP(saves * 4);
@@ -3454,6 +3887,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       }
 
       s.querySelector('#kp-go').onclick = function () { PIQ.sfx.tap(); PIQ.sfx.whistle(); shot(); };
+      stage.after(0.6, function () { PIQ.chat(stage, 'keeperStart'); });
     }
   };
 })();
@@ -3493,6 +3927,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         var box = s.querySelector('#qb-box');
         box._fit = s._fit;
         App.question(box, q, function (ok) {
+          PIQ.chat(stage, ok ? 'quizRight' : 'quizWrong');
           if (ok) {
             right++; streak++;
             pts += 10 + Math.min(streak - 1, 5) * 2;
@@ -3604,10 +4039,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         var ids = stage.list.map(function (p) { return p.id; });
         stage.setDraggable(ids.concat(['ball']), true);
         stage.on('pick', function (p) {
-          if (p.isBall) return;
-          if (selected) selected.ring.visible = false;
+          if (selected && selected.ring) selected.ring.visible = false;
           selected = p;
+          stage.keyPlayer = p.isBall ? 'ball' : p.id;
+          if (p.isBall) return;
           PIQ.setRing(p, PIQ.COLORS.info, true);
+          if (p.team === 'home') PIQ.say(stage, p.id, PIQ.pick(PIQ.TALK.boardPick), 2.6);
           var eyes = document.getElementById('bd-eyes');
           if (eyes) eyes.disabled = false;
         });
@@ -3656,7 +4093,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
           '<button class="btn small ghost" id="bd-clear">Clear runs</button>' +
           '<button class="btn small ghost" id="bd-reset">' + I.replay + ' Reset</button>' +
         '</div>' +
-        '<p class="small" style="margin:10px 0 0">Drag any player or the ball. With <b>Auto shape</b> on, drag the ball and watch both teams move. Tap a player, then <b>Her eyes</b> to see what she sees. Spin and pinch the field to look around.</p>', 'mini');
+        '<p class="small" style="margin:10px 0 0">Drag any player or the ball. With <b>Auto shape</b> on, drag the ball and watch both teams move. Tap a player, then <b>Her eyes</b> to see what she sees' + (PIQ.hasKeys ? ', or move her with the arrow keys' : '') + '. Spin and pinch the field to look around.</p>', 'mini');
 
       s.querySelector('#bd-form').onclick = function (e) {
         var b = e.target.closest ? e.target.closest('[data-f]') : null;
@@ -3689,13 +4126,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       toggle('#bd-draw', 'draw', 'Draw runs', function () { stage.on('groundDrag', cfg.draw ? drawHandler : null); });
       s.querySelector('#bd-draw').className = 'btn small ghost';
       s.querySelector('#bd-eyes').onclick = function () {
-        if (!selected) return;
+        if (!selected || selected.isBall) return;
         PIQ.sfx.tap();
         if (stage.pov) stage.setCamera(stage.lastPreset || 'broadcast');
         else stage.setPOV(selected.id);
       };
       s.querySelector('#bd-clear').onclick = function () { PIQ.sfx.tap(); stage.clearAnnotations(); };
-      s.querySelector('#bd-reset').onclick = function () { PIQ.sfx.tap(); selected = null; stage.setCamera('broadcast'); setup(); };
+      s.querySelector('#bd-reset').onclick = function () { PIQ.sfx.tap(); selected = null; stage.keyPlayer = null; stage.setCamera('broadcast'); setup(); };
 
       stage.setCamera('broadcast');
       setup();
@@ -3813,6 +4250,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     PIQ.TEAMS.away.keeper = state.jersey === 'black' || state.jersey === 'purple' ? 0xd7f24a : 0x2b2f3a;
     PIQ.TEAMS.away.socks = PIQ.TEAMS.away.shirt;
     PIQ.teamWord = j.label.toLowerCase();
+    if (stage && stage.ok) stage.refreshTeams();
   }
   PIQ.teamText = function (html) { return html.replace(/\bblue\b/g, PIQ.teamWord || 'blue'); };
   function hexCss(c) { return '#' + ('000000' + c.toString(16)).slice(-6); }
@@ -3956,6 +4394,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         var p = base[r];
         stage.moveTo(r, [p[0] + (Math.random() - 0.5) * 4, p[1] + (Math.random() - 0.5) * 4], 2.2);
       });
+      // now and then someone talks to her
+      if (Math.random() < 0.45) PIQ.chat(stage, 'ambient', null, 2.6);
       stage.after(2.6, step);
     }
     stage.after(1.5, step);
@@ -4086,6 +4526,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         box._fit = s._fit;
         if (q.scene) App.sceneFor(q);
         App.question(box, q, function (ok) {
+          PIQ.chat(stage, ok ? 'quizRight' : 'quizWrong');
           if (ok) right++;
           n++;
           var nb = s.querySelector('#q-next');
@@ -4114,6 +4555,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       if (all) PIQ.award('allLessons');
       PIQ.sfx.cheer();
       App.bigmsg(stars === 3 ? 'Brilliant!' : 'Nice work!');
+      PIQ.chat(stage, 'lessonEnd', null, 4);
       var nextL = li + 1 < u.lessons.length ? li + 1 : null;
       s.innerHTML = '<div class="eyebrow">Lesson done</div><h2>' + esc(l.title) + '</h2><p>' + App.stars(stars) + '</p>' +
         '<p class="small">' + (stars === 3 ? 'Perfect check. You\'ve got this one!' : 'Watch it again any time to get all 3 stars.') + '</p>' +

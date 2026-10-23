@@ -5,7 +5,7 @@
   var PIQ = window.PIQ;
 
   var SKIN = [0xf1c7a5, 0xe0ac86, 0xc68a5e, 0x9a6440, 0x6e4529, 0xf6d6bd];
-  var HAIR = [0x2b1c12, 0x4a2f1b, 0x7a4a24, 0xc99a4b, 0xe0c27a, 0x111111, 0x8a3b1e];
+  var HAIR = [0x2b1c12, 0x4a2f1b, 0x7a4a24, 0xd8a94e, 0xedd08a, 0x141414, 0xa8471f, 0x5b3a22];
 
   PIQ.TEAMS = {
     home: { name: 'Us', shirt: 0x2f5bea, shorts: 0x1b2a55, socks: 0x2f5bea, text: '#ffffff', keeper: 0x19c37d },
@@ -50,8 +50,11 @@
       shoe: new THREE.BoxGeometry(0.11, 0.08, 0.22),
       arm: new THREE.CylinderGeometry(0.05, 0.045, 0.48, 8),
       head: new THREE.SphereGeometry(0.15, 16, 12),
-      hair: new THREE.SphereGeometry(0.158, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.62),
-      pony: new THREE.SphereGeometry(0.07, 10, 8),
+      hair: new THREE.SphereGeometry(0.168, 16, 12, 0, Math.PI * 2, 0, Math.PI * 0.6),
+      hairBack: new THREE.SphereGeometry(0.17, 16, 12, Math.PI * 0.6, Math.PI * 0.8, Math.PI * 0.35, Math.PI * 0.4),
+      longHair: new THREE.CylinderGeometry(0.16, 0.17, 0.3, 14, 1, true, Math.PI * 0.62, Math.PI * 0.76),
+      pony: new THREE.SphereGeometry(0.075, 10, 8),
+      bun: new THREE.SphereGeometry(0.085, 10, 8),
       shadow: new THREE.CircleGeometry(0.42, 20),
       ring: new THREE.RingGeometry(0.5, 0.62, 32),
       hit: new THREE.CylinderGeometry(0.55, 0.55, 1.6, 8)
@@ -80,16 +83,18 @@
     var G = geos();
     var team = PIQ.TEAMS[opts.team] || PIQ.TEAMS.home;
     var isGK = opts.role === 'GK';
-    var shirtColor = isGK ? team.keeper : team.shirt;
+    // keepers wear the team colour here so it's always clear who is on which team;
+    // bright gloves mark them out (real 7v7 keepers wear a different colour)
+    var shirtColor = team.shirt;
     var seed = (opts.num || 1) * 7 + (opts.team === 'away' ? 3 : 0);
     var skin = new THREE.MeshLambertMaterial({ color: SKIN[seed % SKIN.length] });
     var hairMat = new THREE.MeshLambertMaterial({ color: HAIR[(seed * 3) % HAIR.length] });
     var shirtMat = new THREE.MeshLambertMaterial({ map: shirtTexture(shirtColor, opts.num || '', team.text) });
     var plainShirt = new THREE.MeshLambertMaterial({ color: shirtColor });
-    var shortsMat = new THREE.MeshLambertMaterial({ color: isGK ? 0x222222 : team.shorts });
-    var sockMat = new THREE.MeshLambertMaterial({ color: isGK ? 0x222222 : team.socks });
+    var shortsMat = new THREE.MeshLambertMaterial({ color: team.shorts });
+    var sockMat = new THREE.MeshLambertMaterial({ color: team.socks });
     var shoeMat = new THREE.MeshLambertMaterial({ color: 0x15151a });
-    var gloveMat = new THREE.MeshLambertMaterial({ color: 0xf2f2f2 });
+    var gloveMat = new THREE.MeshLambertMaterial({ color: 0xd7f24a, emissive: 0x2a3000 });
 
     var root = new THREE.Group();
     var body = new THREE.Group(); // bobs while running
@@ -115,7 +120,7 @@
       var sleeve = new THREE.Mesh(G.arm, plainShirt); sleeve.scale.set(1.15, 0.35, 1.15); sleeve.position.y = -0.07; pivot.add(sleeve);
       var arm = new THREE.Mesh(G.arm, skin); arm.position.y = -0.24; pivot.add(arm);
       if (isGK) {
-        var glove = new THREE.Mesh(new THREE.SphereGeometry(0.07, 8, 6), gloveMat);
+        var glove = new THREE.Mesh(new THREE.SphereGeometry(0.095, 8, 6), gloveMat);
         glove.position.y = -0.5; pivot.add(glove);
       }
       pivot.rotation.z = s * 0.12;
@@ -125,11 +130,32 @@
     var head = new THREE.Group();
     head.position.y = hips + 0.8;
     head.add(new THREE.Mesh(G.head, skin));
-    var hair = new THREE.Mesh(G.hair, hairMat); hair.rotation.x = -0.35; hair.position.set(0, 0.012, -0.012); head.add(hair);
+    // hair: a full cap plus one of five styles, picked from the shirt number
+    var hair = new THREE.Mesh(G.hair, hairMat); hair.rotation.x = -0.4; hair.position.set(0, 0.015, -0.015); head.add(hair);
+    var back = new THREE.Mesh(G.hairBack, hairMat); back.rotation.y = Math.PI; head.add(back);
     var pony = new THREE.Group();
-    pony.position.set(0, 0.06, -0.15);
-    var p1 = new THREE.Mesh(G.pony, hairMat); pony.add(p1);
-    var p2 = new THREE.Mesh(G.pony, hairMat); p2.scale.set(0.85, 1.5, 0.85); p2.position.set(0, -0.11, -0.04); pony.add(p2);
+    var style = (seed * 5 + 1) % 5;
+    if (style === 0 || style === 4) { // high ponytail (4: with a bright scrunchie)
+      pony.position.set(0, 0.08, -0.16);
+      pony.add(new THREE.Mesh(G.pony, hairMat));
+      var tail = new THREE.Mesh(G.pony, hairMat); tail.scale.set(0.9, 2.2, 0.9); tail.position.set(0, -0.15, -0.05); pony.add(tail);
+      if (style === 4) {
+        var tie = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.022, 6, 12), new THREE.MeshLambertMaterial({ color: opts.team === 'away' ? 0xffffff : 0xffe14d }));
+        tie.position.set(0, -0.02, -0.02); tie.rotation.x = Math.PI / 2; pony.add(tie);
+      }
+    } else if (style === 1) { // two pigtails
+      pony.position.set(0, 0.02, -0.08);
+      [-1, 1].forEach(function (s) {
+        var pt = new THREE.Mesh(G.pony, hairMat); pt.scale.set(0.8, 1.9, 0.8); pt.position.set(s * 0.15, -0.1, -0.02); pony.add(pt);
+      });
+    } else if (style === 2) { // long hair down the back
+      var lh = new THREE.Mesh(G.longHair, hairMat); lh.position.set(0, -0.12, 0); head.add(lh);
+      pony.position.set(0, -0.16, -0.12);
+      var tip = new THREE.Mesh(G.pony, hairMat); tip.scale.set(1.9, 0.9, 0.7); pony.add(tip);
+    } else { // bun on top
+      pony.position.set(0, 0.16, -0.06);
+      pony.add(new THREE.Mesh(G.bun, hairMat));
+    }
     head.add(pony);
     body.add(head);
 
@@ -227,6 +253,7 @@
   }
 
   PIQ.FIG_SCALE = 1.35; // players drawn a bit larger than life so they read on a phone
+  PIQ.HEAD_TOP = 2.0 * PIQ.FIG_SCALE; // top of the tallest hairstyle, for placing bubbles
   PIQ.BALL_R = 0.21;    // same for the ball (a real size 4 is about 0.1 m)
   PIQ.makeBall = function () {
     var R = PIQ.BALL_R;

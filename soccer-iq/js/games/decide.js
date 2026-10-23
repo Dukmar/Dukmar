@@ -45,9 +45,10 @@
         opts.forEach(function (o) {
           var w = where(o);
           if (o.type === 'dribble' || o.runner) stage.zone(w, 1.6, { color: PIQ.COLORS.zone, pulse: true });
-          stage.label(o.type === 'pass' && !o.runner ? o.to : w, o.key, 'opt', { y: o.type === 'pass' && !o.runner ? 2.6 : 0.8 });
+          stage.label(o.type === 'pass' && !o.runner ? o.to : w, o.key, 'opt', o.type === 'pass' && !o.runner ? {} : { y: 0.8 });
         });
         var answered = false;
+        stage.after(0.5, function () { PIQ.chat(stage, 'decideStart'); });
         s.innerHTML = '<div class="eyebrow">Decision ' + (idx + 1) + ' of ' + round.length + '</div><p class="caption">' + sc.prompt + '</p>' +
           '<div class="answers">' + opts.map(function (o) { return '<button class="answer" data-k="' + o.key + '"><span class="k">' + o.key + '</span><span>' + optLabel(o) + '</span></button>'; }).join('') + '</div>';
         s._fit();
@@ -94,6 +95,9 @@
           else { streak = 0; PIQ.sfx.bad(); }
           if (streak >= 5) PIQ.award('decider');
           score += pts;
+          var speaker = o.type === 'pass' && !o.runner ? o.to : o.runner || null;
+          stage.after(0.9, function () { PIQ.chat(stage, o.grade === 'best' ? 'decideBest' : o.grade === 'ok' ? 'decideOk' : 'decideBad', o.grade === 'bad' ? null : speaker); });
+          if (o.grade === 'best') stage.after(0.9, function () { stage.cheer(); });
           document.getElementById('dc-score').innerHTML = '<b>' + score + '</b> pts';
           act(o);
           var bestO = opts.filter(function (x) { return x.grade === 'best'; })[0];

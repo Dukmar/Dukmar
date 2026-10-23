@@ -21,6 +21,7 @@
         var sc = round[idx];
         PIQ.buildScene(stage, sc.scene, { instantCamera: true });
         var answered = false;
+        stage.on('enter', null);
         s.innerHTML = '<div class="eyebrow">Scene ' + (idx + 1) + ' of ' + round.length + '</div>' +
           '<p class="caption">' + PIQ.teamText(sc.prompt) + '</p><p class="small">Tap one of our players. Spin the field with your finger to look around.</p>';
         s._fit();
@@ -30,23 +31,25 @@
           answered = true;
           var ok = p.id === sc.wrong;
           var w = stage.players[sc.wrong];
-          if (ok) { score++; PIQ.sfx.good(); App.bigmsg('Found it!'); }
+          if (ok) { score++; PIQ.sfx.good(); App.bigmsg('Found it!'); stage.cheer(); PIQ.chat(stage, 'mistakeFound', sc.wrong, 3.4); }
           else {
             PIQ.sfx.bad();
             PIQ.setRing(p, PIQ.COLORS.info, true);
-            stage.label(p.id, 'She\'s OK', 'tag');
+            PIQ.chat(stage, 'mistakeNotMe', p.id, 3);
+            stage.after(1, function () { PIQ.chat(stage, 'mistakeWas', sc.wrong, 3); });
           }
           document.getElementById('mk-score').innerHTML = '<b>' + score + '</b> / ' + round.length;
           PIQ.setRing(w, PIQ.COLORS.bad, true);
-          stage.label(sc.wrong, 'Out of position', 'bad');
+          stage.label(sc.wrong, 'Out of position', 'bad', { ttl: 1.2 });
           stage.after(1.2, function () {
             stage.arrow(w.pos, sc.fix, 'run', { color: PIQ.COLORS.good, startCut: 0.6, endCut: 0.2 });
             stage.moveTo(sc.wrong, sc.fix, 1.4);
           });
-          stage.after(2.8, function () { PIQ.setRing(w, PIQ.COLORS.good, true); stage.clearLabels(); stage.label(sc.wrong, 'Fixed', 'good'); });
+          stage.after(2.8, function () { PIQ.setRing(w, PIQ.COLORS.good, true); stage.label(sc.wrong, 'Fixed', 'good', { ttl: 3 }); });
           s.innerHTML = '<div class="eyebrow">' + (ok ? 'Yes!' : 'Not that one.') + '</div><p class="caption">' + PIQ.teamText(sc.explain) + '</p>' +
             '<div class="row end"><button class="btn" id="mk-next">' + (idx < round.length - 1 ? 'Next ' : 'Finish ') + I.next + '</button></div>';
           s._fit();
+          stage.on('enter', function () { var b = document.getElementById('mk-next'); if (b) b.click(); });
           s.querySelector('#mk-next').onclick = function () {
             PIQ.sfx.tap();
             idx++;

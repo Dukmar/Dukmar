@@ -26,7 +26,7 @@
       App.leave();
       App.setCurrent({ destroy: function () { alive = false; } });
       App.topbar('Keeper Hero', back, '<span class="chip" id="kp-score">Saves <b>0</b></span>');
-      var s = App.sheet('<div class="eyebrow">You\'re the keeper</div><p class="caption">The attacker dribbles, then shoots. <b>Drag anywhere</b> on the field to move. Stand between the ball and the middle of the goal, a few steps off your line.</p>' +
+      var s = App.sheet('<div class="eyebrow">You\'re the keeper</div><p class="caption">The attacker dribbles, then shoots. <b>Drag anywhere</b> on the field to move' + (PIQ.hasKeys ? ' (or use the arrow keys)' : '') + '. Stand between the ball and the middle of the goal, a few steps off your line.</p>' +
         '<div class="row end"><button class="btn" id="kp-go">Start ' + I.next + '</button></div>', 'mini');
 
       PIQ.buildScene(stage, {
@@ -45,6 +45,10 @@
       }
       stage.on('groundDrag', function (g) { steer(g); });
       stage.on('ground', function (g) { steer(g); });
+      // arrow keys move the keeper directly; keep the finger target in step
+      stage.keyPlayer = 'GK';
+      stage.on('keyMove', function () { aim.x = PIQ.clamp(gk.pos[0], GX + 0.3, GX + 10); aim.z = PIQ.clamp(gk.pos[1], -9, 9); });
+      stage.on('enter', function () { var b = document.getElementById('kp-next') || document.getElementById('kp-go'); if (b) b.click(); });
 
       // keeper chases the finger at a keeper's speed
       var lastT = Date.now();
@@ -52,6 +56,7 @@
         if (!alive) { clearInterval(speedTimer); return; }
         var now = Date.now(), dt = Math.min(0.05, (now - lastT) / 1000); lastT = now;
         if (phase === 'idle' || phase === 'done') return;
+        if (stage.keys && (stage.keys.up || stage.keys.down || stage.keys.left || stage.keys.right)) return;
         var dx = aim.x - gk.pos[0], dz = aim.z - gk.pos[1];
         var d = Math.sqrt(dx * dx + dz * dz);
         var max = 6.5 * dt;
@@ -111,9 +116,12 @@
             stage.after(0.7, function () { gk.body.rotation.z = 0; });
             stage.giveBall('GK');
             PIQ.sfx.good();
+            stage.cheer();
+            PIQ.chat(stage, 'keeperSave', null, 3);
             App.bigmsg(PIQ.pick(['Save!', 'Great hands!', 'Denied!']));
           } else {
             PIQ.sfx.bad();
+            PIQ.chat(stage, 'keeperGoal', null, 3);
             App.bigmsg('Goal');
           }
           score();
@@ -146,6 +154,7 @@
 
       function finish() {
         phase = 'done';
+        stage.keyPlayer = null;
         var best = PIQ.saveBest('keeper', saves);
         if (saves >= 8) PIQ.award('keeper');
         PIQ.addXP(saves * 4);
@@ -160,6 +169,7 @@
       }
 
       s.querySelector('#kp-go').onclick = function () { PIQ.sfx.tap(); PIQ.sfx.whistle(); shot(); };
+      stage.after(0.6, function () { PIQ.chat(stage, 'keeperStart'); });
     }
   };
 })();

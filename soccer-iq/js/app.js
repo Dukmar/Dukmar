@@ -106,6 +106,7 @@
     PIQ.TEAMS.away.keeper = state.jersey === 'black' || state.jersey === 'purple' ? 0xd7f24a : 0x2b2f3a;
     PIQ.TEAMS.away.socks = PIQ.TEAMS.away.shirt;
     PIQ.teamWord = j.label.toLowerCase();
+    if (stage && stage.ok) stage.refreshTeams();
   }
   PIQ.teamText = function (html) { return html.replace(/\bblue\b/g, PIQ.teamWord || 'blue'); };
   function hexCss(c) { return '#' + ('000000' + c.toString(16)).slice(-6); }
@@ -249,6 +250,8 @@
         var p = base[r];
         stage.moveTo(r, [p[0] + (Math.random() - 0.5) * 4, p[1] + (Math.random() - 0.5) * 4], 2.2);
       });
+      // now and then someone talks to her
+      if (Math.random() < 0.45) PIQ.chat(stage, 'ambient', null, 2.6);
       stage.after(2.6, step);
     }
     stage.after(1.5, step);
@@ -379,6 +382,7 @@
         box._fit = s._fit;
         if (q.scene) App.sceneFor(q);
         App.question(box, q, function (ok) {
+          PIQ.chat(stage, ok ? 'quizRight' : 'quizWrong');
           if (ok) right++;
           n++;
           var nb = s.querySelector('#q-next');
@@ -407,6 +411,7 @@
       if (all) PIQ.award('allLessons');
       PIQ.sfx.cheer();
       App.bigmsg(stars === 3 ? 'Brilliant!' : 'Nice work!');
+      PIQ.chat(stage, 'lessonEnd', null, 4);
       var nextL = li + 1 < u.lessons.length ? li + 1 : null;
       s.innerHTML = '<div class="eyebrow">Lesson done</div><h2>' + esc(l.title) + '</h2><p>' + App.stars(stars) + '</p>' +
         '<p class="small">' + (stars === 3 ? 'Perfect check. You\'ve got this one!' : 'Watch it again any time to get all 3 stars.') + '</p>' +

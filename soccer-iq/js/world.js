@@ -5,8 +5,8 @@
   'use strict';
   var PIQ = window.PIQ;
 
-  // Field dimensions: mid-range values from the Peel Halton 2026 7v7 spec
-  // (30–36 m × 40–55 m, 16 × 6 ft goals) and Ontario's adapted laws (see RESEARCH.md).
+  // Field dimensions: mid-range values from Ontario Soccer's 7v7 laws (April 2026):
+  // 30–36 m × 40–55 m, 4.8 × 1.8 m goals, no separate goal area (see RESEARCH.md).
   PIQ.FIELD = {
     L: 50,            // touchline length (goal line to goal line)
     W: 34,            // goal line width (touchline to touchline)
@@ -101,7 +101,7 @@
       [-1, 1].forEach(function (t) {
         // ring angle a points along world (cos a, 0, -sin a) after the -90deg X rotation
         var start = s > 0 ? (t > 0 ? Math.PI / 2 : Math.PI) : (t > 0 ? 0 : Math.PI * 1.5);
-        addArc(g, gx, t * hz, 1, start, Math.PI / 2, lw, mat);
+        addArc(g, gx, t * hz, 0.5, start, Math.PI / 2, lw, mat); // Ontario 7v7 corner area: 0.5 m
       });
       // retreat line: dashed, pale blue so it reads as a different kind of line
       var bo = gx - s * F.retreat;
@@ -153,6 +153,7 @@
     geo.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
     var net = new THREE.LineSegments(geo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45 }));
     g.add(net);
+    g.userData.net = net;
     g.position.set(side * (F.L / 2), 0, 0);
     if (side < 0) g.rotation.y = Math.PI;
     return g;
@@ -304,8 +305,9 @@
     pitch.name = 'pitch';
     scene.add(pitch);
     scene.add(buildLines(F));
-    scene.add(buildGoal(F, 1));
-    scene.add(buildGoal(F, -1));
+    var ourGoal = buildGoal(F, -1), theirGoal = buildGoal(F, 1);
+    scene.add(ourGoal);
+    scene.add(theirGoal);
     scene.add(buildSurroundings(F));
 
     var hemi = new THREE.HemisphereLight(0xdff1ff, 0x3f7a3a, 0.75);
@@ -313,6 +315,6 @@
     var sun = new THREE.DirectionalLight(0xfff4e0, 0.95);
     sun.position.set(-40, 80, 30);
     scene.add(sun);
-    return { pitch: pitch };
+    return { pitch: pitch, goals: [ourGoal, theirGoal] };
   };
 })();

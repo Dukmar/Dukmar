@@ -25,6 +25,7 @@
     this.i = -1;
     this.snaps = [];
     this.rings = [];
+    this.talk = (PIQ.TALK && PIQ.TALK.lessons[lesson.id]) || [];
     PIQ.buildScene(stage, lesson.scene, { instantCamera: true });
     if (lesson.scene.camera) stage.setCamera(lesson.scene.camera, true);
   }
@@ -41,12 +42,12 @@
     } else {
       // going forward: capture the state at the start of each beat on the way
       for (var k = this.i + 1; k <= i; k++) {
-        if (k < i) { this.snaps[k] = st.snapshot(); this._run(this.lesson.beats[k], true); st.finishAll(); }
+        if (k < i) { this.snaps[k] = st.snapshot(); this._run(this.lesson.beats[k], true, k); st.finishAll(); }
       }
       this.snaps[i] = st.snapshot();
     }
     this.i = i;
-    this._run(this.lesson.beats[i], false);
+    this._run(this.lesson.beats[i], false, i);
     if (this.hooks.onBeat) this.hooks.onBeat(i, this.lesson.beats[i]);
   };
   LessonPlayer.prototype.next = function () { this.go(this.i + 1); };
@@ -62,7 +63,7 @@
     if (this._scanTimer) { clearInterval(this._scanTimer); this._scanTimer = null; }
   };
 
-  LessonPlayer.prototype._run = function (b, silent) {
+  LessonPlayer.prototype._run = function (b, silent, idx) {
     var st = this.stage, self = this;
     var P = function (ref) { return PIQ.pt(st, ref); };
     this._clearBeat();
@@ -104,6 +105,12 @@
       labels(b.think, 'think');
       labels(b.calls, 'call');
       (b.notes || []).forEach(function (n) { st.label(n[0], n[1], n[2] || 'tag', { y: n[3] || 0.6 }); });
+      // players talking to her
+      this.talk.forEach(function (t) {
+        if (t[0] !== idx) return;
+        st.after(t[3] != null ? t[3] : 0.25, function () { PIQ.say(st, t[1], t[2], 3.6); });
+      });
+      if (idx === 0 && !this.talk.some(function (t) { return t[0] === 0; })) st.after(0.4, function () { PIQ.chat(st, 'lessonStart'); });
     }
     if (b.rings) Object.keys(b.rings).forEach(function (id) {
       var p = st.players[id];

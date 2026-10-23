@@ -30,7 +30,16 @@
 
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 900);
-    PIQ.buildWorld(this.scene);
+    var world = PIQ.buildWorld(this.scene);
+    this.crowd = new PIQ.Crowd(this.scene);
+    this.ends = new PIQ.TeamEnds(this.scene, world.goals);
+    PIQ.cheerHook = function () { self.cheer(); };
+    // a ring in the team's colour under whoever has the ball
+    this.ownerRing = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.18, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false }));
+    this.ownerRing.rotation.x = -Math.PI / 2;
+    this.ownerRing.position.y = 0.017;
+    this.ownerRing.visible = false;
+    this.scene.add(this.ownerRing);
 
     this.dyn = new THREE.Group();   // players + ball
     this.annot = new THREE.Group(); // arrows, zones, links
@@ -71,6 +80,21 @@
     window.requestAnimationFrame(loop);
     document.addEventListener('visibilitychange', function () { self.clock.getDelta(); });
   }
+
+  // recolour crowd, banners and nets after a team colour change
+  Stage.prototype.refreshTeams = function () {
+    this.crowd.recolor();
+    this.ends.recolor();
+  };
+
+  // fans jump and wave; sometimes one shouts
+  Stage.prototype.cheer = function () {
+    this.crowd.cheer(2.6);
+    if (Math.random() < 0.7) {
+      var f = this.crowd.someFan();
+      this.label([f[0], f[1]], PIQ.fill(PIQ.pick(['GO {TEAM}!', 'YES!', 'WOO HOO!', 'GO {NAME}!', 'WHAT A PLAY!'])), 'call', { y: 2.4 * f[2] + 0.4, ttl: 2.2 });
+    }
+  };
 
   Stage.prototype.setQuality = function (q) {
     this.quality = q;
@@ -240,7 +264,8 @@
     this.ball.draggable = false;
     this.ball.obj.visible = true;
     PIQ.setBallPos(this.ball, 0, 0, 0);
-    this.handlers = { pick: null, ground: null, dragEnd: null, dragMove: null, groundDrag: null };
+    this.handlers = { pick: null, ground: null, dragEnd: null, dragMove: null, groundDrag: null, keyMove: null, enter: null };
+    this.keyPlayer = null;
     this.pov = null;
     this.autoSpin = 0;
   };
@@ -481,7 +506,12 @@
     el.className = 'flabel ' + (cls || 'tag');
     el.innerHTML = html;
     this.labelLayer.appendChild(el);
-    var l = { el: el, target: target, y: opts.y != null ? opts.y : (cls === 'you' ? 2.05 : 2.3), ttl: opts.ttl || 0, born: this.time || 0 };
+    var l = { el: el, target: target, y: opts.y != null ? opts.y : PIQ.HEAD_TOP + 0.25, ttl: opts.ttl || 0, born: this.time || 0, you: cls === 'you' };
+    if (cls === 'talk' && typeof target === 'string') {
+      // one speech bubble per player at a time
+      var self = this;
+      this.labels.filter(function (x) { return x.target === target && /\btalk\b/.test(x.el.className); }).forEach(function (x) { self.removeLabel(x); });
+    }
     this.labels.push(l);
     return l;
   };
@@ -502,7 +532,9 @@
   Stage.prototype._updateLabels = function () {
     var cam = this.camera, w = this.w, h = this.h, self = this, v = new THREE.Vector3();
     var dead = [];
-    this.labels.forEach(function (l) {
+    var stack = {}; // pixels already used above each player, so bubbles never cover a head or each other
+    var order = this.labels.slice().sort(function (a, b) { return (b.you ? 1 : 0) - (a.you ? 1 : 0); });
+    order.forEach(function (l) {
       var pos;
       if (l.target === 'ball') pos = [self.ball.pos[0], self.ball.pos[1]];
       else if (typeof l.target === 'string') {
@@ -514,6 +546,11 @@
       if (v.z > 1 || v.z < -1) { l.el.style.display = 'none'; return; }
       l.el.style.display = '';
       var x = (v.x * 0.5 + 0.5) * w, y = (-v.y * 0.5 + 0.5) * h;
+      if (typeof l.target === 'string') {
+        var used = stack[l.target] || 0;
+        y -= used;
+        stack[l.target] = used + (l.el.offsetHeight || 20) + 6;
+      }
       l.el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) translate(-50%,-100%)';
       if (l.ttl && self.time - l.born > l.ttl) dead.push(l);
     });
@@ -647,6 +684,19 @@
       t.z = PIQ.clamp(t.z, -F.W / 2 - 10, F.W / 2 + 10);
     }
 
+    // arrow keys / WASD move the player the current screen hands to keyPlayer
+    var KEYMAP = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right', Up: 'up', Down: 'down', Left: 'left', Right: 'right', w: 'up', s: 'down', a: 'left', d: 'right', W: 'up', S: 'down', A: 'left', D: 'right' };
+    self.keys = {};
+    window.addEventListener('keydown', function (e) {
+      var tag = e.target && e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      var k = KEYMAP[e.key];
+      if (k && self.keyPlayer) { self.keys[k] = true; e.preventDefault(); }
+      if (e.key === 'Enter' && self.handlers.enter && tag !== 'BUTTON') { e.preventDefault(); self.handlers.enter(); }
+    });
+    window.addEventListener('keyup', function (e) { var k = KEYMAP[e.key]; if (k) self.keys[k] = false; });
+    window.addEventListener('blur', function () { self.keys = {}; });
+
     c.addEventListener('mousedown', function (e) { if (e.button === 2 || e.shiftKey) { st = { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, mode: 'pan', moved: true }; return; } start(e.clientX, e.clientY); });
     window.addEventListener('mousemove', function (e) {
       if (st && st.mode === 'pan') { pan(e.clientX - st.x, e.clientY - st.y); st.x = e.clientX; st.y = e.clientY; return; }
@@ -682,6 +732,46 @@
       e.preventDefault();
       if (e.touches.length === 0) { if (!pinch) end(); pinch = null; st = null; self.dragging = false; }
     }, { passive: false });
+  };
+
+  Stage.prototype._keyMove = function (dt) {
+    var k = this.keys;
+    if (!this.keyPlayer || !k) return;
+    var fwd = (k.up ? 1 : 0) - (k.down ? 1 : 0), side = (k.right ? 1 : 0) - (k.left ? 1 : 0);
+    if (!fwd && !side) return;
+    var obj = this.keyPlayer === 'ball' ? this.ball : this.players[this.keyPlayer];
+    if (!obj) return;
+    // "up" means away from the camera, whichever way it is looking
+    var d = new THREE.Vector3();
+    this.camera.getWorldDirection(d);
+    d.y = 0;
+    if (d.lengthSq() < 1e-6) d.set(-Math.sin(this.rig.theta), 0, -Math.cos(this.rig.theta));
+    d.normalize();
+    var mx = d.x * fwd - d.z * side, mz = d.z * fwd + d.x * side;
+    var len = Math.sqrt(mx * mx + mz * mz) || 1;
+    var step = 6.5 * dt;
+    var F = PIQ.FIELD;
+    var nx = PIQ.clamp(obj.pos[0] + mx / len * step, -F.L / 2 - 1, F.L / 2 + 1);
+    var nz = PIQ.clamp(obj.pos[1] + mz / len * step, -F.W / 2 - 1, F.W / 2 + 1);
+    if (obj.isBall) PIQ.setBallPos(obj, nx, nz, 0);
+    else {
+      obj.target = null;
+      obj.heading = Math.atan2(mx, mz);
+      obj.speed = 6; obj._dragSpeedT = 0.12;
+      PIQ.setPlayerPos(obj, nx, nz);
+    }
+    if (this.handlers.dragMove) this.handlers.dragMove(obj);
+    if (this.handlers.keyMove) this.handlers.keyMove(obj);
+  };
+
+  Stage.prototype._updateOwnerRing = function () {
+    var o = this.ball.owner, r = this.ownerRing;
+    if (!o || !o.obj.visible || this.ballTween || !this.ball.obj.visible) { r.visible = false; return; }
+    r.visible = true;
+    r.position.x = o.pos[0]; r.position.z = o.pos[1];
+    r.material.color.setHex((PIQ.TEAMS[o.team] || PIQ.TEAMS.home).shirt);
+    var s = 1 + Math.sin((this.time || 0) * 5) * 0.06;
+    r.scale.set(s, s, s);
   };
 
   Stage.prototype._carryBall = function () {
@@ -741,6 +831,9 @@
     var pulse = 0.85 + Math.sin(t * 4) * 0.15;
     this.annot.children.forEach(function (g) { if (g.userData.pulse) g.scale.set(pulse, 1, pulse); });
 
+    this._keyMove(Math.min(dt / (this.speedScale || 1), 0.1));
+    this._updateOwnerRing();
+    this.crowd.update(dt);
     this._updateLinks();
     this._applyCamera(dt);
     this._updateLabels();

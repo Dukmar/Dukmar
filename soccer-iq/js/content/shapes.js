@@ -68,6 +68,7 @@
     stage.clear();
     var prof = PIQ.profile ? PIQ.profile() : { number: 10 };
     var youRole = spec.you || null;
+    stage.youId = youRole;
     var used = {};
     var home = spec.home || {};
     if (youRole) used[prof.number] = youRole;

@@ -32,7 +32,12 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   await p.click('.swatch[data-j="purple"]');
   await p.click('#p-save');
   await sleep(800);
+  await p.evaluate(() => { PIQ.stageRef.cheer(); PIQ.chat(PIQ.stageRef, 'ambient', null, 5); });
+  await sleep(700);
   await shot(p, '02-home');
+  const fans = await p.evaluate(() => PIQ.stageRef.crowd.fans.length);
+  console.log('- crowd: ' + fans + ' fans');
+  if (fans < 30) errors.push('crowd missing');
   step('welcome + home');
 
   // every lesson, every beat, then the quick check
@@ -69,6 +74,15 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   // Spot On
   await p.evaluate(() => PIQ.GAMES.spoton.start(PIQ.App, PIQ.screens.games));
   await sleep(700);
+  // arrow keys move "YOU"
+  const before = await p.evaluate(() => PIQ.stageRef.players[PIQ.stageRef.youId].pos.slice());
+  await p.keyboard.down('ArrowUp'); await p.keyboard.down('ArrowRight');
+  await sleep(900);
+  await p.keyboard.up('ArrowUp'); await p.keyboard.up('ArrowRight');
+  const after = await p.evaluate(() => PIQ.stageRef.players[PIQ.stageRef.youId].pos.slice());
+  const moved = Math.hypot(after[0] - before[0], after[1] - before[1]);
+  console.log('- arrow keys moved YOU ' + moved.toFixed(2) + ' m');
+  if (moved < 0.3) errors.push('arrow keys did not move the player');
   await shot(p, '06-spoton');
   for (let i = 0; i < 5; i++) {
     // drag YOU to the best spot for some, leave others

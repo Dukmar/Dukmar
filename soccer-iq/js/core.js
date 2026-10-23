@@ -24,6 +24,19 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   };
+  // personalise a line: {name} / {NAME} = her name, {team} / {TEAM} = her team colour
+  PIQ.fill = function (s) {
+    var prof = PIQ.profile ? PIQ.profile() : {};
+    var name = (prof && prof.name) || 'superstar';
+    var team = PIQ.teamWord || 'blue';
+    return String(s).replace(/\{name\}/g, name).replace(/\{NAME\}/g, name.toUpperCase())
+      .replace(/\{team\}/g, team).replace(/\{TEAM\}/g, team.toUpperCase());
+  };
+  // a player says something (speech bubble that fades after a few seconds)
+  PIQ.say = function (stage, id, text, secs) {
+    if (!stage || !stage.players[id]) return null;
+    return stage.label(id, PIQ.esc(PIQ.fill(text)), 'talk', { ttl: secs || 3.2 });
+  };
   // distance from point p to segment ab (all [x,z])
   PIQ.segDist = function (p, a, b) {
     var abx = b[0] - a[0], abz = b[1] - a[1];
@@ -31,6 +44,9 @@
     var t = PIQ.clamp(((p[0] - a[0]) * abx + (p[1] - a[1]) * abz) / len2, 0, 1);
     return PIQ.dist(p, [a[0] + abx * t, a[1] + abz * t]);
   };
+
+  // a real keyboard is likely (Mac) rather than a phone or tablet
+  PIQ.hasKeys = !('ontouchstart' in window) || window.matchMedia && window.matchMedia('(pointer: fine)').matches;
 
   // ---------- storage (per-device progress; never required) ----------
   var KEY = 'pitchiq.v1';
@@ -111,7 +127,7 @@
     good: function () { tone(660, 0.12, 'sine', 0.18); tone(880, 0.18, 'sine', 0.18, 0.1); tone(1320, 0.25, 'sine', 0.14, 0.2); },
     ok: function () { tone(520, 0.14, 'sine', 0.16); tone(660, 0.2, 'sine', 0.14, 0.12); },
     bad: function () { tone(220, 0.22, 'square', 0.08); tone(180, 0.28, 'square', 0.07, 0.15); },
-    cheer: function () { noise(1.6, 0.18, 1400, 0, true); noise(1.4, 0.12, 2600, 0.15, true); },
+    cheer: function () { if (PIQ.cheerHook) PIQ.cheerHook(); noise(1.6, 0.18, 1400, 0, true); noise(1.4, 0.12, 2600, 0.15, true); },
     levelUp: function () { [523, 659, 784, 1047].forEach(function (f, i) { tone(f, 0.2, 'triangle', 0.16, i * 0.11); }); }
   };
 })();

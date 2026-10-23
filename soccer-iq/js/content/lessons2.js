@@ -75,7 +75,7 @@
               pass: { from: 'GK', to: 'LD', delay: 0.3, dur: 1 }, arrows: [['GK', 'LD', 'pass']] },
             { say: 'Once the ball is touched, they can come forward again, so our defender takes a good first touch and looks up.',
               move: { 'away:M1': [-11, -9] }, dribble: { who: 'LD', to: [-13, -11] }, dur: 1.2 },
-            { say: 'Your league may also have rules about whether the keeper can punt or drop-kick it. Ask your coach!',
+            { say: 'Ontario\'s rules recommend that keepers don\'t drop-kick it up the field (some clubs allow it). A short, safe pass builds better habits anyway.',
               think: { GK: 'Short and safe is my plan.' } }
           ]
         },
@@ -89,7 +89,7 @@
           beats: [
             { say: 'The ball rolled out over the sideline off their player. In Ontario 7v7 there are <b>no throw-ins</b>. Instead you take a <b>kick-in</b>: a pass-in or a dribble-in.',
               whistle: true },
-            { say: 'Put the ball still, on or just behind the sideline. The other team has to back off a few steps. Your league says exactly how far.',
+            { say: 'Put the ball still, on the sideline where it went out. The other team has to stand at least <b>3 metres</b> away.',
               move: { RW: [3, 17.6] }, zones: [{ at: [3, 17], r: 3, color: YEL }], dur: 1 },
             { say: 'Be quick! A teammate gets open by moving away, then coming back toward the ball.',
               move: { CM: [4, 8.5] }, arrows: [['CM', [4, 8.5], 'run']], dur: 0.9 },
@@ -141,13 +141,13 @@
             ball: [8, 1], camera: { target: [10, 0], dist: 28, theta: 0.15, phi: 0.95 }
           },
           beats: [
-            { say: 'Our centre mid got fouled. That\'s a <b>free kick</b> for us, from where the foul happened.',
+            { say: 'Our centre mid got fouled. That\'s a <b>free kick</b> for us, from where the foul happened. In 7v7 every free kick is <b>indirect</b>: someone else has to touch it before it can go in the net.',
               whistle: true, rings: { CM: YEL } },
             { say: 'Smart move: if the other team isn\'t ready, take it <b>quickly</b>! Their players are still walking back.',
               pass: { from: 'CM', to: 'LW', delay: 0.4 }, move: { 'away:M1': [11, -7], 'away:D1': [15, -7] }, dur: 1.6 },
             { say: 'Our left wing has space to attack while they\'re still sorting themselves out.',
               dribble: { who: 'LW', to: [17, -10] }, dur: 1.4 },
-            { say: 'When <b>they</b> get a free kick near our goal, a couple of us stand together as a <b>wall</b>, back the distance the ref says. Everyone else marks a player or guards the space.',
+            { say: 'When <b>they</b> get a free kick near our goal, we stand <b>5 metres</b> back. A few of us can stand together as a <b>wall</b>, and everyone else marks a player. Remember: their kicker has to pass to a teammate before anyone can score.',
               cam: 'broadcast', think: { GK: 'I\'ll set the wall!' } }
           ]
         }

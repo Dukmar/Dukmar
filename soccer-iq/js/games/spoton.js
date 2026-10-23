@@ -41,15 +41,20 @@
         me.faceBall = true;
         // tapping the ground also moves you there (handy on small screens)
         stage.on('ground', function (g) { if (!locked) stage.moveTo(sc.you, g, 0.5); });
+        stage.keyPlayer = sc.you;
+        stage.on('enter', function () { var b = document.getElementById('so-lock'); if (b) b.click(); });
         var locked = false;
+        stage.after(0.6, function () { PIQ.chat(stage, 'spotStart', stage.ball.owner && stage.ball.owner.team === 'home' && stage.ball.owner.id !== sc.you ? stage.ball.owner.id : null); });
         s.innerHTML = '<div class="eyebrow">Puzzle ' + (idx + 1) + ' of ' + round.length + ' &middot; ' + sc.title + '</div>' +
-          '<p class="caption">' + sc.prompt + '</p><p class="small">Drag yourself (or tap the field), then lock it in.</p>' +
+          '<p class="caption">' + sc.prompt + '</p><p class="small">Drag yourself (or tap the field), then lock it in.' + (PIQ.hasKeys ? ' Arrow keys move you too; Enter locks it in.' : '') + '</p>' +
           '<div class="row end"><button class="btn" id="so-lock">Lock it in</button></div>';
         s._fit();
         s.querySelector('#so-lock').onclick = function () {
           if (locked) return;
           locked = true;
           stage.setDraggable([sc.you], false);
+          stage.keyPlayer = null;
+          stage.on('enter', function () { var b = document.getElementById('so-next'); if (b) b.click(); });
           reveal(sc, me);
         };
       }
@@ -73,6 +78,9 @@
           stage.arrow(me.pos, sc.best, 'run', { color: PIQ.COLORS.good, startCut: 0.6, endCut: 0.2 });
           stage.label(sc.best, 'Best spot', 'good', { y: 0.4 });
         }
+        var passer = stage.ball.owner && stage.ball.owner.team === 'home' && stage.ball.owner.id !== sc.you ? stage.ball.owner.id : null;
+        PIQ.chat(stage, stars === 3 ? 'spotGreat' : stars === 2 ? 'spotOk' : 'spotMiss', passer, 3.4);
+        if (stars === 3) stage.cheer();
         if (stars >= 2) { PIQ.sfx.good(); App.bigmsg(stars === 3 ? 'Spot on!' : 'Close!'); }
         else if (stars === 1) PIQ.sfx.ok();
         else PIQ.sfx.bad();

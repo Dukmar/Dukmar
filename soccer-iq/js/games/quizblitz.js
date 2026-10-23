@@ -32,6 +32,7 @@
         var box = s.querySelector('#qb-box');
         box._fit = s._fit;
         App.question(box, q, function (ok) {
+          PIQ.chat(stage, ok ? 'quizRight' : 'quizWrong');
           if (ok) {
             right++; streak++;
             pts += 10 + Math.min(streak - 1, 5) * 2;

@@ -72,10 +72,12 @@
         var ids = stage.list.map(function (p) { return p.id; });
         stage.setDraggable(ids.concat(['ball']), true);
         stage.on('pick', function (p) {
-          if (p.isBall) return;
-          if (selected) selected.ring.visible = false;
+          if (selected && selected.ring) selected.ring.visible = false;
           selected = p;
+          stage.keyPlayer = p.isBall ? 'ball' : p.id;
+          if (p.isBall) return;
           PIQ.setRing(p, PIQ.COLORS.info, true);
+          if (p.team === 'home') PIQ.say(stage, p.id, PIQ.pick(PIQ.TALK.boardPick), 2.6);
           var eyes = document.getElementById('bd-eyes');
           if (eyes) eyes.disabled = false;
         });
@@ -124,7 +126,7 @@
           '<button class="btn small ghost" id="bd-clear">Clear runs</button>' +
           '<button class="btn small ghost" id="bd-reset">' + I.replay + ' Reset</button>' +
         '</div>' +
-        '<p class="small" style="margin:10px 0 0">Drag any player or the ball. With <b>Auto shape</b> on, drag the ball and watch both teams move. Tap a player, then <b>Her eyes</b> to see what she sees. Spin and pinch the field to look around.</p>', 'mini');
+        '<p class="small" style="margin:10px 0 0">Drag any player or the ball. With <b>Auto shape</b> on, drag the ball and watch both teams move. Tap a player, then <b>Her eyes</b> to see what she sees' + (PIQ.hasKeys ? ', or move her with the arrow keys' : '') + '. Spin and pinch the field to look around.</p>', 'mini');
 
       s.querySelector('#bd-form').onclick = function (e) {
         var b = e.target.closest ? e.target.closest('[data-f]') : null;
@@ -157,13 +159,13 @@
       toggle('#bd-draw', 'draw', 'Draw runs', function () { stage.on('groundDrag', cfg.draw ? drawHandler : null); });
       s.querySelector('#bd-draw').className = 'btn small ghost';
       s.querySelector('#bd-eyes').onclick = function () {
-        if (!selected) return;
+        if (!selected || selected.isBall) return;
         PIQ.sfx.tap();
         if (stage.pov) stage.setCamera(stage.lastPreset || 'broadcast');
         else stage.setPOV(selected.id);
       };
       s.querySelector('#bd-clear').onclick = function () { PIQ.sfx.tap(); stage.clearAnnotations(); };
-      s.querySelector('#bd-reset').onclick = function () { PIQ.sfx.tap(); selected = null; stage.setCamera('broadcast'); setup(); };
+      s.querySelector('#bd-reset').onclick = function () { PIQ.sfx.tap(); selected = null; stage.keyPlayer = null; stage.setCamera('broadcast'); setup(); };
 
       stage.setCamera('broadcast');
       setup();

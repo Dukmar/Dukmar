@@ -168,7 +168,7 @@
       options: [
         { key: 'A', type: 'pass', to: 'LD', grade: 'best', why: 'Rolled out wide to a defender: safe, easy to control, away from danger.' },
         { key: 'B', type: 'pass', to: 'CM', grade: 'bad', why: 'An opponent is right near our centre mid. Losing it in the middle in front of our goal is dangerous.' },
-        { key: 'C', type: 'punt', to: [10, 0], grade: 'ok', why: 'Some leagues allow punts, but a long kick is often a 50/50 ball. A roll keeps it.' }
+        { key: 'C', type: 'punt', to: [10, 0], grade: 'ok', why: 'Ontario recommends that keepers don\'t drop-kick, and a long kick is often a 50/50 ball. A roll keeps it.' }
       ] }
   ];
 })();
