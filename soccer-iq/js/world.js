@@ -159,19 +159,72 @@
     return g;
   }
 
-  function buildSky() {
-    var geo = new THREE.SphereGeometry(400, 24, 16);
+  function paintSky(geo, topHex, midHex, lowHex) {
     var colors = [];
     var pos = geo.attributes.position;
-    var top = new THREE.Color(0x4f9fe8), mid = new THREE.Color(0xbfe2ff), low = new THREE.Color(0xe9f4ff);
+    var top = new THREE.Color(topHex), mid = new THREE.Color(midHex), low = new THREE.Color(lowHex);
     for (var i = 0; i < pos.count; i++) {
       var y = pos.getY(i) / 400;
       var c = y > 0.25 ? mid.clone().lerp(top, (y - 0.25) / 0.75) : low.clone().lerp(mid, PIQ.clamp((y + 0.05) / 0.3, 0, 1));
       colors.push(c.r, c.g, c.b);
     }
     geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  }
+  function buildSky() {
+    var geo = new THREE.SphereGeometry(400, 24, 16);
+    paintSky(geo, 0x4f9fe8, 0xbfe2ff, 0xe9f4ff);
     return new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false }));
   }
+
+  // floodlight towers, only switched on for night matches
+  function buildFloodlights(F) {
+    var g = new THREE.Group();
+    var poleMat = new THREE.MeshLambertMaterial({ color: 0x8a94a6 });
+    var lampMat = new THREE.MeshBasicMaterial({ color: 0xfffbe6 });
+    var glowTex = PIQ.canvasTex(64, 64, function (c) {
+      var grd = c.createRadialGradient(32, 32, 2, 32, 32, 32);
+      grd.addColorStop(0, 'rgba(255,250,220,1)'); grd.addColorStop(1, 'rgba(255,250,220,0)');
+      c.fillStyle = grd; c.fillRect(0, 0, 64, 64);
+    });
+    [-1, 1].forEach(function (sx) {
+      [-1, 1].forEach(function (sz) {
+        var x = sx * (F.L / 2 + 7), z = sz * (F.W / 2 + 9);
+        var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 22, 8), poleMat);
+        pole.position.set(x, 11, z); g.add(pole);
+        var lamp = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.8, 0.4), lampMat);
+        lamp.position.set(x, 22.5, z); lamp.lookAt(0, 0, 0); g.add(lamp);
+        var glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending }));
+        glow.position.set(x, 22.5, z); glow.scale.set(14, 14, 1); g.add(glow);
+        // a real spotlight per tower: the pitch is lit, the park around it stays dark
+        var spot = new THREE.SpotLight(0xfff4dc, 0.62, 0, 0.62, 0.55, 0);
+        spot.position.set(x, 22.5, z);
+        spot.target.position.set(sx * 6, 0, sz * 3);
+        g.add(spot); g.add(spot.target);
+      });
+    });
+    g.visible = false;
+    return g;
+  }
+
+  var THEMES = {
+    day: { sky: [0x4f9fe8, 0xbfe2ff, 0xe9f4ff], fog: 0xd8ecff, near: 140, far: 330, bg: 0xbfe2ff, hemi: 0.75, hemiSky: 0xdff1ff, sun: 0.95, sunColor: 0xfff4e0, clouds: true, lights: false },
+    sunset: { sky: [0x3a4c9c, 0xf59a6b, 0xffd39a], fog: 0xe9a07a, near: 70, far: 260, bg: 0xf59a6b, hemi: 0.5, hemiSky: 0xffc9a0, sun: 0.9, sunColor: 0xff9a55, clouds: true, lights: false },
+    // night: the floodlights keep the pitch bright while the park around it fades to dark
+    night: { sky: [0x050a1c, 0x101a38, 0x1c2b52], fog: 0x0b1226, near: 30, far: 140, bg: 0x101a38, hemi: 0.15, hemiSky: 0x7f97d6, sun: 0.08, sunColor: 0x9db4ff, clouds: false, lights: true }
+  };
+  PIQ.applyTheme = function (world, scene, name) {
+    var t = THEMES[name] || THEMES.day;
+    paintSky(world.sky.geometry, t.sky[0], t.sky[1], t.sky[2]);
+    scene.fog.color.setHex(t.fog);
+    scene.fog.near = t.near; scene.fog.far = t.far;
+    world.hemi.color.setHex(t.hemiSky);
+    scene.background.setHex(t.bg);
+    world.hemi.intensity = t.hemi;
+    world.sun.intensity = t.sun;
+    world.sun.color.setHex(t.sunColor);
+    world.clouds.visible = t.clouds;
+    world.floodlights.visible = t.lights;
+  };
 
   function buildClouds() {
     var tex = canvasTex(128, 64, function (g, w, h) {
@@ -295,8 +348,10 @@
     var F = PIQ.FIELD;
     scene.background = new THREE.Color(0xbfe2ff);
     scene.fog = new THREE.Fog(0xd8ecff, 140, 330);
-    scene.add(buildSky());
-    scene.add(buildClouds());
+    var sky = buildSky(), clouds = buildClouds(), floodlights = buildFloodlights(F);
+    scene.add(sky);
+    scene.add(clouds);
+    scene.add(floodlights);
 
     var pitchTex = grassTexture(F.L + 8, F.W + 8);
     pitchTex.anisotropy = 4;
@@ -315,6 +370,6 @@
     var sun = new THREE.DirectionalLight(0xfff4e0, 0.95);
     sun.position.set(-40, 80, 30);
     scene.add(sun);
-    return { pitch: pitch, goals: [ourGoal, theirGoal] };
+    return { pitch: pitch, goals: [ourGoal, theirGoal], sky: sky, clouds: clouds, floodlights: floodlights, hemi: hemi, sun: sun };
   };
 })();

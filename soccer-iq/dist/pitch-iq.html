@@ -220,6 +220,43 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 
+/* ---------- gamification: coins, scoreboard, locker, trophies ---------- */
+.tile { height: 118px; min-height: 0; }
+.tile.hero { height: 104px; }
+.tile .s { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.tile.match { background: var(--chalk); color: var(--ink); box-shadow: 0 4px 0 rgba(0,0,0,0.25), inset 0 0 0 3px var(--cone); }
+.chip.coins { color: var(--pinnie); }
+.chip.coins svg { width: 18px; height: 18px; }
+.chip.coins b { color: var(--chalk); }
+.scoreboard { position: absolute; left: 50%; top: calc(66px + var(--safe-t)); transform: translateX(-50%); display: flex; align-items: center; gap: 10px; background: #0d1a14; color: var(--chalk); border-radius: 12px; padding: 6px 12px; font-family: var(--display); font-weight: 900; font-size: 18px; letter-spacing: 0.04em; box-shadow: 0 4px 14px rgba(0,0,0,0.35); white-space: nowrap; max-width: calc(100% - 24px); pointer-events: none; }
+.scoreboard b { font-size: 26px; color: var(--pinnie); font-variant-numeric: tabular-nums; min-width: 64px; text-align: center; }
+.sb-team { display: inline-flex; align-items: center; gap: 6px; overflow: hidden; text-overflow: ellipsis; }
+.sb-team i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: none; }
+.sb-min { font-size: 14px; background: var(--cone); color: #fff; border-radius: 6px; padding: 1px 6px; min-width: 36px; text-align: center; }
+.verdict { font-family: var(--display); font-size: 22px; text-transform: uppercase; letter-spacing: 0.03em; }
+.verdict.good { color: var(--good); }
+.verdict.bad { color: var(--bad); }
+.pip { display: inline-block; width: 12px; height: 12px; border-radius: 50%; background: rgba(255,255,255,0.25); }
+.pip.now { background: var(--pinnie); }
+.pip.good { background: var(--good); }
+.pip.ok { background: var(--cone); }
+.pip.bad { background: var(--bad); }
+.lockgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 8px; }
+.lockcard { border: 0; border-radius: 12px; background: rgba(255,255,255,0.08); padding: 8px; height: 112px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 6px; cursor: pointer; text-align: center; box-shadow: inset 0 0 0 2px transparent; }
+.lockcard.sel { box-shadow: inset 0 0 0 3px var(--pinnie); }
+.lockcard.locked .sw { opacity: 0.55; }
+.lockcard .sw { width: 52px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 0 2px rgba(255,255,255,0.35); color: var(--pinnie); flex: none; }
+.lockcard .sw svg { width: 22px; height: 22px; }
+.lockcard b { font-size: 13px; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.lockcard .st { font-size: 12px; color: var(--chalk-dim); margin-top: auto; }
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
+.stat { background: rgba(255,255,255,0.07); border-radius: 12px; padding: 10px 12px; height: 64px; display: flex; flex-direction: column; justify-content: center; }
+.stat span { font-size: 12px; color: var(--chalk-dim); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 700; }
+.stat b { font-family: var(--display); font-size: 22px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.item .num svg { width: 20px; height: 20px; }
+.badge.trophy svg { width: 22px; height: 22px; display: block; margin-bottom: 4px; }
+.badge.trophy.on svg { color: #a66b00; }
+
 </style>
 </head>
 <body>
@@ -265,6 +302,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   };
+  // local calendar day as 'y-m-d' (used for streaks)
+  PIQ.dayKey = function (d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
   // personalise a line: {name} / {NAME} = her name, {team} / {TEAM} = her team colour
   PIQ.fill = function (s) {
     var prof = PIQ.profile ? PIQ.profile() : {};
@@ -535,19 +574,72 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     return g;
   }
 
-  function buildSky() {
-    var geo = new THREE.SphereGeometry(400, 24, 16);
+  function paintSky(geo, topHex, midHex, lowHex) {
     var colors = [];
     var pos = geo.attributes.position;
-    var top = new THREE.Color(0x4f9fe8), mid = new THREE.Color(0xbfe2ff), low = new THREE.Color(0xe9f4ff);
+    var top = new THREE.Color(topHex), mid = new THREE.Color(midHex), low = new THREE.Color(lowHex);
     for (var i = 0; i < pos.count; i++) {
       var y = pos.getY(i) / 400;
       var c = y > 0.25 ? mid.clone().lerp(top, (y - 0.25) / 0.75) : low.clone().lerp(mid, PIQ.clamp((y + 0.05) / 0.3, 0, 1));
       colors.push(c.r, c.g, c.b);
     }
     geo.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  }
+  function buildSky() {
+    var geo = new THREE.SphereGeometry(400, 24, 16);
+    paintSky(geo, 0x4f9fe8, 0xbfe2ff, 0xe9f4ff);
     return new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, fog: false }));
   }
+
+  // floodlight towers, only switched on for night matches
+  function buildFloodlights(F) {
+    var g = new THREE.Group();
+    var poleMat = new THREE.MeshLambertMaterial({ color: 0x8a94a6 });
+    var lampMat = new THREE.MeshBasicMaterial({ color: 0xfffbe6 });
+    var glowTex = PIQ.canvasTex(64, 64, function (c) {
+      var grd = c.createRadialGradient(32, 32, 2, 32, 32, 32);
+      grd.addColorStop(0, 'rgba(255,250,220,1)'); grd.addColorStop(1, 'rgba(255,250,220,0)');
+      c.fillStyle = grd; c.fillRect(0, 0, 64, 64);
+    });
+    [-1, 1].forEach(function (sx) {
+      [-1, 1].forEach(function (sz) {
+        var x = sx * (F.L / 2 + 7), z = sz * (F.W / 2 + 9);
+        var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 22, 8), poleMat);
+        pole.position.set(x, 11, z); g.add(pole);
+        var lamp = new THREE.Mesh(new THREE.BoxGeometry(3.4, 1.8, 0.4), lampMat);
+        lamp.position.set(x, 22.5, z); lamp.lookAt(0, 0, 0); g.add(lamp);
+        var glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, transparent: true, depthWrite: false, fog: false, blending: THREE.AdditiveBlending }));
+        glow.position.set(x, 22.5, z); glow.scale.set(14, 14, 1); g.add(glow);
+        // a real spotlight per tower: the pitch is lit, the park around it stays dark
+        var spot = new THREE.SpotLight(0xfff4dc, 0.62, 0, 0.62, 0.55, 0);
+        spot.position.set(x, 22.5, z);
+        spot.target.position.set(sx * 6, 0, sz * 3);
+        g.add(spot); g.add(spot.target);
+      });
+    });
+    g.visible = false;
+    return g;
+  }
+
+  var THEMES = {
+    day: { sky: [0x4f9fe8, 0xbfe2ff, 0xe9f4ff], fog: 0xd8ecff, near: 140, far: 330, bg: 0xbfe2ff, hemi: 0.75, hemiSky: 0xdff1ff, sun: 0.95, sunColor: 0xfff4e0, clouds: true, lights: false },
+    sunset: { sky: [0x3a4c9c, 0xf59a6b, 0xffd39a], fog: 0xe9a07a, near: 70, far: 260, bg: 0xf59a6b, hemi: 0.5, hemiSky: 0xffc9a0, sun: 0.9, sunColor: 0xff9a55, clouds: true, lights: false },
+    // night: the floodlights keep the pitch bright while the park around it fades to dark
+    night: { sky: [0x050a1c, 0x101a38, 0x1c2b52], fog: 0x0b1226, near: 30, far: 140, bg: 0x101a38, hemi: 0.15, hemiSky: 0x7f97d6, sun: 0.08, sunColor: 0x9db4ff, clouds: false, lights: true }
+  };
+  PIQ.applyTheme = function (world, scene, name) {
+    var t = THEMES[name] || THEMES.day;
+    paintSky(world.sky.geometry, t.sky[0], t.sky[1], t.sky[2]);
+    scene.fog.color.setHex(t.fog);
+    scene.fog.near = t.near; scene.fog.far = t.far;
+    world.hemi.color.setHex(t.hemiSky);
+    scene.background.setHex(t.bg);
+    world.hemi.intensity = t.hemi;
+    world.sun.intensity = t.sun;
+    world.sun.color.setHex(t.sunColor);
+    world.clouds.visible = t.clouds;
+    world.floodlights.visible = t.lights;
+  };
 
   function buildClouds() {
     var tex = canvasTex(128, 64, function (g, w, h) {
@@ -671,8 +763,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var F = PIQ.FIELD;
     scene.background = new THREE.Color(0xbfe2ff);
     scene.fog = new THREE.Fog(0xd8ecff, 140, 330);
-    scene.add(buildSky());
-    scene.add(buildClouds());
+    var sky = buildSky(), clouds = buildClouds(), floodlights = buildFloodlights(F);
+    scene.add(sky);
+    scene.add(clouds);
+    scene.add(floodlights);
 
     var pitchTex = grassTexture(F.L + 8, F.W + 8);
     pitchTex.anisotropy = 4;
@@ -691,7 +785,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var sun = new THREE.DirectionalLight(0xfff4e0, 0.95);
     sun.position.set(-40, 80, 30);
     scene.add(sun);
-    return { pitch: pitch, goals: [ourGoal, theirGoal] };
+    return { pitch: pitch, goals: [ourGoal, theirGoal], sky: sky, clouds: clouds, floodlights: floodlights, hemi: hemi, sun: sun };
   };
 })();
 
@@ -720,22 +814,50 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 
   function hex(c) { return '#' + ('000000' + c.toString(16)).slice(-6); }
 
-  function shirtTexture(color, num, textColor) {
+  // Brightness check so patterns and numbers contrast with any shirt colour
+  function isLight(c) { return ((c >> 16) & 255) * 0.299 + ((c >> 8) & 255) * 0.587 + (c & 255) * 0.114 > 160; }
+  PIQ.contrastOf = function (c) { return isLight(c) ? 0x1e1e1e : 0xffffff; };
+
+  // Texture u runs around the body: 0.25 is the chest, 0.75 the back.
+  function shirtTexture(color, num, textColor, pattern) {
     return PIQ.canvasTex(256, 128, function (g, w, h) {
+      var con = hex(PIQ.contrastOf(color));
       g.fillStyle = hex(color); g.fillRect(0, 0, w, h);
+      g.fillStyle = con;
+      g.globalAlpha = 0.85;
+      if (pattern === 'stripes') for (var x = 6; x < w; x += 28) g.fillRect(x, 0, 12, h);
+      else if (pattern === 'hoops') for (var y = 4; y < h; y += 30) g.fillRect(0, y, w, 13);
+      else if (pattern === 'sash') {
+        g.beginPath(); g.moveTo(w * 0.08, 0); g.lineTo(w * 0.2, 0); g.lineTo(w * 0.42, h); g.lineTo(w * 0.3, h); g.closePath(); g.fill();
+      } else if (pattern === 'halves') { g.fillRect(w * 0.25, 0, w * 0.25, h); g.fillRect(w * 0.75, 0, w * 0.25, h); }
+      else if (pattern === 'chevron') {
+        g.beginPath(); g.moveTo(w * 0.05, h * 0.25); g.lineTo(w * 0.25, h * 0.55); g.lineTo(w * 0.45, h * 0.25); g.lineTo(w * 0.45, h * 0.4); g.lineTo(w * 0.25, h * 0.7); g.lineTo(w * 0.05, h * 0.4); g.closePath(); g.fill();
+      }
+      g.globalAlpha = 1;
       // subtle side panels
       g.fillStyle = 'rgba(255,255,255,0.12)';
       g.fillRect(w * 0.47, 0, w * 0.06, h);
       g.fillRect(w * 0.97, 0, w * 0.03, h);
       g.fillRect(0, 0, w * 0.03, h);
-      g.fillStyle = textColor || '#ffffff';
       g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.lineJoin = 'round';
+      var tc = textColor || '#ffffff';
+      // outline the numbers so they stay readable on any pattern
+      g.strokeStyle = isLight(parseInt(tc.slice(1), 16)) ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.6)';
+      g.fillStyle = tc;
       g.font = 'bold 74px Arial, Helvetica, sans-serif';
+      if (pattern && pattern !== 'plain' && pattern !== 'sleeves') { g.lineWidth = 7; g.strokeText(String(num), w * 0.75, h * 0.52); }
       g.fillText(String(num), w * 0.75, h * 0.52); // back
       g.font = 'bold 30px Arial, Helvetica, sans-serif';
+      if (pattern && pattern !== 'plain' && pattern !== 'sleeves') { g.lineWidth = 4; g.strokeText(String(num), w * 0.21, h * 0.36); }
       g.fillText(String(num), w * 0.21, h * 0.36); // front, over the heart
     });
   }
+  PIQ.BOOTS = { black: 0x15151a, white: 0xf4f4f4, pink: 0xff4fa3, lime: 0xb6ff3b, gold: 0xf2c230, orange: 0xff7a1a };
+  PIQ.equipped = function () {
+    var p = PIQ.profile ? PIQ.profile() : null;
+    return (p && p.equip) || { kit: 'plain', boots: 'black', ball: 'classic', celebrate: 'jump', stadium: 'day' };
+  };
 
   var shared = null;
   function geos() {
@@ -787,11 +909,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var seed = (opts.num || 1) * 7 + (opts.team === 'away' ? 3 : 0);
     var skin = new THREE.MeshLambertMaterial({ color: SKIN[seed % SKIN.length] });
     var hairMat = new THREE.MeshLambertMaterial({ color: HAIR[(seed * 3) % HAIR.length] });
-    var shirtMat = new THREE.MeshLambertMaterial({ map: shirtTexture(shirtColor, opts.num || '', team.text) });
-    var plainShirt = new THREE.MeshLambertMaterial({ color: shirtColor });
+    var eq = PIQ.equipped();
+    var pattern = opts.team === 'home' ? eq.kit : 'plain';
+    var shirtMat = new THREE.MeshLambertMaterial({ map: shirtTexture(shirtColor, opts.num || '', team.text, pattern) });
+    var plainShirt = new THREE.MeshLambertMaterial({ color: pattern === 'sleeves' ? PIQ.contrastOf(shirtColor) : shirtColor });
     var shortsMat = new THREE.MeshLambertMaterial({ color: team.shorts });
     var sockMat = new THREE.MeshLambertMaterial({ color: team.socks });
-    var shoeMat = new THREE.MeshLambertMaterial({ color: 0x15151a });
+    var shoeMat = new THREE.MeshLambertMaterial({ color: opts.you ? (PIQ.BOOTS[eq.boots] || 0x15151a) : 0x15151a });
     var gloveMat = new THREE.MeshLambertMaterial({ color: 0xd7f24a, emissive: 0x2a3000 });
 
     var root = new THREE.Group();
@@ -895,8 +1019,57 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     p.obj.position.set(x, 0, z);
   };
 
+  // goal celebrations (unlockable). Each runs ~2 seconds, then the player resets.
+  PIQ.CELEBRATIONS = ['jump', 'champion', 'spin', 'airplane', 'kneeslide'];
+  PIQ.startCelebration = function (p, type) {
+    p.celeb = { type: type || 'jump', t: 0, x: p.pos[0], z: p.pos[1] };
+  };
+  function celebrate(p, dt) {
+    var c = p.celeb;
+    c.t += dt;
+    var t = c.t, a0 = p.arms[0], a1 = p.arms[1];
+    p.legs[0].rotation.x = p.legs[1].rotation.x = 0;
+    if (c.type === 'champion') {
+      p.obj.position.y = Math.abs(Math.sin(t * 6)) * 0.25;
+      var pump = 2.6 + Math.sin(t * 12) * 0.35;
+      a0.rotation.z = -pump; a1.rotation.z = pump;
+    } else if (c.type === 'spin') {
+      p.obj.rotation.y += dt * 11;
+      a0.rotation.z = -1.45; a1.rotation.z = 1.45;
+      p.obj.position.y = Math.abs(Math.sin(t * 3)) * 0.15;
+    } else if (c.type === 'airplane') {
+      a0.rotation.z = -1.5; a1.rotation.z = 1.5;
+      p.body.rotation.z = Math.sin(t * 3) * 0.4;
+      p.obj.rotation.y += dt * 2.6;
+      var r = 1.6, ang = t * 2.6;
+      PIQ.setPlayerPos(p, c.x + Math.sin(ang) * r - Math.sin(0) * r, c.z + Math.cos(ang) * r - r);
+      p.phase += dt * 12;
+      p.legs[0].rotation.x = Math.sin(p.phase) * 0.6; p.legs[1].rotation.x = -Math.sin(p.phase) * 0.6;
+    } else if (c.type === 'kneeslide') {
+      var k = Math.min(1, t / 0.7);
+      var hd = p.obj.rotation.y;
+      PIQ.setPlayerPos(p, c.x + Math.sin(hd) * 2.4 * k, c.z + Math.cos(hd) * 2.4 * k);
+      p.body.position.y = -0.32 * k;
+      p.body.rotation.x = -0.55 * k;
+      p.legs[0].rotation.x = p.legs[1].rotation.x = -1.4 * k;
+      a0.rotation.z = -2.5 * k; a1.rotation.z = 2.5 * k;
+    } else { // jump
+      p.obj.position.y = Math.abs(Math.sin(t * 6.5)) * 0.7;
+      a0.rotation.z = -2.8; a1.rotation.z = 2.8;
+    }
+    if (t > 2.2) {
+      p.celeb = null;
+      p.obj.position.y = 0;
+      p.body.position.y = 0;
+      p.body.rotation.set(0, 0, 0);
+      a0.rotation.z = -0.12; a1.rotation.z = 0.12;
+      p.legs[0].rotation.x = p.legs[1].rotation.x = 0;
+    }
+  }
+
   // per-frame animation: run cycle when moving, gentle idle sway when not
   PIQ.animatePlayer = function (p, dt, lookAt) {
+    if (p.celeb) { celebrate(p, dt); return; }
     var moving = p.speed > 0.4;
     var k = Math.min(p.speed, 7);
     if (moving) {
@@ -931,10 +1104,22 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   };
 
   // ---------- ball ----------
-  function ballTexture() {
+  var BALLS = {
+    classic: { base: '#ffffff', spot: '#1b1b22', band: '#ff4fa3' },
+    gold: { base: '#f2c230', spot: '#5a3d00', band: '#fff3b0' },
+    neon: { base: '#c6ff3b', spot: '#111111', band: '#ff4fa3' },
+    galaxy: { base: '#1a1446', spot: '#7b3fe4', band: '#ffffff', stars: true },
+    rainbow: { base: '#ffffff', spot: '#1b1b22', rainbow: true },
+    team: { base: '#ffffff', spot: 'team', band: 'team' }
+  };
+  function ballTexture(design) {
+    var d = BALLS[design] || BALLS.classic;
+    var teamHex = hex(PIQ.TEAMS.home.shirt);
     return PIQ.canvasTex(256, 128, function (g, w, h) {
-      g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h);
-      g.fillStyle = '#1b1b22';
+      g.fillStyle = d.base; g.fillRect(0, 0, w, h);
+      if (d.rainbow) ['#ff5a5f', '#ff9a3d', '#ffe14d', '#3ddc84', '#3a7bd5', '#7b3fe4'].forEach(function (c, i) { g.fillStyle = c; g.fillRect(0, i * (h / 6), w, h / 6 + 1); });
+      if (d.stars) for (var k = 0; k < 60; k++) { g.fillStyle = 'rgba(255,255,255,0.9)'; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+      g.fillStyle = d.spot === 'team' ? teamHex : d.spot;
       var spots = [[30, 30], [95, 64], [160, 30], [225, 64], [30, 100], [160, 100], [95, 4], [225, 124]];
       spots.forEach(function (s) {
         g.beginPath();
@@ -945,10 +1130,15 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         }
         g.closePath(); g.fill();
       });
-      g.fillStyle = '#ff4fa3';
-      g.fillRect(0, 60, w, 6);
+      if (d.band) { g.fillStyle = d.band === 'team' ? teamHex : d.band; g.fillRect(0, 60, w, 6); }
     });
   }
+  PIQ.setBallDesign = function (b, design) {
+    var m = b.mesh.material;
+    if (m.map) m.map.dispose();
+    m.map = ballTexture(design);
+    m.needsUpdate = true;
+  };
 
   PIQ.FIG_SCALE = 1.35; // players drawn a bit larger than life so they read on a phone
   PIQ.HEAD_TOP = 2.0 * PIQ.FIG_SCALE; // top of the tallest hairstyle, for placing bubbles
@@ -956,7 +1146,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   PIQ.makeBall = function () {
     var R = PIQ.BALL_R;
     var root = new THREE.Group();
-    var ball = new THREE.Mesh(new THREE.SphereGeometry(R, 20, 14), new THREE.MeshLambertMaterial({ map: ballTexture() }));
+    var ball = new THREE.Mesh(new THREE.SphereGeometry(R, 20, 14), new THREE.MeshLambertMaterial({ map: ballTexture(PIQ.equipped().ball) }));
     ball.position.y = R;
     root.add(ball);
     var sh = blobShadow();
@@ -1197,6 +1387,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 900);
     var world = PIQ.buildWorld(this.scene);
+    this.world = world;
     this.crowd = new PIQ.Crowd(this.scene);
     this.ends = new PIQ.TeamEnds(this.scene, world.goals);
     PIQ.cheerHook = function () { self.cheer(); };
@@ -1251,6 +1442,25 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   Stage.prototype.refreshTeams = function () {
     this.crowd.recolor();
     this.ends.recolor();
+  };
+
+  // a player does her goal celebration; teammates nearby jump too
+  Stage.prototype.celebrate = function (id, type) {
+    var p = this.players[id];
+    if (!p) return;
+    p.target = null;
+    PIQ.startCelebration(p, type);
+    var self = this;
+    this.list.forEach(function (q) {
+      if (q !== p && q.team === p.team && PIQ.dist(q.pos, p.pos) < 14) self.after(0.2 + Math.random() * 0.4, function () { if (!q.celeb) PIQ.startCelebration(q, 'jump'); });
+    });
+    this.cheer();
+  };
+
+  // stadium look: 'day' | 'sunset' | 'night'
+  Stage.prototype.setTheme = function (name) {
+    PIQ.applyTheme(this.world, this.scene, name);
+    this.theme = name;
   };
 
   // fans jump and wave; sometimes one shouts
@@ -1346,7 +1556,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var g = { target: V3(0, 0, 0), dist: 50, theta: 0, phi: 0.95 };
     if (typeof preset === 'object') {
       var t = preset.target || [0, 0];
-      g.target = V3(t[0], 0, t[1]);
+      g.target = V3(t[0], t[2] || 0, t[1]);
       g.dist = preset.dist || 40;
       g.theta = preset.theta != null ? preset.theta : 0;
       g.phi = preset.phi != null ? preset.phi : 0.95;
@@ -3142,6 +3352,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     keeperGoal: ['Shake it off, {name}!', 'Next one\'s yours!', 'Unlucky, keeper!'],
     quizRight: ['Yes, {name}!', 'You know it!', 'Smart!', 'Nailed it, {name}!'],
     quizWrong: ['No worries, {name}. Now you know!', 'Good try!', 'You\'ll get the next one!'],
+    matchStart: ['Big game today, {name}!', 'Let\'s go, {team}!', 'Ready, {name}? Kick-off!'],
+    matchWin: ['We won! Thanks, {name}!', 'Champions! Great game, {name}!', 'What a team!'],
+    matchDraw: ['A draw! We\'ll get them next time.', 'Good fight, {name}!'],
+    matchLoss: ['Good game, {name}. We\'ll learn from it!', 'Heads up, team. Next match is ours!'],
+    dailyStart: ['Daily challenge time, {name}!', 'Five quick ones. You\'ve got this!'],
+    dailyDone: ['See you tomorrow, {name}!', 'Streak keeper!', 'Daily done. Nice, {name}!'],
+    lockerHi: ['Looking good, {name}!', 'Nice kit!', 'Try something new on!'],
     boardPick: ['Move me anywhere, {name}!', 'Where do you want me?', 'Drag me, or use the arrow keys!']
   };
 
@@ -3156,6 +3373,69 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       id = PIQ.pick(mates).id;
     }
     return PIQ.say(stage, id, PIQ.pick(lines), secs);
+  };
+})();
+
+/* js/content/unlocks.js */
+/* Pitch IQ — Locker Room items. Coins come from playing (every XP point earns a coin),
+   and spending coins never lowers her level. cost 0 = owned from the start. */
+(function () {
+  'use strict';
+  var PIQ = window.PIQ;
+
+  PIQ.UNLOCK_CATS = [
+    { id: 'kit', name: 'Kit', blurb: 'Your whole team wears it.' },
+    { id: 'boots', name: 'Boots', blurb: 'Only you wear these.' },
+    { id: 'ball', name: 'Ball', blurb: 'Used in every scene.' },
+    { id: 'celebrate', name: 'Celebration', blurb: 'What you do after a goal.' },
+    { id: 'stadium', name: 'Stadium', blurb: 'Time of day for every match.' }
+  ];
+
+  PIQ.UNLOCKS = {
+    kit: [
+      { id: 'plain', name: 'Classic', cost: 0 },
+      { id: 'sleeves', name: 'Contrast sleeves', cost: 60 },
+      { id: 'stripes', name: 'Stripes', cost: 80 },
+      { id: 'hoops', name: 'Hoops', cost: 80 },
+      { id: 'sash', name: 'Sash', cost: 120 },
+      { id: 'halves', name: 'Halves', cost: 120 },
+      { id: 'chevron', name: 'Chevron', cost: 150 }
+    ],
+    boots: [
+      { id: 'black', name: 'Black', cost: 0 },
+      { id: 'white', name: 'White', cost: 40 },
+      { id: 'pink', name: 'Hot pink', cost: 60 },
+      { id: 'lime', name: 'Neon lime', cost: 60 },
+      { id: 'orange', name: 'Orange', cost: 60 },
+      { id: 'gold', name: 'Gold', cost: 150 }
+    ],
+    ball: [
+      { id: 'classic', name: 'Classic', cost: 0 },
+      { id: 'team', name: 'Team colours', cost: 50 },
+      { id: 'neon', name: 'Neon', cost: 70 },
+      { id: 'rainbow', name: 'Rainbow', cost: 100 },
+      { id: 'galaxy', name: 'Galaxy', cost: 140 },
+      { id: 'gold', name: 'Gold', cost: 200 }
+    ],
+    celebrate: [
+      { id: 'jump', name: 'Jump for joy', cost: 0 },
+      { id: 'champion', name: 'Champion arms', cost: 60 },
+      { id: 'spin', name: 'Spin', cost: 80 },
+      { id: 'airplane', name: 'Airplane', cost: 110 },
+      { id: 'kneeslide', name: 'Knee slide', cost: 150 }
+    ],
+    stadium: [
+      { id: 'day', name: 'Sunny day', cost: 0 },
+      { id: 'sunset', name: 'Sunset', cost: 200 },
+      { id: 'night', name: 'Night under the lights', cost: 300 }
+    ]
+  };
+
+  // swatch colours for the Locker Room cards
+  PIQ.UNLOCK_SWATCH = {
+    boots: PIQ.BOOTS,
+    ball: { classic: 0xffffff, team: null, neon: 0xc6ff3b, rainbow: 0xff9a3d, galaxy: 0x1a1446, gold: 0xf2c230 },
+    stadium: { day: 0x7cc8ff, sunset: 0xf59a6b, night: 0x101a38 }
   };
 })();
 
@@ -3590,6 +3870,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     return 'Pass to the ' + (o.to === 'GK' ? 'keeper' : who);
   }
 
+  PIQ.decideLabel = optLabel;
+
   PIQ.GAMES.decide = {
     start: function (App, back) {
       var stage = App.stage();
@@ -3984,6 +4266,528 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   };
 })();
 
+/* js/games/moments.js */
+/* Pitch IQ — "moments": single challenges borrowed from every game, used by
+   Match Day and the Daily Challenge. Each moment ends by calling
+   done(result, why) with result 'best' | 'ok' | 'bad'. */
+(function () {
+  'use strict';
+  var PIQ = window.PIQ;
+  var S = PIQ.SHAPES;
+  var GX = -PIQ.FIELD.L / 2, POST = PIQ.FIELD.goalW / 2;
+
+  var ATTACK_SCENE = { home: S.attBall, away: S.attBallAway, ball: 'RW', camera: { target: [12, 0], dist: 36, theta: 0.15, phi: 0.95 } };
+  var DEFEND_SCENE = { home: S.defMid, away: S.defMidAway, ball: 'away:M1', camera: { target: [-6, 2], dist: 36, theta: 0.15, phi: 0.95 } };
+  var ATTACK_LESSONS = /^(field|shape|attack|switch-1|restarts)/;
+  var DEFEND_LESSONS = /^(defend|switch-2|keeper)/;
+  var ATTACK_SPOTS = ['so1', 'so2', 'so4', 'so6', 'so7', 'so11', 'so12', 'so15'];
+  var DEFEND_SPOTS = ['so8', 'so9', 'so10', 'so13', 'so14'];
+
+  // a small seeded random so the Daily Challenge is the same all day
+  PIQ.seeded = function (seed) {
+    var a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      var t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  };
+  function pickFrom(list, used, rnd) {
+    var free = list.filter(function (x) { return !used[x.id]; });
+    if (!free.length) free = list;
+    var it = free[Math.floor((rnd || Math.random)() * free.length)];
+    used[it.id] = true;
+    return it;
+  }
+
+  // kind: quiz | decide | spoton | mistake | keeper ; side: attack | defend
+  function pick(kind, side, used, rnd) {
+    if (kind === 'quiz') {
+      var re = side === 'attack' ? ATTACK_LESSONS : side === 'defend' ? DEFEND_LESSONS : /./;
+      return { kind: kind, side: side, q: pickFrom(PIQ.QUIZ.filter(function (q) { return re.test(q.lesson); }), used, rnd) };
+    }
+    if (kind === 'decide') return { kind: kind, side: 'attack', sc: pickFrom(PIQ.DECISIONS, used, rnd) };
+    if (kind === 'mistake') return { kind: kind, side: side, sc: pickFrom(PIQ.MISTAKES, used, rnd) };
+    if (kind === 'spoton') {
+      var ids = side === 'defend' ? DEFEND_SPOTS : side === 'attack' ? ATTACK_SPOTS : ATTACK_SPOTS.concat(DEFEND_SPOTS);
+      return { kind: kind, side: side, sc: pickFrom(PIQ.SPOTON.filter(function (s) { return ids.indexOf(s.id) >= 0; }), used, rnd) };
+    }
+    var r = rnd || Math.random;
+    return { kind: 'keeper', side: 'defend', id: 'k' + Math.floor(r() * 1e6), spot: [PIQ.lerp(-17, -10, r()), (r() * 2 - 1) * 10] };
+  }
+
+  function run(ctx, m, done) {
+    var App = ctx.App, stage = ctx.stage, s = ctx.sheet, I = App.ICONS;
+    var head = '<div class="eyebrow">' + ctx.eyebrow + '</div>';
+    var finished = false;
+    function finish(result, why) {
+      if (finished) return;
+      finished = true;
+      stage.keyPlayer = null;
+      stage.on('enter', null);
+      done(result, why);
+    }
+    var keysHint = PIQ.hasKeys ? ' Arrow keys work too.' : '';
+
+    if (m.kind === 'quiz') {
+      PIQ.buildScene(stage, m.q.scene || (m.side === 'defend' ? DEFEND_SCENE : ATTACK_SCENE), { instantCamera: true });
+      s.innerHTML = head + '<div id="mm-box"></div><div id="mm-foot"></div>';
+      var box = s.querySelector('#mm-box');
+      box._fit = s._fit;
+      App.question(box, m.q, function (ok) { finish(ok ? 'best' : 'bad', ''); });
+      s._fit();
+      return;
+    }
+
+    if (m.kind === 'decide') {
+      var sc = m.sc;
+      PIQ.buildScene(stage, { home: sc.scene.home, away: sc.scene.away, ball: sc.scene.ball, you: sc.you, camera: sc.scene.camera }, { instantCamera: true });
+      var where = function (o) {
+        if (o.type === 'shoot') return o.target ? [o.target[0] - 1.4, o.target[1]] : [23.6, 0];
+        if (o.type === 'pass' && !o.runner) return PIQ.pt(stage, o.to);
+        return o.to;
+      };
+      var opts = PIQ.shuffle(sc.options).map(function (o, i) { var c = {}; for (var k in o) c[k] = o[k]; c.key = 'ABC'[i]; return c; });
+      opts.forEach(function (o) {
+        var w = where(o);
+        if (o.type === 'dribble' || o.runner) stage.zone(w, 1.6, { color: PIQ.COLORS.zone, pulse: true });
+        stage.label(o.type === 'pass' && !o.runner ? o.to : w, o.key, 'opt', o.type === 'pass' && !o.runner ? {} : { y: 0.8 });
+      });
+      s.innerHTML = head + '<p class="caption">' + sc.prompt + '</p><div class="answers">' +
+        opts.map(function (o) { return '<button class="answer" data-k="' + o.key + '"><span class="k">' + o.key + '</span><span>' + PIQ.decideLabel(o) + '</span></button>'; }).join('') + '</div><div id="mm-foot"></div>';
+      s._fit();
+      var answers = s.querySelector('.answers');
+      answers.addEventListener('click', function (e) {
+        var b = e.target.closest ? e.target.closest('.answer') : null;
+        if (!b || answers.classList.contains('locked')) return;
+        answers.classList.add('locked');
+        var o = opts.filter(function (x) { return x.key === b.getAttribute('data-k'); })[0];
+        b.classList.add(o.grade === 'bad' ? 'wrong' : 'right');
+        stage.clearLabels(true); stage.clearAnnotations();
+        if (o.type === 'pass' && !o.runner) stage.kickBall(PIQ.pt(stage, o.to), { owner: o.to });
+        else if (o.runner) { stage.kickBall(o.to, { dur: 1.1, owner: null }); stage.moveTo(o.runner, o.to, 1.1); stage.after(1.15, function () { stage.giveBall(o.runner); }); }
+        else if (o.type === 'dribble') { stage.giveBall(sc.you); stage.moveTo(sc.you, o.to, 1.3); }
+        else if (o.type !== 'shoot') stage.kickBall(o.to, { height: 4, dur: 1.3 });
+        if (o.grade === 'best') PIQ.sfx.good(); else if (o.grade === 'ok') PIQ.sfx.ok(); else PIQ.sfx.bad();
+        var bestO = opts.filter(function (x) { return x.grade === 'best'; })[0];
+        stage.after(o.type === 'shoot' ? 0.1 : 1.4, function () {
+          finish(o.type === 'shoot' && o.grade === 'best' ? 'best' : o.grade, o.why + (o.grade === 'best' ? '' : ' Best choice: <b>' + PIQ.decideLabel(bestO) + '</b>.'));
+        });
+      });
+      return;
+    }
+
+    if (m.kind === 'spoton') {
+      var so = m.sc;
+      PIQ.buildScene(stage, { home: so.scene.home, away: so.scene.away, ball: so.scene.ball, you: so.you, youAt: so.youAt, camera: so.scene.camera }, { instantCamera: true });
+      stage.setDraggable([so.you], true);
+      stage.keyPlayer = so.you;
+      var locked = false;
+      stage.on('ground', function (g) { if (!locked) stage.moveTo(so.you, g, 0.5); });
+      s.innerHTML = head + '<p class="caption">' + so.prompt + '</p><p class="small">Drag yourself or tap the field, then lock it in.' + keysHint + '</p>' +
+        '<div class="row end"><button class="btn" id="mm-lock">Lock it in</button></div><div id="mm-foot"></div>';
+      s._fit();
+      var lock = function () {
+        if (locked) return;
+        locked = true;
+        stage.setDraggable([so.you], false);
+        stage.finishAll();
+        var me = stage.players[so.you];
+        var gap = PIQ.zoneGap(so.target, me.pos);
+        var stars = gap <= 0.01 ? 3 : gap <= 2.5 ? 2 : gap <= 6 ? 1 : 0;
+        if (so.target.rect) stage.zone(so.target.rect, null, { color: PIQ.COLORS.good, opacity: 0.25 });
+        else stage.zone(so.target.at, so.target.r, { color: PIQ.COLORS.good, opacity: 0.25, pulse: true });
+        if (stars < 3) stage.label(so.best, 'Best spot', 'good', { y: 0.4 });
+        if (stars < 2) stage.moveTo(so.you, so.best, 1);
+        if (stars >= 2) PIQ.sfx.good(); else PIQ.sfx.bad();
+        var btn = s.querySelector('#mm-lock'); if (btn) btn.parentNode.removeChild(btn);
+        // pass to her if she's in the spot (the match may then turn it into a goal)
+        stage.after(stars >= 2 ? 0.3 : 1.2, function () {
+          var owner = stage.ball.owner;
+          if (owner && owner.id !== so.you && owner.team === 'home' && stars >= 2) stage.kickBall(PIQ.pt(stage, so.you), { owner: so.you });
+        });
+        stage.after(1.3, function () { finish(stars === 3 ? 'best' : stars === 2 ? 'ok' : 'bad', App.stars(stars) + ' ' + so.explain); });
+      };
+      s.querySelector('#mm-lock').onclick = lock;
+      stage.on('enter', lock);
+      return;
+    }
+
+    if (m.kind === 'mistake') {
+      var mk = m.sc;
+      PIQ.buildScene(stage, mk.scene, { instantCamera: true });
+      s.innerHTML = head + '<p class="caption">' + PIQ.teamText(mk.prompt) + '</p><p class="small">Tap one of our players.</p><div id="mm-foot"></div>';
+      s._fit();
+      var answered = false;
+      stage.on('pick', function (p) {
+        if (answered || p.isBall) return;
+        if (p.team !== 'home') { PIQ.toast('Look at <b>our</b> team: the ' + (PIQ.teamWord || 'blue') + ' shirts.'); return; }
+        answered = true;
+        var ok = p.id === mk.wrong;
+        var w = stage.players[mk.wrong];
+        PIQ.setRing(w, PIQ.COLORS.bad, true);
+        if (ok) { PIQ.sfx.good(); PIQ.chat(stage, 'mistakeFound', mk.wrong, 3); }
+        else { PIQ.sfx.bad(); PIQ.chat(stage, 'mistakeNotMe', p.id, 2.5); }
+        stage.after(0.8, function () { stage.moveTo(mk.wrong, mk.fix, 1.2); });
+        stage.after(2.1, function () { PIQ.setRing(w, PIQ.COLORS.good, true); finish(ok ? 'best' : 'bad', PIQ.teamText(mk.explain)); });
+      });
+      return;
+    }
+
+    // keeper: one shot, get your angle right first
+    PIQ.buildScene(stage, {
+      home: { GK: [GX + 1, 0], LD: [-16, -9], RD: [-15, 9] },
+      away: { F: m.spot.slice() },
+      ball: 'away:F', you: 'GK',
+      camera: { target: [-15, 0], dist: 20, theta: -Math.PI / 2 + 0.0001, phi: 1.0, portraitDist: 30, portraitTheta: -Math.PI / 2 }
+    }, { instantCamera: true });
+    var gk = stage.players.GK;
+    gk.faceBall = true;
+    stage.keyPlayer = 'GK';
+    var steer = function (g) {
+      if (!g) return;
+      stage.moveTo('GK', [PIQ.clamp(g[0], GX + 0.3, GX + 10), PIQ.clamp(g[1], -9, 9)], 0.35);
+    };
+    stage.on('groundDrag', steer);
+    stage.on('ground', steer);
+    s.innerHTML = head + '<p class="caption">You\'re the keeper. Get your angle right, then tap <b>Ready</b>.</p><p class="small">Drag or tap on the field to move.' + keysHint + '</p>' +
+      '<div class="row end"><button class="btn" id="mm-ready">Ready</button></div><div id="mm-foot"></div>';
+    s._fit();
+    var shoot = function () {
+      var rb = s.querySelector('#mm-ready'); if (!rb) return;
+      rb.parentNode.removeChild(rb);
+      stage.keyPlayer = null;
+      stage.on('groundDrag', null); stage.on('ground', null);
+      stage.finishAll();
+      var ball = stage.ball.pos.slice();
+      var sides = [-POST + 0.35, POST - 0.35].map(function (z) { return { z: z, gap: PIQ.segDist(gk.pos, ball, [GX, z]) }; }).sort(function (a, b) { return b.gap - a.gap; });
+      var target = [GX - 0.6, sides[0].z];
+      var chip = gk.pos[0] - GX > 7;
+      var gap = PIQ.segDist(gk.pos, ball, target);
+      var saved = !chip && gap < 2.1;
+      var ideal = PIQ.keeperIdeal(ball);
+      var hit = saved ? [gk.pos[0] + (ball[0] - gk.pos[0]) * 0.08, gk.pos[1] + (ball[1] - gk.pos[1]) * 0.08] : target;
+      stage.kickBall(hit, { height: chip ? 2.6 : 0.45, dur: chip ? 1 : 0.55, onDone: function () {
+        stage.zone(ideal, 0.9, { color: PIQ.COLORS.good, pulse: true });
+        if (saved) { stage.giveBall('GK'); gk.body.rotation.z = 0.8; stage.after(0.7, function () { gk.body.rotation.z = 0; }); }
+        finish(saved ? 'best' : 'bad', saved ? 'Great angle! The green circle is the textbook spot.' : chip ? 'Too far out: she chipped it over you.' : 'The green circle shows the best spot: on the line from the ball to the middle of the goal.');
+      } });
+    };
+    s.querySelector('#mm-ready').onclick = shoot;
+    stage.on('enter', shoot);
+  }
+
+  // ---------- goals ----------
+  function ourGoal(stage, cb) {
+    stage.finishAll();
+    var home = stage.list.filter(function (p) { return p.team === 'home' && p.role !== 'GK'; });
+    var scorer = stage.players[stage.youId] && stage.youId !== 'GK' ? stage.players[stage.youId] : null;
+    if (!scorer && stage.ball.owner && stage.ball.owner.team === 'home' && stage.ball.owner.role !== 'GK') scorer = stage.ball.owner;
+    if (!scorer) scorer = home.sort(function (a, b) { return b.pos[0] - a.pos[0]; })[0];
+    if (!scorer) { if (cb) cb(); return; }
+    stage.ball.obj.visible = true;
+    stage.giveBall(scorer.id);
+    scorer.heading = Math.atan2(25 - scorer.pos[0], -scorer.pos[1] * 0.3);
+    scorer.obj.rotation.y = scorer.heading;
+    stage._carryBall();
+    stage.after(0.35, function () {
+      stage.kickBall([PIQ.FIELD.L / 2 + 0.6, (Math.random() - 0.5) * 3], { height: 0.5, dur: 0.75, onDone: function () {
+        PIQ.sfx.cheer();
+        stage.celebrate(scorer.id, PIQ.equipped().celebrate);
+        PIQ.say(stage, scorer.id, PIQ.pick(['GOAL!', 'YES!', 'For you, {name}!', 'Get in!']), 2.5);
+        if (cb) cb();
+      } });
+    });
+  }
+  function theirGoal(stage, cb) {
+    stage.finishAll();
+    var away = stage.list.filter(function (p) { return p.team === 'away' && p.role !== 'GK'; });
+    var shooter = stage.ball.owner && stage.ball.owner.team === 'away' ? stage.ball.owner : away.sort(function (a, b) { return a.pos[0] - b.pos[0]; })[0];
+    if (!shooter) { if (cb) cb(); return; }
+    stage.ball.obj.visible = true;
+    stage.giveBall(shooter.id);
+    shooter.heading = Math.atan2(-25 - shooter.pos[0], -shooter.pos[1] * 0.3);
+    shooter.obj.rotation.y = shooter.heading;
+    stage._carryBall();
+    stage.after(0.35, function () {
+      stage.kickBall([-PIQ.FIELD.L / 2 - 0.6, (Math.random() - 0.5) * 3], { height: 0.5, dur: 0.75, onDone: function () {
+        PIQ.sfx.bad();
+        PIQ.chat(stage, 'keeperGoal', null, 2.5);
+        if (cb) cb();
+      } });
+    });
+  }
+
+  PIQ.Moments = { pick: pick, run: run, ourGoal: ourGoal, theirGoal: theirGoal };
+})();
+
+/* js/games/matchday.js */
+/* Pitch IQ — Match Day: two halves of challenges against a rival team.
+   Our chances: a smart answer scores. Their chances: a smart answer stops them.
+   (Real U10 games in Ontario keep no score; this is the app's own game.) */
+(function () {
+  'use strict';
+  var PIQ = window.PIQ;
+  PIQ.GAMES = PIQ.GAMES || {};
+
+  var RIVALS = ['Thunder', 'Comets', 'Wildcats', 'Rockets', 'Hurricanes', 'Falcons', 'Lightning', 'Panthers'];
+  // minute marks for the eight moments (two 25-minute halves)
+  var MINUTES = [4, 11, 17, 23, 29, 36, 42, 48];
+  var TIPS = [
+    'Coach says: spread out when we have the ball, squeeze in when they do.',
+    'Coach says: scan before the ball arrives. Look, then look again.',
+    'Coach says: if you get beaten, sprint back toward our goal.',
+    'Coach says: look forward first. Can we score? Can we pass forward?',
+    'Coach says: talk to each other. Names first, short and loud.'
+  ];
+
+  PIQ.GAMES.matchday = {
+    start: function (App, back) {
+      var stage = App.stage();
+      var I = App.ICONS;
+      var prof = PIQ.profile();
+      var rival = PIQ.pick(RIVALS);
+      var used = {};
+      // each half: our chance, their chance, our chance, their chance
+      var attackKinds = PIQ.shuffle(['decide', 'spoton', 'quiz', 'decide']);
+      var defendKinds = PIQ.shuffle(['mistake', 'keeper', 'quiz', 'spoton']);
+      var plan = [];
+      for (var i = 0; i < 4; i++) {
+        plan.push(PIQ.Moments.pick(attackKinds[i], 'attack', used));
+        plan.push(PIQ.Moments.pick(defendKinds[i], 'defend', used));
+      }
+      var n = 0, us = 0, them = 0, smart = 0;
+      var team = (PIQ.teamWord || 'blue').toUpperCase();
+
+      App.leave();
+      App.setCurrent({ destroy: function () {} });
+      App.topbar('Match Day', back);
+      var sb = App.el('<div class="scoreboard" aria-live="polite"><span class="sb-team"><i style="background:' + hex(PIQ.TEAMS.home.shirt) + '"></i>' + PIQ.esc(team) + '</span>' +
+        '<b id="sb-score">0 – 0</b><span class="sb-team">' + PIQ.esc(rival.toUpperCase()) + '<i style="background:' + hex(PIQ.TEAMS.away.shirt) + '"></i></span><span class="sb-min" id="sb-min">KO</span></div>');
+      document.getElementById('ui').appendChild(sb);
+      var s = App.sheet('', 'mini');
+
+      function hex(c) { return '#' + ('000000' + c.toString(16)).slice(-6); }
+      function board(min) {
+        document.getElementById('sb-score').textContent = us + ' – ' + them;
+        document.getElementById('sb-min').textContent = min;
+      }
+
+      function intro() {
+        PIQ.buildScene(stage, { home: PIQ.SHAPES.kickoff, away: PIQ.SHAPES.kickoffAway, ball: [0, 0], camera: { target: [0, 0], dist: 46, theta: 0.5, phi: 1.0, portraitDist: 70, portraitTheta: 0.5 } }, { instantCamera: true });
+        stage.autoSpin = 0.05;
+        stage.after(0.8, function () { PIQ.chat(stage, 'matchStart', null, 3.5); });
+        s.innerHTML = '<div class="eyebrow">Match Day</div><h2>' + PIQ.esc(team) + ' vs ' + PIQ.esc(rival) + '</h2>' +
+          '<p>Two halves, eight big moments. When it\'s <b>our chance</b>, a smart answer scores a goal. When <b>they attack</b>, a smart answer stops them.</p>' +
+          '<div class="row end"><button class="btn" id="md-ko">Kick off ' + I.next + '</button></div>';
+        s._fit();
+        var go = function () { PIQ.sfx.tap(); PIQ.sfx.whistle(); next(); };
+        s.querySelector('#md-ko').onclick = go;
+        stage.on('enter', go);
+      }
+
+      var htDone = false;
+      function next() {
+        if (n === 4 && !htDone) return halftime();
+        if (n >= plan.length) return fulltime();
+        var m = plan[n];
+        var min = MINUTES[n] + "'";
+        board(min);
+        var attack = m.side === 'attack';
+        var ctx = { App: App, stage: stage, sheet: s, eyebrow: min + ' &middot; ' + (attack ? 'Our chance!' : 'Danger! ' + PIQ.esc(rival) + ' attack') };
+        PIQ.Moments.run(ctx, m, function (result, why) {
+          if (result === 'best') smart++;
+          var scored = attack && (result === 'best' || (result === 'ok' && Math.random() < 0.5));
+          var conceded = !attack && result === 'bad' && (m.kind === 'keeper' || Math.random() < 0.85);
+          var foot = s.querySelector('#mm-foot');
+          var verdict;
+          if (scored) { us++; verdict = 'GOAL! ' + PIQ.esc(team) + ' score!'; }
+          else if (attack) verdict = result === 'ok' ? 'Shot saved. So close!' : 'Chance gone.';
+          else if (conceded) { them++; verdict = PIQ.esc(rival) + ' score.'; }
+          else verdict = result === 'best' ? 'Stopped them! Great defending.' : 'Phew, they missed!';
+          var after = function () {
+            board(min);
+            if (scored) App.bigmsg('GOAL!', 1600);
+            else if (conceded) App.bigmsg(PIQ.esc(rival) + ' score', 1300);
+            foot.innerHTML = (why ? '<div class="why">' + why + '</div>' : '') +
+              '<div class="row between" style="margin-top:10px"><b class="verdict ' + (scored || (!attack && !conceded) ? 'good' : 'bad') + '">' + verdict + '</b>' +
+              '<button class="btn" id="md-next">' + (n === 3 ? 'Half-time' : n === plan.length - 1 ? 'Full time' : 'Next') + ' ' + I.next + '</button></div>';
+            s._fit();
+            var go = function () { PIQ.sfx.tap(); n++; next(); };
+            foot.querySelector('#md-next').onclick = go;
+            stage.on('enter', go);
+          };
+          if (scored) PIQ.Moments.ourGoal(stage, after);
+          else if (conceded && m.kind !== 'keeper') PIQ.Moments.theirGoal(stage, after);
+          else { if (!attack && !conceded) stage.cheer(); after(); }
+        });
+      }
+
+      function halftime() {
+        board('HT');
+        PIQ.sfx.whistle();
+        stage.clearAnnotations(); stage.clearLabels(true);
+        s.innerHTML = '<div class="eyebrow">Half-time</div><h2>' + PIQ.esc(team) + ' ' + us + ' – ' + them + ' ' + PIQ.esc(rival) + '</h2>' +
+          '<p class="coachnote">' + PIQ.esc(PIQ.pick(TIPS)) + '</p>' +
+          '<div class="row end"><button class="btn" id="md-2h">Second half ' + I.next + '</button></div>';
+        s._fit();
+        var go = function () { PIQ.sfx.tap(); PIQ.sfx.whistle(); htDone = true; next(); };
+        s.querySelector('#md-2h').onclick = go;
+        stage.on('enter', go);
+      }
+
+      function fulltime() {
+        board('FT');
+        PIQ.sfx.whistle();
+        var result = us > them ? 'win' : us === them ? 'draw' : 'loss';
+        var rec = prof.match = prof.match || { played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, clean: 0, bestWin: 0 };
+        rec.played++; rec.gf += us; rec.ga += them;
+        if (result === 'win') { rec.won++; rec.bestWin = Math.max(rec.bestWin, us - them); }
+        else if (result === 'draw') rec.drawn++; else rec.lost++;
+        if (them === 0) rec.clean++;
+        PIQ.saveProfile();
+        PIQ.saveBest('matchday', us);
+        if (result === 'win') PIQ.award('match');
+        if (result === 'win' && them === 0) PIQ.award('clean');
+        if (us >= 3) PIQ.award('hattrick');
+        var xp = (result === 'win' ? 50 : result === 'draw' ? 30 : 20) + us * 5 + smart * 2;
+        PIQ.addXP(xp);
+        PIQ.markDay();
+        if (result !== 'loss') PIQ.sfx.cheer();
+        App.bigmsg(result === 'win' ? 'You win!' : result === 'draw' ? 'A draw!' : 'Good game!', 1800);
+        stage.clearAnnotations(); stage.clearLabels(true);
+        PIQ.chat(stage, result === 'win' ? 'matchWin' : result === 'draw' ? 'matchDraw' : 'matchLoss', null, 4);
+        s.innerHTML = '<div class="eyebrow">Full time</div><h2>' + PIQ.esc(team) + ' ' + us + ' – ' + them + ' ' + PIQ.esc(rival) + '</h2>' +
+          '<p>' + smart + ' of ' + plan.length + ' smart plays. +' + xp + ' XP and ' + xp + ' coins.</p>' +
+          '<p class="small">Your record: ' + rec.won + ' won, ' + rec.drawn + ' drawn, ' + rec.lost + ' lost. ' + (result === 'loss' ? 'Every smart answer is a goal next time.' : '') + '</p>' +
+          '<div class="row"><button class="btn ghost" id="md-home">Home</button><button class="btn" id="md-again">' + I.replay + ' Play another match</button></div>';
+        s._fit();
+        s.querySelector('#md-again').onclick = function () { PIQ.sfx.tap(); PIQ.GAMES.matchday.start(App, back); };
+        s.querySelector('#md-home').onclick = function () { PIQ.sfx.tap(); back(); };
+        stage.on('enter', null);
+      }
+
+      intro();
+    }
+  };
+})();
+
+/* js/games/daily.js */
+/* Pitch IQ — Daily Challenge: five moments, the same all day, with a day streak.
+   Coins and streak count once a day; replays are practice. */
+(function () {
+  'use strict';
+  var PIQ = window.PIQ;
+  PIQ.GAMES = PIQ.GAMES || {};
+
+  function todaysPlan() {
+    var key = PIQ.dayKey(new Date());
+    var seed = 0;
+    for (var i = 0; i < key.length; i++) seed = (seed * 31 + key.charCodeAt(i)) >>> 0;
+    var rnd = PIQ.seeded(seed);
+    var kinds = ['quiz', 'spoton', 'mistake', 'decide', 'quiz'];
+    for (var j = kinds.length - 1; j > 0; j--) { var k = Math.floor(rnd() * (j + 1)); var t = kinds[j]; kinds[j] = kinds[k]; kinds[k] = t; }
+    var used = {};
+    return kinds.map(function (kind) { return PIQ.Moments.pick(kind, 'any', used, rnd); });
+  }
+
+  PIQ.dailyState = function () {
+    var prof = PIQ.profile();
+    prof.daily = prof.daily || { last: '', streak: 0, best: 0, days: 0, score: 0 };
+    var d = prof.daily;
+    // a streak only survives if yesterday (or today) was played
+    var today = PIQ.dayKey(new Date()), yest = PIQ.dayKey(new Date(Date.now() - 864e5));
+    d.live = d.last === today || d.last === yest ? d.streak : 0;
+    d.doneToday = d.last === today;
+    return d;
+  };
+
+  PIQ.GAMES.daily = {
+    start: function (App, back) {
+      var stage = App.stage();
+      var I = App.ICONS;
+      var d = PIQ.dailyState();
+      var practice = d.doneToday;
+      var plan = todaysPlan();
+      var n = 0, best = 0;
+
+      App.leave();
+      App.setCurrent({ destroy: function () {} });
+      App.topbar('Daily Challenge', back, '<span class="chip" id="dy-prog">' + plan.map(function () { return '<span class="pip"></span>'; }).join('') + '</span>');
+      var s = App.sheet('', 'mini');
+
+      PIQ.buildScene(stage, { home: PIQ.SHAPES.midBall, away: PIQ.SHAPES.midBallAway, ball: 'CM', camera: { target: [0, 0], dist: 46, theta: 0.6, phi: 1.0, portraitDist: 70, portraitTheta: 0.6 } }, { instantCamera: true });
+      stage.autoSpin = 0.05;
+      stage.after(0.6, function () { PIQ.chat(stage, 'dailyStart', null, 3.5); });
+      s.innerHTML = '<div class="eyebrow">' + (practice ? 'Already done today' : 'Today\'s challenge') + '</div><h2>Five quick moments</h2>' +
+        '<p>' + (practice ? 'You\'ve finished today\'s challenge. Play it again for practice, or come back tomorrow for a new one.' :
+          'A new mix every day. Finish it to earn coins and keep your streak going.') + '</p>' +
+        '<p class="small">Day streak: <b>' + d.live + '</b> &middot; Best: ' + d.best + '</p>' +
+        '<div class="row end"><button class="btn" id="dy-go">' + (practice ? 'Practise' : 'Start') + ' ' + I.next + '</button></div>';
+      s._fit();
+      var go = function () { PIQ.sfx.tap(); next(); };
+      s.querySelector('#dy-go').onclick = go;
+      stage.on('enter', go);
+
+      function pip(i, cls) {
+        var p = document.querySelectorAll('#dy-prog .pip')[i];
+        if (p) p.className = 'pip ' + cls;
+      }
+
+      function next() {
+        if (n >= plan.length) return finish();
+        var m = plan[n];
+        pip(n, 'now');
+        PIQ.Moments.run({ App: App, stage: stage, sheet: s, eyebrow: 'Challenge ' + (n + 1) + ' of ' + plan.length }, m, function (result, why) {
+          if (result === 'best') { best++; stage.cheer(); }
+          pip(n, result === 'best' ? 'good' : result === 'ok' ? 'ok' : 'bad');
+          var foot = s.querySelector('#mm-foot');
+          foot.innerHTML = (why ? '<div class="why">' + why + '</div>' : '') +
+            '<div class="row end" style="margin-top:10px"><button class="btn" id="dy-next">' + (n < plan.length - 1 ? 'Next' : 'Finish') + ' ' + I.next + '</button></div>';
+          s._fit();
+          var go2 = function () { PIQ.sfx.tap(); n++; next(); };
+          foot.querySelector('#dy-next').onclick = go2;
+          stage.on('enter', go2);
+        });
+      }
+
+      function finish() {
+        stage.on('enter', null);
+        var prof = PIQ.profile();
+        var dd = prof.daily;
+        var msg;
+        if (!practice) {
+          var today = PIQ.dayKey(new Date()), yest = PIQ.dayKey(new Date(Date.now() - 864e5));
+          dd.streak = dd.last === yest ? dd.streak + 1 : 1;
+          dd.best = Math.max(dd.best, dd.streak);
+          dd.days++;
+          dd.last = today;
+          dd.score = best;
+          PIQ.saveProfile();
+          var xp = 30 + best * 6;
+          PIQ.addXP(xp);
+          PIQ.addCoins(20);
+          PIQ.markDay();
+          if (dd.streak >= 3) PIQ.award('daily3');
+          if (dd.streak >= 7) PIQ.award('daily7');
+          msg = '+' + xp + ' XP and ' + (xp + 20) + ' coins (with a 20-coin daily bonus).';
+        } else msg = 'Practice round: no coins, but every answer counts for your brain!';
+        PIQ.saveBest('daily', best);
+        PIQ.sfx.cheer();
+        App.bigmsg(best === plan.length ? 'Perfect day!' : 'Daily done!', 1600);
+        PIQ.chat(stage, 'dailyDone', null, 4);
+        s.innerHTML = '<div class="eyebrow">Daily Challenge</div><h2>' + best + ' / ' + plan.length + ' smart plays</h2>' +
+          '<p>' + msg + '</p><p class="small">Day streak: <b>' + (practice ? dd.streak : dd.streak) + '</b> &middot; Best streak: ' + dd.best + '. A new challenge appears tomorrow.</p>' +
+          '<div class="row"><button class="btn" id="dy-home">Home</button></div>';
+        s._fit();
+        s.querySelector('#dy-home').onclick = function () { PIQ.sfx.tap(); back(); };
+      }
+    }
+  };
+})();
+
 /* js/board.js */
 /* Pitch IQ — Tactics Board: drag anyone, pick a formation, and let
    "Auto shape" move both teams as the ball moves. */
@@ -4185,6 +4989,10 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     cone: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 4h4l4 14H6z"/><rect x="3" y="18" width="18" height="3" rx="1"/></svg>',
     board: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.6" fill="currentColor"/><circle cx="15" cy="15" r="1.6" fill="currentColor"/><path d="M9.5 10.5l4 3" stroke-dasharray="2 2"/></svg>',
     whistle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><circle cx="9" cy="14" r="6"/><path d="M13 9h8v4h-5"/><circle cx="9" cy="14" r="1.5" fill="currentColor"/></svg>',
+    trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 14v4M8 21h8"/></svg>',
+    shirt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M8 3l-5 3 2 4 3-1v12h8V9l3 1 2-4-5-3c-1 2-2.5 3-4 3S9 5 8 3z"/></svg>',
+    calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+    coin: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="6" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="2"/></svg>',
     star: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5 2 7.5-6.5-4.5L5.5 21l2-7.5L2 9h7z"/></svg>'
   };
   PIQ.ICONS = I;
@@ -4192,9 +5000,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   // ---------- progress ----------
   var DEFAULT = {
     name: '', number: 10, jersey: 'blue', xp: 0,
-    lessons: {}, games: {}, badges: {}, days: [], settings: { sound: true, quality: 'high' }, seen: false
+    lessons: {}, games: {}, badges: {}, days: [], settings: { sound: true, quality: 'high' }, seen: false,
+    owned: {}, equip: { kit: 'plain', boots: 'black', ball: 'classic', celebrate: 'jump', stadium: 'day' }
   };
   var state = PIQ.store.load() || {};
+  // players from before coins existed start with one coin per XP point
+  if (state.coins === undefined) state.coins = state.xp || 0;
   for (var k in DEFAULT) if (state[k] === undefined) state[k] = JSON.parse(JSON.stringify(DEFAULT[k]));
   PIQ.profile = function () { return state; };
   function save() { PIQ.store.save(state); }
@@ -4223,7 +5034,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     { id: 'decider', name: 'Quick Thinker', d: '5 best decisions in a row.' },
     { id: 'keeper', name: 'Wall of Hands', d: '8 saves in one Keeper Hero game.' },
     { id: 'quiz', name: 'Quiz Whiz', d: 'A 10-answer streak in Quiz Blitz.' },
-    { id: 'streak', name: 'On a Roll', d: 'Play on 3 different days.' }
+    { id: 'streak', name: 'On a Roll', d: 'Play on 3 different days.' },
+    { id: 'match', name: 'Match Winner', d: 'Win a Match Day game.' },
+    { id: 'clean', name: 'Clean Sheet', d: 'Win a match without letting in a goal.' },
+    { id: 'hattrick', name: 'Hat-Trick', d: 'Score 3 goals in one match.' },
+    { id: 'daily3', name: 'Three in a Row', d: 'A 3-day Daily Challenge streak.' },
+    { id: 'daily7', name: 'Week Warrior', d: 'A 7-day Daily Challenge streak.' },
+    { id: 'collector', name: 'Collector', d: 'Unlock 5 items in the Locker Room.' }
   ];
 
   function toast(msg, ms) {
@@ -4239,6 +5056,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     if (!n) return;
     var before = levelOf(state.xp).i;
     state.xp += n;
+    state.coins += n; // every XP point also earns a coin to spend in the Locker Room
     var after = levelOf(state.xp);
     save();
     if (after.i > before) {
@@ -4254,7 +5072,29 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     save();
     setTimeout(function () { PIQ.sfx.levelUp(); toast('New badge: <b>' + esc(b.name) + '</b>', 3500); }, 900);
   };
-  function today() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function today() { return PIQ.dayKey(new Date()); }
+  PIQ.addCoins = function (n) { state.coins += n; save(); };
+
+  // ---------- Locker Room ownership ----------
+  PIQ.owns = function (cat, id) {
+    var item = (PIQ.UNLOCKS[cat] || []).filter(function (x) { return x.id === id; })[0];
+    return !!item && (item.cost === 0 || !!state.owned[cat + ':' + id]);
+  };
+  PIQ.buy = function (cat, id) {
+    var item = (PIQ.UNLOCKS[cat] || []).filter(function (x) { return x.id === id; })[0];
+    if (!item || PIQ.owns(cat, id) || state.coins < item.cost) return false;
+    state.coins -= item.cost;
+    state.owned[cat + ':' + id] = Date.now();
+    save();
+    if (Object.keys(state.owned).length >= 5) PIQ.award('collector');
+    return true;
+  };
+  PIQ.equipItem = function (cat, id) {
+    if (!PIQ.owns(cat, id)) return false;
+    state.equip[cat] = id;
+    save();
+    return true;
+  };
   function markDay() {
     var t = today();
     if (state.days.indexOf(t) < 0) { state.days.push(t); if (state.days.length > 60) state.days.shift(); save(); }
@@ -4433,23 +5273,31 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     var total = PIQ.UNITS.reduce(function (n, u) { return n + u.lessons.length; }, 0);
     var j = PIQ.JERSEYS.filter(function (x) { return x.id === state.jersey; })[0] || PIQ.JERSEYS[0];
     var name = state.name || 'Tap to add your name';
+    var rec = state.match && state.match.played ? state.match : null;
+    var daily = PIQ.dailyState();
     var h = el('<div class="home">' +
       '<div class="logo"><div class="word">Pitch <span>IQ</span></div><div class="tag">soccer smarts for 7v7</div></div>' +
       '<button class="playercard" id="h-profile"><div class="shirt" style="background:' + hexCss(j.shirt) + ';color:' + (j.text || '#fff') + '">' + state.number + '</div>' +
       '<div class="who"><div class="name">' + esc(name) + '</div><div class="lvl">' + esc(lv.name) + ' &middot; ' + state.xp + ' XP' + (lv.next ? ' &middot; ' + lv.toNext + ' to ' + esc(lv.next) : '') + '</div><div class="bar"><i style="width:' + Math.round(lv.pct * 100) + '%"></i></div></div></button>' +
       '<div class="tiles">' +
         '<button class="tile hero" id="h-learn"><div class="row between"><span class="t">Academy</span>' + I.book + '</div><span class="s">Animated lessons: positions, attacking, defending, restarts. ' + done + ' of ' + total + ' done.</span></button>' +
-        '<button class="tile" id="h-games">' + I.play + '<div><div class="t">Games</div><div class="s">Spot On, Keeper Hero and more</div></div></button>' +
-        '<button class="tile yellow" id="h-quiz">' + I.whistle + '<div><div class="t">Quiz Blitz</div><div class="s">Quick-fire questions</div></div></button>' +
+        '<button class="tile hero match" id="h-match"><div class="row between"><span class="t">Match Day</span>' + I.whistle + '</div><span class="s">Play a full match. Smart answers score goals.' + (rec ? ' Record ' + rec.won + '-' + rec.drawn + '-' + rec.lost + '.' : '') + '</span></button>' +
+        '<button class="tile yellow" id="h-daily">' + I.calendar + '<div><div class="t">Daily</div><div class="s">' + (daily.doneToday ? 'Done today &#10003;' : 'New challenge!') + ' &middot; streak ' + daily.live + '</div></div></button>' +
+        '<button class="tile" id="h-games">' + I.play + '<div><div class="t">Games</div><div class="s">Spot On, Keeper Hero, Quiz Blitz</div></div></button>' +
+        '<button class="tile" id="h-locker">' + I.shirt + '<div><div class="t">Locker Room</div><div class="s">Spend coins on kits and more</div></div></button>' +
+        '<button class="tile" id="h-trophies">' + I.trophy + '<div><div class="t">Trophies</div><div class="s">' + Object.keys(state.badges).length + ' of ' + PIQ.BADGES.length + ' badges</div></div></button>' +
         '<button class="tile green" id="h-board">' + I.board + '<div><div class="t">Tactics Board</div><div class="s">Move players in 3D</div></div></button>' +
         '<button class="tile green" id="h-rules">' + I.cone + '<div><div class="t">7v7 Rules</div><div class="s">Halton / Ontario</div></div></button>' +
       '</div></div>');
     ui.appendChild(h);
-    App.topbar('', null);
+    App.topbar('', null, '<span class="chip coins" title="Coins">' + I.coin + '<b>' + state.coins + '</b></span>');
     h.querySelector('#h-profile').onclick = function () { PIQ.sfx.tap(); screens.profile(); };
     h.querySelector('#h-learn').onclick = function () { PIQ.sfx.tap(); screens.academy(); };
     h.querySelector('#h-games').onclick = function () { PIQ.sfx.tap(); screens.games(); };
-    h.querySelector('#h-quiz').onclick = function () { PIQ.sfx.tap(); PIQ.GAMES.quizblitz.start(App, screens.home); };
+    h.querySelector('#h-match').onclick = function () { PIQ.sfx.tap(); PIQ.GAMES.matchday.start(App, screens.home); };
+    h.querySelector('#h-daily').onclick = function () { PIQ.sfx.tap(); PIQ.GAMES.daily.start(App, screens.home); };
+    h.querySelector('#h-locker').onclick = function () { PIQ.sfx.tap(); screens.locker(); };
+    h.querySelector('#h-trophies').onclick = function () { PIQ.sfx.tap(); screens.trophies(); };
     h.querySelector('#h-board').onclick = function () { PIQ.sfx.tap(); PIQ.Board.start(App, screens.home); };
     h.querySelector('#h-rules').onclick = function () { PIQ.sfx.tap(); screens.rules(); };
     if (!state.seen) { state.seen = true; save(); setTimeout(function () { screens.profile(true); }, 400); }
@@ -4705,6 +5553,143 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     };
   };
 
+  // ---------- Locker Room ----------
+  function swatchCss(cat, id) {
+    var c = hexCss(PIQ.TEAMS.home.shirt), con = hexCss(PIQ.contrastOf(PIQ.TEAMS.home.shirt));
+    if (cat === 'kit') {
+      return {
+        plain: c,
+        sleeves: 'linear-gradient(90deg,' + con + ' 20%,' + c + ' 20% 80%,' + con + ' 80%)',
+        stripes: 'repeating-linear-gradient(90deg,' + c + ' 0 7px,' + con + ' 7px 12px)',
+        hoops: 'repeating-linear-gradient(0deg,' + c + ' 0 8px,' + con + ' 8px 13px)',
+        sash: 'linear-gradient(60deg,' + c + ' 38%,' + con + ' 38% 56%,' + c + ' 56%)',
+        halves: 'linear-gradient(90deg,' + c + ' 50%,' + con + ' 50%)',
+        chevron: 'linear-gradient(135deg,' + c + ' 40%,' + con + ' 40% 50%,' + c + ' 50%) top/50% 100% no-repeat,linear-gradient(225deg,' + c + ' 40%,' + con + ' 40% 50%,' + c + ' 50%) right top/50% 100% no-repeat,' + c
+      }[id] || c;
+    }
+    if (cat === 'ball' && id === 'team') return c;
+    if (cat === 'ball' && id === 'rainbow') return 'linear-gradient(180deg,#ff5a5f,#ff9a3d,#ffe14d,#3ddc84,#3a7bd5,#7b3fe4)';
+    if (cat === 'celebrate') return 'var(--board-2)';
+    var map = PIQ.UNLOCK_SWATCH[cat] || {};
+    return map[id] != null ? hexCss(map[id]) : '#888';
+  }
+
+  screens.locker = function (cat) {
+    cat = cat || 'kit';
+    App.leave();
+    var tryOn = {};
+    var restore = { destroy: function () { stage.setTheme(state.equip.stadium); PIQ.setBallDesign(stage.ball, state.equip.ball); } };
+    App.setCurrent(restore);
+    App.topbar('Locker Room', screens.home, '<span class="chip coins" id="lk-coins">' + I.coin + '<b>' + state.coins + '</b></span>');
+    var selected = state.equip[cat];
+
+    function preview(celebrate) {
+      var saved = state.equip;
+      var eq = {};
+      for (var k in saved) eq[k] = tryOn[k] || saved[k];
+      state.equip = eq;
+      var hd = 0.35;
+      PIQ.buildScene(stage, { home: { CM: [0, 0], LW: [-3.2, -2.6], RW: [-3.2, 2.6] }, ball: [Math.sin(hd) * 0.9, Math.cos(hd) * 0.9], you: 'CM',
+        camera: { target: [0, 0, 1.25], dist: 7.5, theta: hd, phi: 1.32, portraitDist: 11, portraitTheta: hd } }, { noYou: true, instantCamera: true });
+      PIQ.setBallDesign(stage.ball, eq.ball);
+      stage.setTheme(eq.stadium);
+      state.equip = saved;
+      stage.list.forEach(function (p) { p.faceBall = false; p.heading = hd; p.obj.rotation.y = hd; });
+      stage.autoSpin = 0.22;
+      if (celebrate) stage.after(0.3, function () { stage.celebrate('CM', celebrate); });
+      else stage.after(0.5, function () { PIQ.chat(stage, 'lockerHi', 'LW', 2.6); });
+    }
+
+    var s = App.sheet('', 'tall');
+    function render() {
+      var items = PIQ.UNLOCKS[cat];
+      var catInfo = PIQ.UNLOCK_CATS.filter(function (c) { return c.id === cat; })[0];
+      var sel = items.filter(function (x) { return x.id === selected; })[0] || items[0];
+      var owned = PIQ.owns(cat, sel.id), equipped = state.equip[cat] === sel.id;
+      var action;
+      if (equipped) action = '<button class="btn" disabled>Wearing it</button>';
+      else if (owned) action = '<button class="btn" id="lk-equip">' + (cat === 'stadium' ? 'Play here' : cat === 'celebrate' ? 'Use it' : 'Wear it') + '</button>';
+      else if (state.coins >= sel.cost) action = '<button class="btn" id="lk-buy">' + I.coin + ' Buy for ' + sel.cost + '</button>';
+      else action = '<button class="btn" disabled>Need ' + (sel.cost - state.coins) + ' more coins</button>';
+      s.innerHTML = '<div class="seg" id="lk-cats" style="margin-bottom:10px;flex-wrap:wrap">' + PIQ.UNLOCK_CATS.map(function (c) { return '<button data-c="' + c.id + '" class="' + (c.id === cat ? 'on' : '') + '">' + c.name + '</button>'; }).join('') + '</div>' +
+        '<p class="small" style="margin:0 0 10px">' + esc(catInfo.blurb) + ' Coins come from everything you play.</p>' +
+        '<div class="lockgrid">' + items.map(function (it) {
+          var own = PIQ.owns(cat, it.id), on = state.equip[cat] === it.id;
+          return '<button class="lockcard' + (it.id === selected ? ' sel' : '') + (own ? '' : ' locked') + '" data-i="' + it.id + '">' +
+            '<span class="sw" style="background:' + swatchCss(cat, it.id) + '">' + (cat === 'celebrate' ? I.star : '') + '</span>' +
+            '<b>' + esc(it.name) + '</b><span class="st">' + (on ? 'Wearing' : own ? 'Owned' : it.cost + ' coins') + '</span></button>';
+        }).join('') + '</div>' +
+        '<div class="row between" style="margin-top:12px"><span class="grow"><b>' + esc(sel.name) + '</b></span>' + action + '</div>';
+      s._fit();
+      var b = s.querySelector('#lk-buy');
+      if (b) b.onclick = function () {
+        if (!PIQ.buy(cat, sel.id)) return;
+        PIQ.equipItem(cat, sel.id);
+        if (cat === 'kit') applyJersey();
+        PIQ.sfx.levelUp();
+        toast('Unlocked: <b>' + esc(sel.name) + '</b>!');
+        document.getElementById('lk-coins').innerHTML = I.coin + '<b>' + state.coins + '</b>';
+        tryOn = {};
+        preview(cat === 'celebrate' ? sel.id : state.equip.celebrate);
+        render();
+      };
+      var e = s.querySelector('#lk-equip');
+      if (e) e.onclick = function () {
+        PIQ.equipItem(cat, sel.id);
+        PIQ.sfx.good();
+        tryOn = {};
+        preview(cat === 'celebrate' ? sel.id : null);
+        render();
+      };
+    }
+    s.addEventListener('click', function (ev) {
+      var c = ev.target.closest ? ev.target.closest('[data-c]') : null;
+      if (c) { PIQ.sfx.tap(); cat = c.getAttribute('data-c'); selected = state.equip[cat]; tryOn = {}; preview(); render(); return; }
+      var it = ev.target.closest ? ev.target.closest('[data-i]') : null;
+      if (it) {
+        PIQ.sfx.tap();
+        selected = it.getAttribute('data-i');
+        tryOn = {}; tryOn[cat] = selected;
+        preview(cat === 'celebrate' ? selected : null);
+        render();
+      }
+    });
+    preview();
+    render();
+  };
+
+  // ---------- Trophy Room ----------
+  screens.trophies = function () {
+    App.leave();
+    App.setCurrent(ambient());
+    App.topbar('Trophies', screens.home);
+    var lessonStars = 0, lessonMax = 0, spotStars = 0;
+    PIQ.UNITS.forEach(function (u) { u.lessons.forEach(function (l) { lessonMax += 3; lessonStars += state.lessons[l.id] || 0; }); });
+    var ss = state.games.spotonStars || {};
+    Object.keys(ss).forEach(function (k) { spotStars += ss[k]; });
+    var m = state.match || { played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, clean: 0 };
+    var d = PIQ.dailyState();
+    var lv = levelOf(state.xp);
+    function stat(label, value) { return '<div class="stat"><span>' + label + '</span><b>' + value + '</b></div>'; }
+    var bests = [['spoton', 'Spot On', 'stars'], ['mistake', 'Spot the Mistake', 'found'], ['decide', 'Pass, Dribble or Shoot?', 'points'], ['keeper', 'Keeper Hero', 'saves'], ['quizblitz', 'Quiz Blitz', 'points'], ['matchday', 'Match Day', 'goals in a match'], ['daily', 'Daily Challenge', 'smart plays']];
+    var html = '<div class="eyebrow">' + esc(lv.name) + '</div><h2>Trophy room</h2>' +
+      '<div class="stats">' +
+        stat('XP', state.xp) + stat('Coins', state.coins) +
+        stat('Lesson stars', lessonStars + ' / ' + lessonMax) + stat('Spot On stars', spotStars + ' / ' + PIQ.SPOTON.length * 3) +
+        stat('Matches', m.won + 'W ' + m.drawn + 'D ' + m.lost + 'L') + stat('Goals scored', m.gf) +
+        stat('Clean sheets', m.clean || 0) + stat('Daily streak', d.live + ' (best ' + d.best + ')') +
+      '</div>' +
+      '<h3 style="margin-top:16px">Personal bests</h3><div class="list">' + bests.map(function (b) {
+        var v = state.games[b[0]];
+        return '<div class="item"><div class="num">' + I.trophy + '</div><div class="txt"><b>' + b[1] + '</b><span>' + (v != null ? 'Best: ' + v + ' ' + b[2] : 'Not played yet') + '</span></div></div>';
+      }).join('') + '</div>' +
+      '<h3 style="margin-top:16px">Trophy case</h3><div class="badges">' + PIQ.BADGES.map(function (b) {
+        var on = !!state.badges[b.id];
+        return '<div class="badge trophy ' + (on ? 'on' : 'off') + '">' + I.trophy + '<b>' + esc(b.name) + '</b>' + esc(b.d) + '</div>';
+      }).join('') + '</div>';
+    App.sheet(html, 'tall');
+  };
+
   PIQ.screens = screens;
 
   // ---------- boot ----------
@@ -4718,6 +5703,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       return;
     }
     if (state.settings.quality === 'low') stage.setQuality('low');
+    stage.setTheme(state.equip.stadium);
     PIQ.stageRef = stage;
     window.addEventListener('resize', function () {
       var s = ui.querySelector('.sheet');

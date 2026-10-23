@@ -24,9 +24,13 @@ Progress (XP, stars, badges) is saved in the browser on that device only.
   7. Keeper Smarts (angles, distribution, talking)
   8. Talk and Lead (the calls, leadership, fair play)
 - **Games:** Spot On (drag yourself to the right spot, 15 puzzles), Spot the Mistake (12 scenes), Pass, Dribble or Shoot? (10 decisions), Keeper Hero (angle play, 10 shots), Quiz Blitz (57 questions).
+- **Match Day:** a full match against a rival team: two halves, eight big moments drawn from all the games. On our chances a smart answer scores (and she does her goal celebration); when they attack, a smart answer stops them. Live scoreboard, half-time coach tip, win/draw/loss record. (Real U10 games in Ontario keep no score; this is the app's own game.)
+- **Daily Challenge:** five moments, the same all day, with a day streak and bonus coins. Replays the same day are practice.
+- **Locker Room:** coins (one per XP point, never lowering her level) buy kit designs (stripes, hoops, sash, halves, chevron, contrast sleeves), boot colours, balls (neon, rainbow, galaxy, gold, team colours), goal celebrations (champion arms, spin, airplane, knee slide) and stadiums (sunset, night under floodlights). She tries items on in 3D before buying.
+- **Trophies:** level, XP, coins, lesson and Spot On stars, match record, goals, clean sheets, daily streak, personal bests for every game, and a trophy case of 18 badges.
 - **Tactics Board:** drag any player or the ball, switch formations (2-3-1, 3-2-1, 2-1-2-1), and turn on Auto shape to watch both teams shift as the ball moves. Draw runs, and see the field through any player's eyes.
 - **7v7 Rules:** the Halton / Ontario U10–U11 rules, with "Check" flags where clubs differ.
-- **My Player:** name, jersey number and team colour (her number appears on "YOU" in every scene), badges, a graphics setting for older devices.
+- **My Player:** name, jersey number and team colour (her number appears on "YOU" in every scene), a graphics setting for older devices.
 
 You can rotate, zoom and pan the 3D field everywhere: drag to spin, pinch or scroll to zoom, two fingers (or shift-drag) to pan. On a Mac, the **arrow keys** (or WASD) move "YOU" in Spot On, the keeper in Keeper Hero, and the selected player or ball on the Tactics Board; **Enter** locks in or moves to the next one. "Up" always means away from the camera.
 
@@ -43,6 +47,7 @@ You can rotate, zoom and pan the 3D field everywhere: drag to spin, pinch or scr
 - Lessons: `js/content/lessons.js` and `lessons2.js`. Coordinates are metres: x runs from our goal (-25) to theirs (+25), z from our left touchline (-17) to our right (+17).
 - What the players say: `js/content/talk.js`.
 - Questions: `js/content/quiz.js` (`c` is the index of the right answer; answers are shuffled on screen).
+- Locker Room items and prices: `js/content/unlocks.js`. Match Day: `js/games/matchday.js`; the shared challenge engine: `js/games/moments.js`.
 - Game scenarios: `js/content/scenarios.js`. Rules text: `js/content/rules.js`.
 - After any change, rebuild the single files and run the test:
 

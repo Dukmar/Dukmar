@@ -58,6 +58,13 @@
     keeperGoal: ['Shake it off, {name}!', 'Next one\'s yours!', 'Unlucky, keeper!'],
     quizRight: ['Yes, {name}!', 'You know it!', 'Smart!', 'Nailed it, {name}!'],
     quizWrong: ['No worries, {name}. Now you know!', 'Good try!', 'You\'ll get the next one!'],
+    matchStart: ['Big game today, {name}!', 'Let\'s go, {team}!', 'Ready, {name}? Kick-off!'],
+    matchWin: ['We won! Thanks, {name}!', 'Champions! Great game, {name}!', 'What a team!'],
+    matchDraw: ['A draw! We\'ll get them next time.', 'Good fight, {name}!'],
+    matchLoss: ['Good game, {name}. We\'ll learn from it!', 'Heads up, team. Next match is ours!'],
+    dailyStart: ['Daily challenge time, {name}!', 'Five quick ones. You\'ve got this!'],
+    dailyDone: ['See you tomorrow, {name}!', 'Streak keeper!', 'Daily done. Nice, {name}!'],
+    lockerHi: ['Looking good, {name}!', 'Nice kit!', 'Try something new on!'],
     boardPick: ['Move me anywhere, {name}!', 'Where do you want me?', 'Drag me, or use the arrow keys!']
   };
 

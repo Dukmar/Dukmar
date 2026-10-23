@@ -16,6 +16,8 @@
     return 'Pass to the ' + (o.to === 'GK' ? 'keeper' : who);
   }
 
+  PIQ.decideLabel = optLabel;
+
   PIQ.GAMES.decide = {
     start: function (App, back) {
       var stage = App.stage();

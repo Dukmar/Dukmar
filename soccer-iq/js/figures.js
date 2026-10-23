@@ -22,22 +22,50 @@
 
   function hex(c) { return '#' + ('000000' + c.toString(16)).slice(-6); }
 
-  function shirtTexture(color, num, textColor) {
+  // Brightness check so patterns and numbers contrast with any shirt colour
+  function isLight(c) { return ((c >> 16) & 255) * 0.299 + ((c >> 8) & 255) * 0.587 + (c & 255) * 0.114 > 160; }
+  PIQ.contrastOf = function (c) { return isLight(c) ? 0x1e1e1e : 0xffffff; };
+
+  // Texture u runs around the body: 0.25 is the chest, 0.75 the back.
+  function shirtTexture(color, num, textColor, pattern) {
     return PIQ.canvasTex(256, 128, function (g, w, h) {
+      var con = hex(PIQ.contrastOf(color));
       g.fillStyle = hex(color); g.fillRect(0, 0, w, h);
+      g.fillStyle = con;
+      g.globalAlpha = 0.85;
+      if (pattern === 'stripes') for (var x = 6; x < w; x += 28) g.fillRect(x, 0, 12, h);
+      else if (pattern === 'hoops') for (var y = 4; y < h; y += 30) g.fillRect(0, y, w, 13);
+      else if (pattern === 'sash') {
+        g.beginPath(); g.moveTo(w * 0.08, 0); g.lineTo(w * 0.2, 0); g.lineTo(w * 0.42, h); g.lineTo(w * 0.3, h); g.closePath(); g.fill();
+      } else if (pattern === 'halves') { g.fillRect(w * 0.25, 0, w * 0.25, h); g.fillRect(w * 0.75, 0, w * 0.25, h); }
+      else if (pattern === 'chevron') {
+        g.beginPath(); g.moveTo(w * 0.05, h * 0.25); g.lineTo(w * 0.25, h * 0.55); g.lineTo(w * 0.45, h * 0.25); g.lineTo(w * 0.45, h * 0.4); g.lineTo(w * 0.25, h * 0.7); g.lineTo(w * 0.05, h * 0.4); g.closePath(); g.fill();
+      }
+      g.globalAlpha = 1;
       // subtle side panels
       g.fillStyle = 'rgba(255,255,255,0.12)';
       g.fillRect(w * 0.47, 0, w * 0.06, h);
       g.fillRect(w * 0.97, 0, w * 0.03, h);
       g.fillRect(0, 0, w * 0.03, h);
-      g.fillStyle = textColor || '#ffffff';
       g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.lineJoin = 'round';
+      var tc = textColor || '#ffffff';
+      // outline the numbers so they stay readable on any pattern
+      g.strokeStyle = isLight(parseInt(tc.slice(1), 16)) ? 'rgba(0,0,0,0.55)' : 'rgba(255,255,255,0.6)';
+      g.fillStyle = tc;
       g.font = 'bold 74px Arial, Helvetica, sans-serif';
+      if (pattern && pattern !== 'plain' && pattern !== 'sleeves') { g.lineWidth = 7; g.strokeText(String(num), w * 0.75, h * 0.52); }
       g.fillText(String(num), w * 0.75, h * 0.52); // back
       g.font = 'bold 30px Arial, Helvetica, sans-serif';
+      if (pattern && pattern !== 'plain' && pattern !== 'sleeves') { g.lineWidth = 4; g.strokeText(String(num), w * 0.21, h * 0.36); }
       g.fillText(String(num), w * 0.21, h * 0.36); // front, over the heart
     });
   }
+  PIQ.BOOTS = { black: 0x15151a, white: 0xf4f4f4, pink: 0xff4fa3, lime: 0xb6ff3b, gold: 0xf2c230, orange: 0xff7a1a };
+  PIQ.equipped = function () {
+    var p = PIQ.profile ? PIQ.profile() : null;
+    return (p && p.equip) || { kit: 'plain', boots: 'black', ball: 'classic', celebrate: 'jump', stadium: 'day' };
+  };
 
   var shared = null;
   function geos() {
@@ -89,11 +117,13 @@
     var seed = (opts.num || 1) * 7 + (opts.team === 'away' ? 3 : 0);
     var skin = new THREE.MeshLambertMaterial({ color: SKIN[seed % SKIN.length] });
     var hairMat = new THREE.MeshLambertMaterial({ color: HAIR[(seed * 3) % HAIR.length] });
-    var shirtMat = new THREE.MeshLambertMaterial({ map: shirtTexture(shirtColor, opts.num || '', team.text) });
-    var plainShirt = new THREE.MeshLambertMaterial({ color: shirtColor });
+    var eq = PIQ.equipped();
+    var pattern = opts.team === 'home' ? eq.kit : 'plain';
+    var shirtMat = new THREE.MeshLambertMaterial({ map: shirtTexture(shirtColor, opts.num || '', team.text, pattern) });
+    var plainShirt = new THREE.MeshLambertMaterial({ color: pattern === 'sleeves' ? PIQ.contrastOf(shirtColor) : shirtColor });
     var shortsMat = new THREE.MeshLambertMaterial({ color: team.shorts });
     var sockMat = new THREE.MeshLambertMaterial({ color: team.socks });
-    var shoeMat = new THREE.MeshLambertMaterial({ color: 0x15151a });
+    var shoeMat = new THREE.MeshLambertMaterial({ color: opts.you ? (PIQ.BOOTS[eq.boots] || 0x15151a) : 0x15151a });
     var gloveMat = new THREE.MeshLambertMaterial({ color: 0xd7f24a, emissive: 0x2a3000 });
 
     var root = new THREE.Group();
@@ -197,8 +227,57 @@
     p.obj.position.set(x, 0, z);
   };
 
+  // goal celebrations (unlockable). Each runs ~2 seconds, then the player resets.
+  PIQ.CELEBRATIONS = ['jump', 'champion', 'spin', 'airplane', 'kneeslide'];
+  PIQ.startCelebration = function (p, type) {
+    p.celeb = { type: type || 'jump', t: 0, x: p.pos[0], z: p.pos[1] };
+  };
+  function celebrate(p, dt) {
+    var c = p.celeb;
+    c.t += dt;
+    var t = c.t, a0 = p.arms[0], a1 = p.arms[1];
+    p.legs[0].rotation.x = p.legs[1].rotation.x = 0;
+    if (c.type === 'champion') {
+      p.obj.position.y = Math.abs(Math.sin(t * 6)) * 0.25;
+      var pump = 2.6 + Math.sin(t * 12) * 0.35;
+      a0.rotation.z = -pump; a1.rotation.z = pump;
+    } else if (c.type === 'spin') {
+      p.obj.rotation.y += dt * 11;
+      a0.rotation.z = -1.45; a1.rotation.z = 1.45;
+      p.obj.position.y = Math.abs(Math.sin(t * 3)) * 0.15;
+    } else if (c.type === 'airplane') {
+      a0.rotation.z = -1.5; a1.rotation.z = 1.5;
+      p.body.rotation.z = Math.sin(t * 3) * 0.4;
+      p.obj.rotation.y += dt * 2.6;
+      var r = 1.6, ang = t * 2.6;
+      PIQ.setPlayerPos(p, c.x + Math.sin(ang) * r - Math.sin(0) * r, c.z + Math.cos(ang) * r - r);
+      p.phase += dt * 12;
+      p.legs[0].rotation.x = Math.sin(p.phase) * 0.6; p.legs[1].rotation.x = -Math.sin(p.phase) * 0.6;
+    } else if (c.type === 'kneeslide') {
+      var k = Math.min(1, t / 0.7);
+      var hd = p.obj.rotation.y;
+      PIQ.setPlayerPos(p, c.x + Math.sin(hd) * 2.4 * k, c.z + Math.cos(hd) * 2.4 * k);
+      p.body.position.y = -0.32 * k;
+      p.body.rotation.x = -0.55 * k;
+      p.legs[0].rotation.x = p.legs[1].rotation.x = -1.4 * k;
+      a0.rotation.z = -2.5 * k; a1.rotation.z = 2.5 * k;
+    } else { // jump
+      p.obj.position.y = Math.abs(Math.sin(t * 6.5)) * 0.7;
+      a0.rotation.z = -2.8; a1.rotation.z = 2.8;
+    }
+    if (t > 2.2) {
+      p.celeb = null;
+      p.obj.position.y = 0;
+      p.body.position.y = 0;
+      p.body.rotation.set(0, 0, 0);
+      a0.rotation.z = -0.12; a1.rotation.z = 0.12;
+      p.legs[0].rotation.x = p.legs[1].rotation.x = 0;
+    }
+  }
+
   // per-frame animation: run cycle when moving, gentle idle sway when not
   PIQ.animatePlayer = function (p, dt, lookAt) {
+    if (p.celeb) { celebrate(p, dt); return; }
     var moving = p.speed > 0.4;
     var k = Math.min(p.speed, 7);
     if (moving) {
@@ -233,10 +312,22 @@
   };
 
   // ---------- ball ----------
-  function ballTexture() {
+  var BALLS = {
+    classic: { base: '#ffffff', spot: '#1b1b22', band: '#ff4fa3' },
+    gold: { base: '#f2c230', spot: '#5a3d00', band: '#fff3b0' },
+    neon: { base: '#c6ff3b', spot: '#111111', band: '#ff4fa3' },
+    galaxy: { base: '#1a1446', spot: '#7b3fe4', band: '#ffffff', stars: true },
+    rainbow: { base: '#ffffff', spot: '#1b1b22', rainbow: true },
+    team: { base: '#ffffff', spot: 'team', band: 'team' }
+  };
+  function ballTexture(design) {
+    var d = BALLS[design] || BALLS.classic;
+    var teamHex = hex(PIQ.TEAMS.home.shirt);
     return PIQ.canvasTex(256, 128, function (g, w, h) {
-      g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h);
-      g.fillStyle = '#1b1b22';
+      g.fillStyle = d.base; g.fillRect(0, 0, w, h);
+      if (d.rainbow) ['#ff5a5f', '#ff9a3d', '#ffe14d', '#3ddc84', '#3a7bd5', '#7b3fe4'].forEach(function (c, i) { g.fillStyle = c; g.fillRect(0, i * (h / 6), w, h / 6 + 1); });
+      if (d.stars) for (var k = 0; k < 60; k++) { g.fillStyle = 'rgba(255,255,255,0.9)'; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }
+      g.fillStyle = d.spot === 'team' ? teamHex : d.spot;
       var spots = [[30, 30], [95, 64], [160, 30], [225, 64], [30, 100], [160, 100], [95, 4], [225, 124]];
       spots.forEach(function (s) {
         g.beginPath();
@@ -247,10 +338,15 @@
         }
         g.closePath(); g.fill();
       });
-      g.fillStyle = '#ff4fa3';
-      g.fillRect(0, 60, w, 6);
+      if (d.band) { g.fillStyle = d.band === 'team' ? teamHex : d.band; g.fillRect(0, 60, w, 6); }
     });
   }
+  PIQ.setBallDesign = function (b, design) {
+    var m = b.mesh.material;
+    if (m.map) m.map.dispose();
+    m.map = ballTexture(design);
+    m.needsUpdate = true;
+  };
 
   PIQ.FIG_SCALE = 1.35; // players drawn a bit larger than life so they read on a phone
   PIQ.HEAD_TOP = 2.0 * PIQ.FIG_SCALE; // top of the tallest hairstyle, for placing bubbles
@@ -258,7 +354,7 @@
   PIQ.makeBall = function () {
     var R = PIQ.BALL_R;
     var root = new THREE.Group();
-    var ball = new THREE.Mesh(new THREE.SphereGeometry(R, 20, 14), new THREE.MeshLambertMaterial({ map: ballTexture() }));
+    var ball = new THREE.Mesh(new THREE.SphereGeometry(R, 20, 14), new THREE.MeshLambertMaterial({ map: ballTexture(PIQ.equipped().ball) }));
     ball.position.y = R;
     root.add(ball);
     var sh = blobShadow();

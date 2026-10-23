@@ -157,6 +157,73 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   if (!(await p.$('#qb-again'))) throw new Error('quiz did not finish');
   step('quiz blitz');
 
+  // Match Day and the Daily Challenge share "moments": answer whatever control is showing
+  async function playMoment(p, nextSel) {
+    for (let tries = 0; tries < 60; tries++) {
+      await sleep(250);
+      if (await p.$(nextSel)) return;
+      if (await p.$('.answers:not(.locked) .answer')) { await p.click('.answers:not(.locked) .answer'); continue; }
+      if (await p.$('#mm-lock')) { await p.click('#mm-lock'); continue; }
+      if (await p.$('#mm-ready')) { await p.click('#mm-ready'); continue; }
+      // a Spot the Mistake moment: tap one of our players
+      await p.evaluate(() => { const st = PIQ.stageRef; if (st.handlers.pick) { const h = st.list.filter((x) => x.team === 'home'); st.handlers.pick(h[1] || h[0]); } });
+    }
+    throw new Error('moment never finished (' + nextSel + ')');
+  }
+  await p.evaluate(() => PIQ.GAMES.matchday.start(PIQ.App, PIQ.screens.home));
+  await sleep(600);
+  await shot(p, '17-match-intro');
+  await p.click('#md-ko');
+  for (let i = 0; i < 8; i++) {
+    await playMoment(p, '#md-next');
+    if (i === 0) await shot(p, '18-match-moment');
+    await p.click('#md-next');
+    if (i === 3) { await sleep(300); await shot(p, '19-match-halftime'); await p.click('#md-2h'); }
+  }
+  await sleep(400);
+  if (!(await p.$('#md-again'))) throw new Error('match did not reach full time');
+  await shot(p, '20-match-fulltime');
+  const rec = await p.evaluate(() => PIQ.profile().match);
+  step('match day (' + rec.gf + '-' + rec.ga + ')');
+
+  await p.evaluate(() => PIQ.GAMES.daily.start(PIQ.App, PIQ.screens.home));
+  await sleep(400);
+  await p.click('#dy-go');
+  for (let i = 0; i < 5; i++) { await playMoment(p, '#dy-next'); await p.click('#dy-next'); }
+  await sleep(300);
+  if (!(await p.$('#dy-home'))) throw new Error('daily did not finish');
+  const daily = await p.evaluate(() => PIQ.profile().daily);
+  if (daily.streak !== 1 || !daily.last) errors.push('daily streak not recorded');
+  step('daily challenge (streak ' + daily.streak + ')');
+
+  // Locker Room: buy and wear one item in every category
+  await p.evaluate(() => { PIQ.addCoins(2000); PIQ.screens.locker(); });
+  await sleep(500);
+  for (const [cat, id] of [['kit', 'stripes'], ['boots', 'gold'], ['ball', 'galaxy'], ['celebrate', 'airplane'], ['stadium', 'night']]) {
+    await p.click('[data-c="' + cat + '"]');
+    await sleep(150);
+    await p.click('[data-i="' + id + '"]');
+    await sleep(150);
+    await p.click('#lk-buy');
+    await sleep(300);
+  }
+  const eq = await p.evaluate(() => PIQ.profile().equip);
+  console.log('- equipped', JSON.stringify(eq));
+  if (eq.kit !== 'stripes' || eq.stadium !== 'night' || eq.ball !== 'galaxy') errors.push('locker purchases did not equip');
+  await sleep(1200);
+  await shot(p, '21-locker');
+  await p.evaluate(() => PIQ.screens.trophies());
+  await sleep(500);
+  await shot(p, '22-trophies');
+  const statH = await p.$$eval('.stat', (els) => els.map((e) => Math.round(e.getBoundingClientRect().height)));
+  const cardH = await p.evaluate(() => { PIQ.screens.locker('kit'); return [...document.querySelectorAll('.lockcard')].map((e) => Math.round(e.getBoundingClientRect().height)); });
+  const tileH = await p.evaluate(() => { PIQ.screens.home(); return [...document.querySelectorAll('.tile:not(.hero)')].map((e) => Math.round(e.getBoundingClientRect().height)); });
+  console.log('- heights stats', JSON.stringify(statH), 'locker', JSON.stringify(cardH), 'tiles', JSON.stringify(tileH));
+  if (new Set(statH).size > 1 || new Set(cardH).size > 1 || new Set(tileH).size > 1) errors.push('stat, locker or tile rows are not a uniform height');
+  await sleep(1500);
+  await shot(p, '23-home-night');
+  step('locker room + trophies');
+
   // Tactics board
   await p.evaluate(() => PIQ.Board.start(PIQ.App, PIQ.screens.home));
   await sleep(600);

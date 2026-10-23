@@ -24,6 +24,8 @@
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   };
+  // local calendar day as 'y-m-d' (used for streaks)
+  PIQ.dayKey = function (d) { return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
   // personalise a line: {name} / {NAME} = her name, {team} / {TEAM} = her team colour
   PIQ.fill = function (s) {
     var prof = PIQ.profile ? PIQ.profile() : {};

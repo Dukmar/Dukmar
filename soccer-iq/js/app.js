@@ -21,6 +21,10 @@
     cone: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 4h4l4 14H6z"/><rect x="3" y="18" width="18" height="3" rx="1"/></svg>',
     board: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="9" r="1.6" fill="currentColor"/><circle cx="15" cy="15" r="1.6" fill="currentColor"/><path d="M9.5 10.5l4 3" stroke-dasharray="2 2"/></svg>',
     whistle: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><circle cx="9" cy="14" r="6"/><path d="M13 9h8v4h-5"/><circle cx="9" cy="14" r="1.5" fill="currentColor"/></svg>',
+    trophy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4M12 14v4M8 21h8"/></svg>',
+    shirt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><path d="M8 3l-5 3 2 4 3-1v12h8V9l3 1 2-4-5-3c-1 2-2.5 3-4 3S9 5 8 3z"/></svg>',
+    calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+    coin: '<svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="6" fill="none" stroke="rgba(0,0,0,.25)" stroke-width="2"/></svg>',
     star: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3 7h7l-5.5 4.5 2 7.5-6.5-4.5L5.5 21l2-7.5L2 9h7z"/></svg>'
   };
   PIQ.ICONS = I;
@@ -28,9 +32,12 @@
   // ---------- progress ----------
   var DEFAULT = {
     name: '', number: 10, jersey: 'blue', xp: 0,
-    lessons: {}, games: {}, badges: {}, days: [], settings: { sound: true, quality: 'high' }, seen: false
+    lessons: {}, games: {}, badges: {}, days: [], settings: { sound: true, quality: 'high' }, seen: false,
+    owned: {}, equip: { kit: 'plain', boots: 'black', ball: 'classic', celebrate: 'jump', stadium: 'day' }
   };
   var state = PIQ.store.load() || {};
+  // players from before coins existed start with one coin per XP point
+  if (state.coins === undefined) state.coins = state.xp || 0;
   for (var k in DEFAULT) if (state[k] === undefined) state[k] = JSON.parse(JSON.stringify(DEFAULT[k]));
   PIQ.profile = function () { return state; };
   function save() { PIQ.store.save(state); }
@@ -59,7 +66,13 @@
     { id: 'decider', name: 'Quick Thinker', d: '5 best decisions in a row.' },
     { id: 'keeper', name: 'Wall of Hands', d: '8 saves in one Keeper Hero game.' },
     { id: 'quiz', name: 'Quiz Whiz', d: 'A 10-answer streak in Quiz Blitz.' },
-    { id: 'streak', name: 'On a Roll', d: 'Play on 3 different days.' }
+    { id: 'streak', name: 'On a Roll', d: 'Play on 3 different days.' },
+    { id: 'match', name: 'Match Winner', d: 'Win a Match Day game.' },
+    { id: 'clean', name: 'Clean Sheet', d: 'Win a match without letting in a goal.' },
+    { id: 'hattrick', name: 'Hat-Trick', d: 'Score 3 goals in one match.' },
+    { id: 'daily3', name: 'Three in a Row', d: 'A 3-day Daily Challenge streak.' },
+    { id: 'daily7', name: 'Week Warrior', d: 'A 7-day Daily Challenge streak.' },
+    { id: 'collector', name: 'Collector', d: 'Unlock 5 items in the Locker Room.' }
   ];
 
   function toast(msg, ms) {
@@ -75,6 +88,7 @@
     if (!n) return;
     var before = levelOf(state.xp).i;
     state.xp += n;
+    state.coins += n; // every XP point also earns a coin to spend in the Locker Room
     var after = levelOf(state.xp);
     save();
     if (after.i > before) {
@@ -90,7 +104,29 @@
     save();
     setTimeout(function () { PIQ.sfx.levelUp(); toast('New badge: <b>' + esc(b.name) + '</b>', 3500); }, 900);
   };
-  function today() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  function today() { return PIQ.dayKey(new Date()); }
+  PIQ.addCoins = function (n) { state.coins += n; save(); };
+
+  // ---------- Locker Room ownership ----------
+  PIQ.owns = function (cat, id) {
+    var item = (PIQ.UNLOCKS[cat] || []).filter(function (x) { return x.id === id; })[0];
+    return !!item && (item.cost === 0 || !!state.owned[cat + ':' + id]);
+  };
+  PIQ.buy = function (cat, id) {
+    var item = (PIQ.UNLOCKS[cat] || []).filter(function (x) { return x.id === id; })[0];
+    if (!item || PIQ.owns(cat, id) || state.coins < item.cost) return false;
+    state.coins -= item.cost;
+    state.owned[cat + ':' + id] = Date.now();
+    save();
+    if (Object.keys(state.owned).length >= 5) PIQ.award('collector');
+    return true;
+  };
+  PIQ.equipItem = function (cat, id) {
+    if (!PIQ.owns(cat, id)) return false;
+    state.equip[cat] = id;
+    save();
+    return true;
+  };
   function markDay() {
     var t = today();
     if (state.days.indexOf(t) < 0) { state.days.push(t); if (state.days.length > 60) state.days.shift(); save(); }
@@ -269,23 +305,31 @@
     var total = PIQ.UNITS.reduce(function (n, u) { return n + u.lessons.length; }, 0);
     var j = PIQ.JERSEYS.filter(function (x) { return x.id === state.jersey; })[0] || PIQ.JERSEYS[0];
     var name = state.name || 'Tap to add your name';
+    var rec = state.match && state.match.played ? state.match : null;
+    var daily = PIQ.dailyState();
     var h = el('<div class="home">' +
       '<div class="logo"><div class="word">Pitch <span>IQ</span></div><div class="tag">soccer smarts for 7v7</div></div>' +
       '<button class="playercard" id="h-profile"><div class="shirt" style="background:' + hexCss(j.shirt) + ';color:' + (j.text || '#fff') + '">' + state.number + '</div>' +
       '<div class="who"><div class="name">' + esc(name) + '</div><div class="lvl">' + esc(lv.name) + ' &middot; ' + state.xp + ' XP' + (lv.next ? ' &middot; ' + lv.toNext + ' to ' + esc(lv.next) : '') + '</div><div class="bar"><i style="width:' + Math.round(lv.pct * 100) + '%"></i></div></div></button>' +
       '<div class="tiles">' +
         '<button class="tile hero" id="h-learn"><div class="row between"><span class="t">Academy</span>' + I.book + '</div><span class="s">Animated lessons: positions, attacking, defending, restarts. ' + done + ' of ' + total + ' done.</span></button>' +
-        '<button class="tile" id="h-games">' + I.play + '<div><div class="t">Games</div><div class="s">Spot On, Keeper Hero and more</div></div></button>' +
-        '<button class="tile yellow" id="h-quiz">' + I.whistle + '<div><div class="t">Quiz Blitz</div><div class="s">Quick-fire questions</div></div></button>' +
+        '<button class="tile hero match" id="h-match"><div class="row between"><span class="t">Match Day</span>' + I.whistle + '</div><span class="s">Play a full match. Smart answers score goals.' + (rec ? ' Record ' + rec.won + '-' + rec.drawn + '-' + rec.lost + '.' : '') + '</span></button>' +
+        '<button class="tile yellow" id="h-daily">' + I.calendar + '<div><div class="t">Daily</div><div class="s">' + (daily.doneToday ? 'Done today &#10003;' : 'New challenge!') + ' &middot; streak ' + daily.live + '</div></div></button>' +
+        '<button class="tile" id="h-games">' + I.play + '<div><div class="t">Games</div><div class="s">Spot On, Keeper Hero, Quiz Blitz</div></div></button>' +
+        '<button class="tile" id="h-locker">' + I.shirt + '<div><div class="t">Locker Room</div><div class="s">Spend coins on kits and more</div></div></button>' +
+        '<button class="tile" id="h-trophies">' + I.trophy + '<div><div class="t">Trophies</div><div class="s">' + Object.keys(state.badges).length + ' of ' + PIQ.BADGES.length + ' badges</div></div></button>' +
         '<button class="tile green" id="h-board">' + I.board + '<div><div class="t">Tactics Board</div><div class="s">Move players in 3D</div></div></button>' +
         '<button class="tile green" id="h-rules">' + I.cone + '<div><div class="t">7v7 Rules</div><div class="s">Halton / Ontario</div></div></button>' +
       '</div></div>');
     ui.appendChild(h);
-    App.topbar('', null);
+    App.topbar('', null, '<span class="chip coins" title="Coins">' + I.coin + '<b>' + state.coins + '</b></span>');
     h.querySelector('#h-profile').onclick = function () { PIQ.sfx.tap(); screens.profile(); };
     h.querySelector('#h-learn').onclick = function () { PIQ.sfx.tap(); screens.academy(); };
     h.querySelector('#h-games').onclick = function () { PIQ.sfx.tap(); screens.games(); };
-    h.querySelector('#h-quiz').onclick = function () { PIQ.sfx.tap(); PIQ.GAMES.quizblitz.start(App, screens.home); };
+    h.querySelector('#h-match').onclick = function () { PIQ.sfx.tap(); PIQ.GAMES.matchday.start(App, screens.home); };
+    h.querySelector('#h-daily').onclick = function () { PIQ.sfx.tap(); PIQ.GAMES.daily.start(App, screens.home); };
+    h.querySelector('#h-locker').onclick = function () { PIQ.sfx.tap(); screens.locker(); };
+    h.querySelector('#h-trophies').onclick = function () { PIQ.sfx.tap(); screens.trophies(); };
     h.querySelector('#h-board').onclick = function () { PIQ.sfx.tap(); PIQ.Board.start(App, screens.home); };
     h.querySelector('#h-rules').onclick = function () { PIQ.sfx.tap(); screens.rules(); };
     if (!state.seen) { state.seen = true; save(); setTimeout(function () { screens.profile(true); }, 400); }
@@ -541,6 +585,143 @@
     };
   };
 
+  // ---------- Locker Room ----------
+  function swatchCss(cat, id) {
+    var c = hexCss(PIQ.TEAMS.home.shirt), con = hexCss(PIQ.contrastOf(PIQ.TEAMS.home.shirt));
+    if (cat === 'kit') {
+      return {
+        plain: c,
+        sleeves: 'linear-gradient(90deg,' + con + ' 20%,' + c + ' 20% 80%,' + con + ' 80%)',
+        stripes: 'repeating-linear-gradient(90deg,' + c + ' 0 7px,' + con + ' 7px 12px)',
+        hoops: 'repeating-linear-gradient(0deg,' + c + ' 0 8px,' + con + ' 8px 13px)',
+        sash: 'linear-gradient(60deg,' + c + ' 38%,' + con + ' 38% 56%,' + c + ' 56%)',
+        halves: 'linear-gradient(90deg,' + c + ' 50%,' + con + ' 50%)',
+        chevron: 'linear-gradient(135deg,' + c + ' 40%,' + con + ' 40% 50%,' + c + ' 50%) top/50% 100% no-repeat,linear-gradient(225deg,' + c + ' 40%,' + con + ' 40% 50%,' + c + ' 50%) right top/50% 100% no-repeat,' + c
+      }[id] || c;
+    }
+    if (cat === 'ball' && id === 'team') return c;
+    if (cat === 'ball' && id === 'rainbow') return 'linear-gradient(180deg,#ff5a5f,#ff9a3d,#ffe14d,#3ddc84,#3a7bd5,#7b3fe4)';
+    if (cat === 'celebrate') return 'var(--board-2)';
+    var map = PIQ.UNLOCK_SWATCH[cat] || {};
+    return map[id] != null ? hexCss(map[id]) : '#888';
+  }
+
+  screens.locker = function (cat) {
+    cat = cat || 'kit';
+    App.leave();
+    var tryOn = {};
+    var restore = { destroy: function () { stage.setTheme(state.equip.stadium); PIQ.setBallDesign(stage.ball, state.equip.ball); } };
+    App.setCurrent(restore);
+    App.topbar('Locker Room', screens.home, '<span class="chip coins" id="lk-coins">' + I.coin + '<b>' + state.coins + '</b></span>');
+    var selected = state.equip[cat];
+
+    function preview(celebrate) {
+      var saved = state.equip;
+      var eq = {};
+      for (var k in saved) eq[k] = tryOn[k] || saved[k];
+      state.equip = eq;
+      var hd = 0.35;
+      PIQ.buildScene(stage, { home: { CM: [0, 0], LW: [-3.2, -2.6], RW: [-3.2, 2.6] }, ball: [Math.sin(hd) * 0.9, Math.cos(hd) * 0.9], you: 'CM',
+        camera: { target: [0, 0, 1.25], dist: 7.5, theta: hd, phi: 1.32, portraitDist: 11, portraitTheta: hd } }, { noYou: true, instantCamera: true });
+      PIQ.setBallDesign(stage.ball, eq.ball);
+      stage.setTheme(eq.stadium);
+      state.equip = saved;
+      stage.list.forEach(function (p) { p.faceBall = false; p.heading = hd; p.obj.rotation.y = hd; });
+      stage.autoSpin = 0.22;
+      if (celebrate) stage.after(0.3, function () { stage.celebrate('CM', celebrate); });
+      else stage.after(0.5, function () { PIQ.chat(stage, 'lockerHi', 'LW', 2.6); });
+    }
+
+    var s = App.sheet('', 'tall');
+    function render() {
+      var items = PIQ.UNLOCKS[cat];
+      var catInfo = PIQ.UNLOCK_CATS.filter(function (c) { return c.id === cat; })[0];
+      var sel = items.filter(function (x) { return x.id === selected; })[0] || items[0];
+      var owned = PIQ.owns(cat, sel.id), equipped = state.equip[cat] === sel.id;
+      var action;
+      if (equipped) action = '<button class="btn" disabled>Wearing it</button>';
+      else if (owned) action = '<button class="btn" id="lk-equip">' + (cat === 'stadium' ? 'Play here' : cat === 'celebrate' ? 'Use it' : 'Wear it') + '</button>';
+      else if (state.coins >= sel.cost) action = '<button class="btn" id="lk-buy">' + I.coin + ' Buy for ' + sel.cost + '</button>';
+      else action = '<button class="btn" disabled>Need ' + (sel.cost - state.coins) + ' more coins</button>';
+      s.innerHTML = '<div class="seg" id="lk-cats" style="margin-bottom:10px;flex-wrap:wrap">' + PIQ.UNLOCK_CATS.map(function (c) { return '<button data-c="' + c.id + '" class="' + (c.id === cat ? 'on' : '') + '">' + c.name + '</button>'; }).join('') + '</div>' +
+        '<p class="small" style="margin:0 0 10px">' + esc(catInfo.blurb) + ' Coins come from everything you play.</p>' +
+        '<div class="lockgrid">' + items.map(function (it) {
+          var own = PIQ.owns(cat, it.id), on = state.equip[cat] === it.id;
+          return '<button class="lockcard' + (it.id === selected ? ' sel' : '') + (own ? '' : ' locked') + '" data-i="' + it.id + '">' +
+            '<span class="sw" style="background:' + swatchCss(cat, it.id) + '">' + (cat === 'celebrate' ? I.star : '') + '</span>' +
+            '<b>' + esc(it.name) + '</b><span class="st">' + (on ? 'Wearing' : own ? 'Owned' : it.cost + ' coins') + '</span></button>';
+        }).join('') + '</div>' +
+        '<div class="row between" style="margin-top:12px"><span class="grow"><b>' + esc(sel.name) + '</b></span>' + action + '</div>';
+      s._fit();
+      var b = s.querySelector('#lk-buy');
+      if (b) b.onclick = function () {
+        if (!PIQ.buy(cat, sel.id)) return;
+        PIQ.equipItem(cat, sel.id);
+        if (cat === 'kit') applyJersey();
+        PIQ.sfx.levelUp();
+        toast('Unlocked: <b>' + esc(sel.name) + '</b>!');
+        document.getElementById('lk-coins').innerHTML = I.coin + '<b>' + state.coins + '</b>';
+        tryOn = {};
+        preview(cat === 'celebrate' ? sel.id : state.equip.celebrate);
+        render();
+      };
+      var e = s.querySelector('#lk-equip');
+      if (e) e.onclick = function () {
+        PIQ.equipItem(cat, sel.id);
+        PIQ.sfx.good();
+        tryOn = {};
+        preview(cat === 'celebrate' ? sel.id : null);
+        render();
+      };
+    }
+    s.addEventListener('click', function (ev) {
+      var c = ev.target.closest ? ev.target.closest('[data-c]') : null;
+      if (c) { PIQ.sfx.tap(); cat = c.getAttribute('data-c'); selected = state.equip[cat]; tryOn = {}; preview(); render(); return; }
+      var it = ev.target.closest ? ev.target.closest('[data-i]') : null;
+      if (it) {
+        PIQ.sfx.tap();
+        selected = it.getAttribute('data-i');
+        tryOn = {}; tryOn[cat] = selected;
+        preview(cat === 'celebrate' ? selected : null);
+        render();
+      }
+    });
+    preview();
+    render();
+  };
+
+  // ---------- Trophy Room ----------
+  screens.trophies = function () {
+    App.leave();
+    App.setCurrent(ambient());
+    App.topbar('Trophies', screens.home);
+    var lessonStars = 0, lessonMax = 0, spotStars = 0;
+    PIQ.UNITS.forEach(function (u) { u.lessons.forEach(function (l) { lessonMax += 3; lessonStars += state.lessons[l.id] || 0; }); });
+    var ss = state.games.spotonStars || {};
+    Object.keys(ss).forEach(function (k) { spotStars += ss[k]; });
+    var m = state.match || { played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, clean: 0 };
+    var d = PIQ.dailyState();
+    var lv = levelOf(state.xp);
+    function stat(label, value) { return '<div class="stat"><span>' + label + '</span><b>' + value + '</b></div>'; }
+    var bests = [['spoton', 'Spot On', 'stars'], ['mistake', 'Spot the Mistake', 'found'], ['decide', 'Pass, Dribble or Shoot?', 'points'], ['keeper', 'Keeper Hero', 'saves'], ['quizblitz', 'Quiz Blitz', 'points'], ['matchday', 'Match Day', 'goals in a match'], ['daily', 'Daily Challenge', 'smart plays']];
+    var html = '<div class="eyebrow">' + esc(lv.name) + '</div><h2>Trophy room</h2>' +
+      '<div class="stats">' +
+        stat('XP', state.xp) + stat('Coins', state.coins) +
+        stat('Lesson stars', lessonStars + ' / ' + lessonMax) + stat('Spot On stars', spotStars + ' / ' + PIQ.SPOTON.length * 3) +
+        stat('Matches', m.won + 'W ' + m.drawn + 'D ' + m.lost + 'L') + stat('Goals scored', m.gf) +
+        stat('Clean sheets', m.clean || 0) + stat('Daily streak', d.live + ' (best ' + d.best + ')') +
+      '</div>' +
+      '<h3 style="margin-top:16px">Personal bests</h3><div class="list">' + bests.map(function (b) {
+        var v = state.games[b[0]];
+        return '<div class="item"><div class="num">' + I.trophy + '</div><div class="txt"><b>' + b[1] + '</b><span>' + (v != null ? 'Best: ' + v + ' ' + b[2] : 'Not played yet') + '</span></div></div>';
+      }).join('') + '</div>' +
+      '<h3 style="margin-top:16px">Trophy case</h3><div class="badges">' + PIQ.BADGES.map(function (b) {
+        var on = !!state.badges[b.id];
+        return '<div class="badge trophy ' + (on ? 'on' : 'off') + '">' + I.trophy + '<b>' + esc(b.name) + '</b>' + esc(b.d) + '</div>';
+      }).join('') + '</div>';
+    App.sheet(html, 'tall');
+  };
+
   PIQ.screens = screens;
 
   // ---------- boot ----------
@@ -554,6 +735,7 @@
       return;
     }
     if (state.settings.quality === 'low') stage.setQuality('low');
+    stage.setTheme(state.equip.stadium);
     PIQ.stageRef = stage;
     window.addEventListener('resize', function () {
       var s = ui.querySelector('.sheet');

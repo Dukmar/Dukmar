@@ -20,15 +20,25 @@ Play it now: https://claude.ai/artifact/VL6RAii3sDkREvtD8g8fn6 (private to your 
   - Speech bubbles now sit above the tallest hairstyle and stack instead of covering heads or each other (`js/stage.js`).
   - Players talk to her by name: 94 lesson lines plus 70 lines for the games, quiz, home screen and board (`js/content/talk.js`).
 - **Verified:** the smoke test passes on `index.html` and the built `dist/pitch-iq.html`: all 31 lessons step by step, all five games, the board, rules, profile, phone portrait and landscape, zero console errors. It also checks that the arrow keys move "YOU" (3.25 m in the test) and that the crowd loads. All code parses as ES2017.
+- **Gamification** (night, Colin chose Match Day, Unlockables and Daily + Trophies):
+  - `js/games/moments.js`: shared challenge engine (quiz, decision, Spot On, Spot the Mistake, one-shot keeper).
+  - `js/games/matchday.js`: two halves, eight moments, scoreboard, half-time tip, record, badges (Match Winner, Clean Sheet, Hat-Trick).
+  - `js/games/daily.js`: same five moments all day (seeded by date), day streak, +20 bonus coins, badges at 3 and 7 days.
+  - `js/content/unlocks.js` + `screens.locker` in `js/app.js`: coins (one per XP; existing players start with coins equal to their XP), 27 items in 5 categories, 3D try-on, Collector badge.
+  - `js/figures.js`, `js/world.js`, `js/stage.js`: kit patterns, boot colours, ball designs, five goal celebrations, sunset and night stadiums (night uses four spotlights so the pitch glows and the park stays dark).
+  - `screens.trophies` in `js/app.js`: stats, personal bests, trophy case. Home screen now has Match Day, Daily, Locker Room and Trophies tiles plus a coin counter.
+  - **Verified:** the smoke test now also plays a full match to full time, the daily challenge, buys and equips one item in every category (night stadium, galaxy ball, stripes kit, gold boots, airplane celebration), opens the Trophy Room, and checks stat cards (64 px), locker cards (112 px) and home tiles (118 px) are uniform heights. Passes on `index.html` and the built `dist/pitch-iq.html` with zero console errors.
 - **Not verified:** the published artifact page on claude.ai, and any real Mac or iPhone.
 
 ## Open
 1. Which club and age group is she in? Burlington's house league moves U11 to 9v9 with throw-ins; everywhere else checked keeps U11 at 7v7.
 2. Which formation does her coach use? The app teaches 2-3-1 first.
 3. Two club differences the app flags but can't settle: penalty distance (Ontario 8 m, Oakville summer sheet 9 m) and whether keepers may drop-kick or score from a goal kick (Ontario and Oakville differ).
-4. On an iPhone there are no arrow keys. Want an on-screen joystick, or is dragging enough?
-5. Share the artifact with anyone else (Alison, the coach)? Only you can open it right now.
-6. Want it on a normal web address (Netlify or GitHub Pages) so it can go on the iPhone home screen? That's a deploy, so it's yours to run.
+4. Share the artifact with anyone else (Alison, the coach)? Only you can open it right now.
+5. Want it on a normal web address (Netlify or GitHub Pages) so it can go on the iPhone home screen? That's a deploy, so it's yours to run.
+
+6. Coin prices are a first guess. By my arithmetic, three lessons plus one match earns about 150 coins, and unlocking everything costs 2,440. Tell me if she's unlocking too fast or too slow.
+7. Family profiles (more than one player on a device) is ready to build whenever you want it.
 
 ## Needs the laptop
 - Try it on the old Mac and the iPhone. If something looks off on the Mac, send the macOS and Safari versions.
@@ -37,6 +47,8 @@ Play it now: https://claude.ai/artifact/VL6RAii3sDkREvtD8g8fn6 (private to your 
 ## Memory candidates
 - Colin is building a 3D soccer IQ app for 10-year-old girls playing Halton 7v7, "for our consumption only", to run on "an old-school Mac or even an iPhone" (his words, 2026-10-22).
 - Colin on soccer: "I know very little about soccer" (his words, 2026-10-22). Explain soccer terms plainly in anything written for him.
+- Colin on the iPhone version: "Dragging I think is enough" (no on-screen joystick needed) (his words, 2026-10-22).
+- Colin chose Match Day, Unlockables and Daily challenge + trophies when offered gamification options; Family profiles not chosen yet (2026-10-22).
 - Colin wants app characters to talk to the user: "I'd like more comments throughout the thing, with the players saying things to the person using it" (his words, 2026-10-22).
 - Ontario 7v7 (U10–U11): kick-ins not throw-ins (opponents 3 m back), retreat line at the one-third line, no offside, all free kicks indirect except penalties, no scores (Ontario Soccer Adapted Match Formats Laws, April 30, 2026).
 - Burlington Soccer Club house league plays U11 at 9v9 with throw-ins (BSC Recreation Rules 2025).

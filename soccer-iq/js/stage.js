@@ -31,6 +31,7 @@
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.1, 900);
     var world = PIQ.buildWorld(this.scene);
+    this.world = world;
     this.crowd = new PIQ.Crowd(this.scene);
     this.ends = new PIQ.TeamEnds(this.scene, world.goals);
     PIQ.cheerHook = function () { self.cheer(); };
@@ -85,6 +86,25 @@
   Stage.prototype.refreshTeams = function () {
     this.crowd.recolor();
     this.ends.recolor();
+  };
+
+  // a player does her goal celebration; teammates nearby jump too
+  Stage.prototype.celebrate = function (id, type) {
+    var p = this.players[id];
+    if (!p) return;
+    p.target = null;
+    PIQ.startCelebration(p, type);
+    var self = this;
+    this.list.forEach(function (q) {
+      if (q !== p && q.team === p.team && PIQ.dist(q.pos, p.pos) < 14) self.after(0.2 + Math.random() * 0.4, function () { if (!q.celeb) PIQ.startCelebration(q, 'jump'); });
+    });
+    this.cheer();
+  };
+
+  // stadium look: 'day' | 'sunset' | 'night'
+  Stage.prototype.setTheme = function (name) {
+    PIQ.applyTheme(this.world, this.scene, name);
+    this.theme = name;
   };
 
   // fans jump and wave; sometimes one shouts
@@ -180,7 +200,7 @@
     var g = { target: V3(0, 0, 0), dist: 50, theta: 0, phi: 0.95 };
     if (typeof preset === 'object') {
       var t = preset.target || [0, 0];
-      g.target = V3(t[0], 0, t[1]);
+      g.target = V3(t[0], t[2] || 0, t[1]);
       g.dist = preset.dist || 40;
       g.theta = preset.theta != null ? preset.theta : 0;
       g.phi = preset.phi != null ? preset.phi : 0.95;

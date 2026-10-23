@@ -1,6 +1,6 @@
 # Pitch IQ: project status
 
-Last updated 2026-10-22 (evening).
+Last updated 2026-10-22 (night).
 
 ## State
 Version 1 built and tested in headless Chromium (desktop, phone portrait, phone landscape). Not yet tried on a real older Mac or iPhone.
@@ -8,7 +8,8 @@ Version 1 built and tested in headless Chromium (desktop, phone portrait, phone 
 Live copy: private claude.ai artifact https://claude.ai/artifact/VL6RAii3sDkREvtD8g8fn6 (built from `dist/artifact.html`).
 
 ## What exists
-- 31 animated lessons in 8 units, 57 quiz questions, 15 Spot On puzzles, 12 Spot the Mistake scenes, 10 decisions, Keeper Hero, Tactics Board, rules screen, player profile with XP, levels and 12 badges.
+- 31 animated lessons in 8 units, 57 quiz questions, 15 Spot On puzzles, 12 Spot the Mistake scenes, 10 decisions, Keeper Hero, Tactics Board, rules screen, player profile with XP, levels and 18 badges.
+- Match Day, Daily Challenge with streaks, Locker Room (coins, 27 items, 3D try-on), Trophy Room.
 - Arrow-key control, a cheering crowd, team-coloured ends and keepers, five hairstyles, and players who talk to her by name.
 - `tools/build.py` makes `dist/pitch-iq.html` (offline, single file) and `dist/artifact.html` (hosted).
 - `tests/smoke.cjs` walks everything and fails on console errors.
@@ -20,6 +21,7 @@ Live copy: private claude.ai artifact https://claude.ai/artifact/VL6RAii3sDkREvt
 - No offline install as a home-screen app (service workers aren't allowed in an artifact). Safari "Add to Home Screen" from a regular web host would work.
 
 ## Ideas for version 2
+- Family profiles (several players on one device). Discussed 2026-10-22, not chosen yet.
 - Load the coach's real formation and positions, so the puzzles match her team.
 - A parent view showing which lessons and puzzles she finds hard.
 - More Spot On puzzles per position, especially keeper and centre mid.
