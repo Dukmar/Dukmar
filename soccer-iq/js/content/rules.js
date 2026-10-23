@@ -1,0 +1,26 @@
+/* Pitch IQ — 7v7 rules as played in Halton (Ontario Soccer U10–U11).
+   Checked against Ontario Soccer's Adapted Match Formats Laws (April 30, 2026) and the
+   Peel Halton, Oakville and Burlington rule sheets. check: true marks rules that differ
+   between clubs. Sources are listed in RESEARCH.md. */
+(function () {
+  'use strict';
+  var PIQ = window.PIQ;
+  PIQ.RULES = [
+    { t: 'Who plays', d: 'Each team has seven players: a keeper and six others. In Ontario, 7v7 is for U10 and U11 (under 10 and under 11). Peel Halton district play is the same. Burlington Soccer Club\'s house league is different. There, U9 and U10 play 7v7. U11 moves up to 9v9, with throw-ins.', check: true },
+    { t: 'The field', d: 'The field is 30 to 36 metres wide and 40 to 55 metres long. The goals are 16 feet wide and 6 feet tall. You play with a size 4 ball. The penalty area (the box) is 20 to 24 metres wide. It is 10 to 12 metres deep. There is no small box in front of the goal.' },
+    { t: 'How long', d: 'A game is two halves of 25 minutes, with 5 minutes for half-time. Some games use four quarters of 12.5 minutes instead. Coaches can sub players in and out as often as they like. They can do it any time play stops. In Oakville and Burlington, everyone gets the same playing time. Oakville also has every player take turns at every position.' },
+    { t: 'No offside', d: 'Older players have an offside rule. It stops attackers from waiting past the defenders, near the goal, for a pass. There\'s no offside in 7v7. You can stand anywhere, so stand somewhere smart.' },
+    { t: 'Retreat line', d: 'The retreat line is the dashed line a third of the way up the field. Sometimes the other team must move back behind it. That happens on our goal kicks. It happens when our keeper holds the ball in her hands. It also happens on our free kicks in our own third of the field. They can come forward again once one of our players touches the ball. They can also come forward if the ball crosses the line or goes out. If our keeper plays the ball before they\'ve moved back, play just goes on.', lesson: 'shape-1' },
+    { t: 'Kick-ins, not throw-ins', d: 'When the ball goes over the sideline, the team that didn\'t touch it last gets it back. They start play again from the spot where it went out. They can pass it in or dribble it in. The ball must be still first. The other team stands at least 3 metres away. You can\'t score straight from a kick-in.', lesson: 'restarts-2' },
+    { t: 'Goal kicks', d: 'Sometimes attackers knock the ball over the goal line (the end line by the goal). Then the defending team gets a goal kick. They can take it from anywhere in the box. The other team must move behind the retreat line. Ontario\'s rules let you score straight from a goal kick. Oakville\'s rules don\'t. In Oakville, the keeper takes every goal kick, for practice.', check: true, lesson: 'restarts-1' },
+    { t: 'Corners', d: 'Sometimes a defender knocks the ball over her own goal line (the end line). Then the other team gets a corner kick. They kick it from the corner closest to where it went out. The defending team stands 5 metres back. At your age, short corners are encouraged. That means a short pass, not a big kick into the box.', lesson: 'restarts-3' },
+    { t: 'Kick-off', d: 'Everyone starts in their own half. The other team stands 5 metres back from the ball. You can score straight from a kick-off.', lesson: 'restarts-4' },
+    { t: 'Free kicks', d: 'Every free kick in 7v7 is indirect. That means someone else has to touch the ball before it can go in. The other team stands 5 metres back. Sometimes three or more defenders stand side by side to block the kick. That\'s called a wall. Then attackers must stay 1 metre away from the wall.', lesson: 'restarts-5' },
+    { t: 'Penalty kicks', d: 'Some fouls inside the box give the other team a penalty kick. Tripping, pushing and a handball are fouls like that. A penalty kick is one shot with only the keeper to beat. Ontario puts the penalty spot 8 metres from the goal. Oakville\'s house league rule sheet says 9 metres.', check: true },
+    { t: 'Keeper\'s hands', d: 'The keeper can use her hands only in her own box. Sometimes a teammate kicks the ball back to her on purpose. Then she can\'t pick it up. She also can\'t pick up a ball straight from a teammate\'s kick-in.' },
+    { t: 'Keeper kicks', d: 'In a drop-kick, the keeper drops the ball and kicks it as it bounces. Ontario asks keepers not to drop-kick. Oakville allows drop-kicks. But Oakville wants keepers to start with short passes to their defenders instead.', check: true },
+    { t: 'Heading', d: 'Heading means hitting the ball with your head. Canada Soccer says heading should not be taught at practice at U10 and U11. Coaches should use short corners and free kicks. That way heading rarely happens in games.' },
+    { t: 'No scores', d: 'At U10 and U11, no scores or standings are kept. Standings are the table that shows who is winning the league. That\'s true in Ontario, Peel Halton, Oakville and Burlington. It\'s about learning and having fun.' },
+    { t: 'One referee', d: 'There is one referee and no helpers on the sidelines. Referees explain fouls to players. They try not to give yellow or red cards. Keep playing until you hear the whistle.' }
+  ];
+})();
