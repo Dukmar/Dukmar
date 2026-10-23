@@ -25,7 +25,7 @@
             { say: 'Near our goal, be <b>careful</b>. A mistake there can give away a goal. Near their goal, be <b>brave</b>. Trying something there can score one!',
               zones: [{ rect: [-25, -17, -RL, 17], color: BLUE, opacity: 0.18 }, { rect: [RL, -17, 25, 17], color: ORANGE, opacity: 0.18 }],
               notes: [[[-17, 0], 'Be careful'], [[17, 0], 'Be brave']] },
-            { say: 'See the dashed lines? They\'re called <b>retreat lines</b>. When our keeper has the ball, or we take a goal kick, the other team must go back behind that line. That gives us room to pass.',
+            { say: 'See the dashed lines? They\'re <b>retreat lines</b>. Sometimes our keeper has the ball, or we take a goal kick. Then the other team must go back behind that line. That gives us room to pass.',
               zones: [{ rect: [-RL - 0.35, -17, -RL + 0.35, 17], color: BLUE, opacity: 0.5 }], notes: [[[-RL, -12], 'Retreat line']], cam: 'broadcast' },
             { say: 'The big box in front of each goal is the <b>penalty area</b>. The keeper can only use her hands inside her own box.',
               zones: [{ rect: [-25, -11, -14, 11], color: YEL, opacity: 0.2 }], rings: { GK: YEL }, cam: { target: [-17, 0], dist: 30, theta: 0.3, phi: 0.95 } },
@@ -92,7 +92,7 @@
               move: { LD: [-16, -11], RD: [-16, 11] }, arrows: [['LD', [-16, -11], 'run'], ['RD', [-16, 11], 'run']] },
             { say: 'Our <b>centre mid</b> comes back to the middle, open for a pass. The wingers stay out wide. The <b>striker</b> stays up front to push their defenders back.',
               move: { CM: [-11, 1], LW: [-3, -14], RW: [-3, 14], ST: [5, 0] }, cam: 'broadcast' },
-            { say: 'Now the keeper has easy choices. She rolls it to a defender out by the side, away from danger in the middle.',
+            { say: 'Now the keeper has easy choices. She rolls it to a defender by the side, away from danger in the middle.',
               pass: { to: 'RD', delay: 0.3, dur: 1 }, arrows: [['GK', 'RD', 'pass']] },
             { say: 'Once we touch the ball, they can come forward. One of them runs at our right back. So she looks up the sideline and passes to her winger.',
               move: { 'away:M3': [-12, 9.5] }, pass: { to: 'RW', delay: 1.1, dur: 0.9 }, arrows: [['RD', 'RW', 'pass']], dur: 1.2 }
@@ -242,7 +242,7 @@
             ball: 'RD', you: 'CM', camera: { target: [-3, 2], dist: 24, theta: 0.3, phi: 0.95 }
           },
           beats: [
-            { say: 'Before the pass comes, stand <b>sideways</b>. Now you can see where the ball is coming from and where you want to go. Coaches call this opening your body.',
+            { say: 'Before the pass comes, stand <b>sideways</b>. Now you can see where the ball comes from and where you want to go. Coaches call this opening your body.',
               think: { CM: 'I can see both ways!' }, arrows: [['RD', 'CM', 'pass'], ['CM', [8, 0], 'run', 0, YEL]] },
             { say: 'Get ready to take the ball on the foot <b>farther from it</b>. Coaches call that your back foot. It turns you to face forward in one touch.' },
             { say: 'Her first touch pushes the ball forward, away from the defender. One touch, and she\'s facing their goal!',

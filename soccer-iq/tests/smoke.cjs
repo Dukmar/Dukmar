@@ -116,6 +116,10 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   // Pass, Dribble or Shoot
   await p.evaluate(() => PIQ.GAMES.decide.start(PIQ.App, PIQ.screens.games));
+  await sleep(400);
+  const timerHidden = await p.$eval('.timer', (e) => e.hidden);
+  if (!timerHidden) errors.push('decide clock should be off by default');
+  await p.click('#dc-go');
   for (let i = 0; i < 6; i++) {
     await sleep(600);
     if (i === 0) await shot(p, '09-decide');

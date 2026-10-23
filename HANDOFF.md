@@ -28,6 +28,12 @@ Play it now: https://claude.ai/artifact/VL6RAii3sDkREvtD8g8fn6 (private to your 
   - `js/figures.js`, `js/world.js`, `js/stage.js`: kit patterns, boot colours, ball designs, five goal celebrations, sunset and night stadiums (night uses four spotlights so the pitch glows and the park stays dark).
   - `screens.trophies` in `js/app.js`: stats, personal bests, trophy case. Home screen now has Match Day, Daily, Locker Room and Trophies tiles plus a coin counter.
   - **Verified:** the smoke test now also plays a full match to full time, the daily challenge, buys and equips one item in every category (night stadium, galaxy ball, stripes kit, gold boots, airplane celebration), opens the Trophy Room, and checks stat cards (64 px), locker cards (112 px) and home tiles (118 px) are uniform heights. Passes on `index.html` and the built `dist/pitch-iq.html` with zero console errors.
+- **Feedback round** (night): Colin flagged hard wording ("Which way would you show the attacker…"), small phone screens, misplaced call-outs and a too-short timer.
+  - Plain language: every question, lesson step, game prompt, rule and speech line rewritten for a 10-year-old. Coach words are replaced or explained on the spot ("make her go toward the sideline"; "between her and our goal, coaches call this goal-side"). New `tools/readability.py` measures it: lessons 3.5 → 2.1, quiz 2.3 → 1.8, scenarios 1.9 → 1.3, rules 6.3 → 3.3 (Flesch-Kincaid grade). The formula misses jargon, so the rewrite was also checked line by line for coach-speak.
+  - Phones: players and ball drawn bigger on small screens, portrait cameras pull back to show the whole play, smaller panel text, a Hide/Show tab on every panel to see the full field, and a one-time "turn your phone sideways" tip (landscape is the better phone layout).
+  - Speech bubbles: the pointer now lands on the speaker's head (it was 22 px off to one side), bubbles stay on screen, never sit under the top bar, and a speaker who is off screen or behind the panel gets a name tag ("Keeper: …") instead of a pointer to nothing.
+  - Timer: Pass, Dribble or Shoot has no clock by default; "Beat the clock (30 s)" is an option on its start screen. Keeper Hero's first shots come more slowly.
+  - Verified: full smoke test passes on the built file (adds a check that the clock is off by default); phone portrait and landscape screenshots reviewed.
 - **Not verified:** the published artifact page on claude.ai, and any real Mac or iPhone.
 
 ## Open
