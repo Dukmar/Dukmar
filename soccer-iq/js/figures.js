@@ -348,9 +348,12 @@
     m.needsUpdate = true;
   };
 
-  PIQ.FIG_SCALE = 1.35; // players drawn a bit larger than life so they read on a phone
+  // players drawn larger than life so they read on screen; bigger still on a phone
+  var shortSide = Math.min(window.screen ? window.screen.width : 800, window.screen ? window.screen.height : 800);
+  PIQ.SMALL_SCREEN = shortSide < 600;
+  PIQ.FIG_SCALE = PIQ.SMALL_SCREEN ? 1.75 : 1.35;
   PIQ.HEAD_TOP = 2.0 * PIQ.FIG_SCALE; // top of the tallest hairstyle, for placing bubbles
-  PIQ.BALL_R = 0.21;    // same for the ball (a real size 4 is about 0.1 m)
+  PIQ.BALL_R = PIQ.SMALL_SCREEN ? 0.27 : 0.21; // same for the ball (a real size 4 is about 0.1 m)
   PIQ.makeBall = function () {
     var R = PIQ.BALL_R;
     var root = new THREE.Group();

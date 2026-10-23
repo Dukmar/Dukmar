@@ -183,7 +183,7 @@
     };
     stage.on('groundDrag', steer);
     stage.on('ground', steer);
-    s.innerHTML = head + '<p class="caption">You\'re the keeper. Get your angle right, then tap <b>Ready</b>.</p><p class="small">Drag or tap on the field to move.' + keysHint + '</p>' +
+    s.innerHTML = head + '<p class="caption">You\'re the keeper. Stand between the ball and the middle of the goal, then tap <b>Ready</b>.</p><p class="small">Drag or tap on the field to move.' + keysHint + '</p>' +
       '<div class="row end"><button class="btn" id="mm-ready">Ready</button></div><div id="mm-foot"></div>';
     s._fit();
     var shoot = function () {
@@ -203,7 +203,7 @@
       stage.kickBall(hit, { height: chip ? 2.6 : 0.45, dur: chip ? 1 : 0.55, onDone: function () {
         stage.zone(ideal, 0.9, { color: PIQ.COLORS.good, pulse: true });
         if (saved) { stage.giveBall('GK'); gk.body.rotation.z = 0.8; stage.after(0.7, function () { gk.body.rotation.z = 0; }); }
-        finish(saved ? 'best' : 'bad', saved ? 'Great angle! The green circle is the textbook spot.' : chip ? 'Too far out: she chipped it over you.' : 'The green circle shows the best spot: on the line from the ball to the middle of the goal.');
+        finish(saved ? 'best' : 'bad', saved ? 'Great spot! The green circle shows the very best spot.' : chip ? 'Too far out: she chipped it over you.' : 'The green circle shows the best spot: on the line from the ball to the middle of the goal.');
       } });
     };
     s.querySelector('#mm-ready').onclick = shoot;

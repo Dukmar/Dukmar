@@ -36,7 +36,7 @@
     this.ends = new PIQ.TeamEnds(this.scene, world.goals);
     PIQ.cheerHook = function () { self.cheer(); };
     // a ring in the team's colour under whoever has the ball
-    this.ownerRing = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.18, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false }));
+    this.ownerRing = new THREE.Mesh(new THREE.RingGeometry(0.7 * PIQ.FIG_SCALE, 0.87 * PIQ.FIG_SCALE, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false }));
     this.ownerRing.rotation.x = -Math.PI / 2;
     this.ownerRing.position.y = 0.017;
     this.ownerRing.visible = false;
@@ -207,6 +207,12 @@
       if (portrait && preset.portraitTheta != null) g.theta = preset.portraitTheta;
       if (portrait && preset.portraitDist) g.dist = preset.portraitDist;
       else if (portrait && preset.theta == null) { g.theta = -Math.PI / 2; g.dist *= 1.25; }
+      else if (portrait) {
+        // a tall, narrow screen sees much less side to side: pull back in proportion
+        // and look down more so the field's depth fills the height
+        g.dist *= PIQ.clamp(0.9 / asp, 1, 2.1);
+        g.phi = Math.max(0.5, g.phi - 0.2);
+      }
     } else if (preset === 'top') {
       g.phi = 0.3;
       if (portrait) { g.theta = -Math.PI / 2; g.dist = Math.max((F.L / 2 + 1) / tan, (F.W / 2 + 1) / (tan * asp)) * 0.95; }
@@ -527,6 +533,12 @@
     el.innerHTML = html;
     this.labelLayer.appendChild(el);
     var l = { el: el, target: target, y: opts.y != null ? opts.y : PIQ.HEAD_TOP + 0.25, ttl: opts.ttl || 0, born: this.time || 0, you: cls === 'you' };
+    if (typeof target === 'string' && this.players[target] && /talk|think|call/.test(cls || '')) {
+      // who is talking, shown when she's off screen
+      var sp = this.players[target];
+      l.who = sp.team === 'away' ? 'Other team' : (PIQ.ROLES[sp.role] ? PIQ.ROLES[sp.role].name : 'Teammate');
+      el.setAttribute('data-who', l.who);
+    }
     if (cls === 'talk' && typeof target === 'string') {
       // one speech bubble per player at a time
       var self = this;
@@ -571,7 +583,22 @@
         y -= used;
         stack[l.target] = used + (l.el.offsetHeight || 20) + 6;
       }
-      l.el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) translate(-50%,-100%)';
+      // a speaker who is off screen (or hidden behind the panel) gets a name tag instead of a pointer
+      if (l.who) {
+        var hiddenBottom = h - ((self.inset && self.inset.bottom) || 0) - 10;
+        var hiddenRight = w - ((self.inset && self.inset.right) || 0) - 10;
+        var off = x < 10 || x > hiddenRight || y < 70 || y > hiddenBottom + 40;
+        if (off !== !!l.off) { l.off = off; l.el.classList.toggle('off', off); l.w = 0; }
+        if (off) { x = PIQ.clamp(x, 10, hiddenRight); y = PIQ.clamp(y, 110, hiddenBottom); }
+      }
+      // keep the bubble on screen, and move its pointer so it still lands on the player
+      if (!l.w || l.w !== l.el.offsetWidth) l.w = l.el.offsetWidth || 40;
+      var maxX = w - ((self.inset && self.inset.right) || 0);
+      var left = Math.max(6, Math.min(maxX - l.w - 6, x - l.w / 2));
+      var tail = Math.max(12, Math.min(l.w - 12, x - left));
+      if (l.tail !== tail) { l.el.style.setProperty('--tail', tail.toFixed(0) + 'px'); l.tail = tail; }
+      var top = Math.max(l.el.offsetHeight + 56, y); // never under the top bar
+      l.el.style.transform = 'translate(' + left.toFixed(1) + 'px,' + top.toFixed(1) + 'px) translateY(-100%)';
       if (l.ttl && self.time - l.born > l.ttl) dead.push(l);
     });
     dead.forEach(function (l) { self.removeLabel(l); });
@@ -799,7 +826,7 @@
     if (!o || this.ballTween) return;
     var hd = o.obj.rotation.y;
     var bob = o.speed > 0.4 ? Math.sin(o.phase) * 0.12 : 0;
-    PIQ.setBallPos(b, o.pos[0] + Math.sin(hd) * (0.62 + bob), o.pos[1] + Math.cos(hd) * (0.62 + bob), 0);
+    PIQ.setBallPos(b, o.pos[0] + Math.sin(hd) * (0.46 * PIQ.FIG_SCALE + bob), o.pos[1] + Math.cos(hd) * (0.46 * PIQ.FIG_SCALE + bob), 0);
   };
 
   // ---------- frame ----------

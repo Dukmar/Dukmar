@@ -188,18 +188,43 @@
       return s;
     },
     fitInset: function (s) {
+      // a tab on the panel's edge tucks it away so she can see the whole field
+      var tab = el('<button class="sheet-tab" aria-label="Hide the panel" aria-expanded="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg><span>Hide</span></button>');
+      ui.appendChild(tab);
+      function landscapePhone() { return window.innerHeight <= 520 && window.innerWidth > window.innerHeight; }
       function fit() {
-        if (!s.parentNode) return;
-        var landscapePhone = window.innerHeight <= 520 && window.innerWidth > window.innerHeight;
-        if (landscapePhone) stage.setInset(0, s.offsetWidth + 8);
-        else stage.setInset(Math.min(s.offsetHeight, window.innerHeight * 0.6), 0);
+        if (!s.parentNode) { if (tab.parentNode) tab.parentNode.removeChild(tab); return; }
+        var lp = landscapePhone(), r = s.getBoundingClientRect();
+        if (lp) stage.setInset(0, s.classList.contains('collapsed') ? 0 : s.offsetWidth + 8);
+        else stage.setInset(s.classList.contains('collapsed') ? 0 : Math.min(s.offsetHeight, window.innerHeight * 0.6), 0);
+        tab.classList.toggle('side', lp);
+        if (lp) { tab.style.left = (r.left - 44) + 'px'; tab.style.top = (r.top + 8) + 'px'; }
+        else { tab.style.left = (r.left + r.width / 2 - 40) + 'px'; tab.style.top = (r.top - 30) + 'px'; }
       }
+      function setCollapsed(c) {
+        s.classList.toggle('collapsed', c);
+        tab.classList.toggle('collapsed', c);
+        tab.setAttribute('aria-expanded', c ? 'false' : 'true');
+        tab.setAttribute('aria-label', c ? 'Show the panel' : 'Hide the panel');
+        tab.querySelector('span').textContent = c ? 'Show' : 'Hide';
+        fit();
+        setTimeout(fit, 260);
+      }
+      tab.onclick = function () { PIQ.sfx.tap(); setCollapsed(!s.classList.contains('collapsed')); };
+      // new content (next question, feedback) always opens the panel again
+      if (window.MutationObserver) new MutationObserver(function () { if (s.classList.contains('collapsed')) setCollapsed(false); else fit(); }).observe(s, { childList: true });
       fit();
       setTimeout(fit, 60);
       s._fit = fit;
     },
     // camera buttons; youId enables "her eyes"
     camDock: function (youId, extra) {
+      if (PIQ.SMALL_SCREEN && window.innerWidth < window.innerHeight && !App._rotateTip) {
+        App._rotateTip = true;
+        var tip = el('<div class="rotate-tip">Tip: turn your phone sideways for a bigger field</div>');
+        ui.appendChild(tip);
+        setTimeout(function () { if (tip.parentNode) tip.parentNode.removeChild(tip); }, 5000);
+      }
       var html = '<div class="camdock">' +
         '<button data-cam="broadcast" aria-label="TV view">' + I.tv + 'TV</button>' +
         '<button data-cam="top" aria-label="Top view">' + I.top + 'TOP</button>' +
@@ -485,7 +510,7 @@
       ['spoton', 'Spot On', 'Drag yourself to the right spot on the field.'],
       ['mistake', 'Spot the Mistake', 'One player is in the wrong place. Find her!'],
       ['decide', 'Pass, Dribble or Shoot?', 'You have the ball. Make the smart choice.'],
-      ['keeper', 'Keeper Hero', 'Get your angles right and make the save.'],
+      ['keeper', 'Keeper Hero', 'Stand in the right spot and make the save.'],
       ['quizblitz', 'Quiz Blitz', 'Quick-fire questions. Build a streak!']
     ];
     var html = '<div class="eyebrow">Play</div><h2>Games</h2><div class="list">' + list.map(function (g, i) {

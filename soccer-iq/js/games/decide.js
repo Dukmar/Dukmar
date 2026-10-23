@@ -3,15 +3,17 @@
   'use strict';
   var PIQ = window.PIQ;
   PIQ.GAMES = PIQ.GAMES || {};
-  var TIME = 14; // seconds per decision: generous, it's about thinking, not twitch speed
+  // No clock by default: she needs time to spin the field and look around before deciding.
+  // "Beat the clock" is an opt-in challenge with a generous 30 seconds.
+  var TIME = 30;
 
   function optLabel(o) {
     var R = PIQ.ROLES;
     if (o.type === 'shoot') return 'Shoot!';
-    if (o.type === 'dribble') return 'Dribble into space';
+    if (o.type === 'dribble') return 'Dribble into the open grass';
     if (o.type === 'clear') return 'Kick it out of play';
     if (o.type === 'punt') return 'Kick it long';
-    if (o.runner) return 'Pass into space for the ' + R[o.runner].name.toLowerCase();
+    if (o.runner) return 'Pass ahead of the ' + R[o.runner].name.toLowerCase() + ' so she can run onto it';
     var who = R[o.to] ? R[o.to].name.toLowerCase() : 'teammate';
     return 'Pass to the ' + (o.to === 'GK' ? 'keeper' : who);
   }
@@ -30,7 +32,8 @@
       App.setCurrent({ destroy: function () { if (timerId) clearInterval(timerId); } });
       App.topbar('Pass, Dribble or Shoot?', back, '<span class="chip" id="dc-score"><b>0</b> pts</span>');
       App.camDock(null);
-      var timerBar = App.el('<div class="timer"><i style="width:100%"></i></div>');
+      var timed = !!PIQ.profile().settings.clock;
+      var timerBar = App.el('<div class="timer"' + (timed ? '' : ' hidden') + '><i style="width:100%"></i></div>');
       document.getElementById('ui').appendChild(timerBar);
       var s = App.sheet('', 'mini');
 
@@ -56,7 +59,7 @@
         s._fit();
         var t0 = Date.now();
         if (timerId) clearInterval(timerId);
-        timerId = setInterval(function () {
+        if (timed) timerId = setInterval(function () {
           var left = 1 - (Date.now() - t0) / (TIME * 1000);
           timerBar.firstChild.style.width = Math.max(0, left * 100) + '%';
           if (left <= 0) { clearInterval(timerId); timerId = null; if (!answered) choose(null); }
@@ -92,7 +95,8 @@
             feedback(o, 0, 'Out of time! Here\'s the best choice.');
             return;
           }
-          if (o.grade === 'best') { pts = 3 + (secs < 5 ? 1 : 0); streak++; PIQ.sfx.good(); App.bigmsg(secs < 5 ? 'Quick &amp; smart!' : 'Smart!'); }
+          var quick = timed && secs < 10;
+          if (o.grade === 'best') { pts = 3 + (quick ? 1 : 0); streak++; PIQ.sfx.good(); App.bigmsg(quick ? 'Quick &amp; smart!' : 'Smart!'); }
           else if (o.grade === 'ok') { pts = 1; streak = 0; PIQ.sfx.ok(); }
           else { streak = 0; PIQ.sfx.bad(); }
           if (streak >= 5) PIQ.award('decider');
@@ -151,14 +155,31 @@
         PIQ.sfx.cheer();
         stage.clearAnnotations(); stage.clearLabels();
         s.innerHTML = '<div class="eyebrow">Round done</div><h2>' + score + ' points</h2>' +
-          '<p class="small">' + (best ? 'New best! ' : '') + '+' + score * 2 + ' XP. Best choices score 3, fast best choices score 4.</p>' +
+          '<p class="small">' + (best ? 'New best! ' : '') + '+' + score * 2 + ' XP. The best choice scores 3.' + (timed ? ' With the clock on, a best choice in under 10 seconds scores 4.' : '') + '</p>' +
           '<div class="row"><button class="btn ghost" id="dc-back">Games</button><button class="btn" id="dc-again">' + I.replay + ' Play again</button></div>';
         s._fit();
         s.querySelector('#dc-again').onclick = function () { PIQ.sfx.tap(); PIQ.GAMES.decide.start(App, back); };
         s.querySelector('#dc-back').onclick = function () { PIQ.sfx.tap(); back(); };
       }
 
-      play();
+      // start screen: take your time (default) or beat the clock
+      PIQ.buildScene(stage, round[0].scene, { instantCamera: true });
+      s.innerHTML = '<div class="eyebrow">Pass, Dribble or Shoot?</div><p class="caption">You have the ball. Look around the field, then pick the smartest play.</p>' +
+        '<p class="small">Spin the field with your finger (or the mouse) to see where everyone is.</p>' +
+        '<div class="row" style="margin:8px 0 12px"><span class="grow">Clock</span><div class="seg" id="dc-clock"><button data-c="0" class="' + (timed ? '' : 'on') + '">Take your time</button><button data-c="1" class="' + (timed ? 'on' : '') + '">Beat the clock (30 s)</button></div></div>' +
+        '<div class="row end"><button class="btn" id="dc-go">Start ' + I.next + '</button></div>';
+      s._fit();
+      s.querySelector('#dc-clock').onclick = function (e) {
+        var b = e.target.closest ? e.target.closest('[data-c]') : null;
+        if (!b) return;
+        PIQ.sfx.tap();
+        timed = b.getAttribute('data-c') === '1';
+        PIQ.profile().settings.clock = timed;
+        PIQ.saveProfile();
+        timerBar.hidden = !timed;
+        Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
+      };
+      s.querySelector('#dc-go').onclick = function () { PIQ.sfx.tap(); play(); };
     }
   };
 })();

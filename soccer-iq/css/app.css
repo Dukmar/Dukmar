@@ -41,13 +41,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 /* ---------- floating labels over players ---------- */
 .flabel { position: absolute; left: 0; top: 0; white-space: nowrap; font-weight: 700; will-change: transform; }
 .flabel.you { background: var(--pinnie); color: var(--ink); font-family: var(--display); font-size: 15px; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 6px; box-shadow: 0 2px 0 rgba(0,0,0,0.25); }
-.flabel.you::after { content: ''; position: absolute; left: 50%; bottom: -6px; margin-left: -6px; border: 6px solid transparent; border-bottom: 0; border-top-color: var(--pinnie); }
+.flabel.you::after { content: ''; position: absolute; left: var(--tail, 50%); bottom: -6px; margin-left: -6px; border: 6px solid transparent; border-bottom: 0; border-top-color: var(--pinnie); }
 .flabel.tag { background: rgba(11,58,38,0.88); color: var(--chalk); font-size: 12px; padding: 2px 7px; border-radius: 6px; border: 1px solid rgba(245,245,236,0.35); }
 .flabel.opt { background: var(--chalk); color: var(--ink); font-family: var(--display); font-size: 18px; width: 30px; height: 30px; line-height: 30px; text-align: center; border-radius: 50%; border: 3px solid var(--cone); }
 .flabel.think { background: #fff; color: var(--ink); font-family: var(--marker); font-weight: 400; font-size: 14px; padding: 6px 10px; border-radius: 14px; max-width: 200px; white-space: normal; width: max-content; box-shadow: 0 3px 10px rgba(0,0,0,0.25); }
-.flabel.think::after { content: ''; position: absolute; left: 50%; bottom: -7px; margin-left: -7px; border: 7px solid transparent; border-bottom: 0; border-top-color: #fff; }
+.flabel.think::after { content: ''; position: absolute; left: var(--tail, 50%); bottom: -7px; margin-left: -7px; border: 7px solid transparent; border-bottom: 0; border-top-color: #fff; }
 .flabel.talk { background: #fff; color: var(--ink); font-family: var(--body); font-weight: 700; font-size: 14px; line-height: 1.3; padding: 6px 11px; border-radius: 12px; max-width: 220px; white-space: normal; width: max-content; box-shadow: 0 3px 10px rgba(0,0,0,0.25); border: 2px solid var(--pinnie); animation: pop 0.3s ease-out; }
-.flabel.talk::after { content: ''; position: absolute; left: 22px; bottom: -8px; border: 8px solid transparent; border-bottom: 0; border-left: 0; border-top-color: var(--pinnie); }
+.flabel.talk::after { content: ''; position: absolute; left: var(--tail, 50%); bottom: -9px; margin-left: -8px; border: 8px solid transparent; border-bottom: 0; border-top-color: var(--pinnie); }
+.flabel.call::after { content: ''; position: absolute; left: var(--tail, 50%); bottom: -6px; margin-left: -6px; border: 6px solid transparent; border-bottom: 0; border-top-color: var(--cone); }
 .flabel.call { background: var(--cone); color: #fff; font-family: var(--display); font-size: 20px; letter-spacing: 0.04em; padding: 3px 10px; border-radius: 10px; transform-origin: 50% 100%; animation: pop 0.35s ease-out; }
 .flabel.good { background: var(--good); color: var(--ink); font-size: 13px; padding: 3px 8px; border-radius: 8px; }
 .flabel.bad { background: var(--bad); color: var(--ink); font-size: 13px; padding: 3px 8px; border-radius: 8px; }
@@ -243,3 +244,37 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .item .num svg { width: 20px; height: 20px; }
 .badge.trophy svg { width: 22px; height: 22px; display: block; margin-bottom: 4px; }
 .badge.trophy.on svg { color: #a66b00; }
+
+/* ---------- the panel's hide/show tab ---------- */
+.sheet { transition: max-height 0.22s ease, max-width 0.22s ease; }
+.sheet.collapsed { max-height: 14px !important; padding-top: 0; padding-bottom: env(safe-area-inset-bottom, 0px); overflow: hidden; }
+.sheet.collapsed > * { visibility: hidden; }
+.sheet-tab { position: absolute; z-index: 5; width: 80px; height: 30px; border: 0; border-radius: 12px 12px 0 0; background: var(--board-2); color: var(--chalk); display: flex; align-items: center; justify-content: center; gap: 2px; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 -4px 10px rgba(0,0,0,0.2); }
+.sheet-tab svg { width: 18px; height: 18px; transition: transform 0.2s; }
+.sheet-tab.collapsed svg { transform: rotate(180deg); }
+.sheet-tab.side { width: 44px; height: 64px; border-radius: 12px 0 0 12px; flex-direction: column; }
+.sheet-tab.side svg { transform: rotate(-90deg); }
+.sheet-tab.side.collapsed svg { transform: rotate(90deg); }
+
+/* ---------- phones: tighter panel, slightly smaller type ---------- */
+@media (max-width: 480px) {
+  .sheet { padding-top: 12px; max-height: 50%; }
+  .sheet.tall { max-height: 74%; }
+  .sheet.mini { max-height: 42%; }
+  .caption { font-size: 16px; line-height: 1.4; min-height: 0; }
+  .sheet h2 { font-size: 26px; }
+  .answer { padding: 9px 12px; min-height: 44px; font-size: 15px; }
+  .answers { gap: 6px; }
+  .btn { min-height: 44px; padding: 10px 14px; }
+  .why { padding: 8px 10px; font-size: 15px; }
+  .camdock button { width: 40px; height: 40px; }
+  .topbar .title { font-size: 19px; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .sheet.collapsed { max-width: 0 !important; padding-left: 0; padding-right: 0; border: 0; }
+}
+.rotate-tip { position: absolute; left: 50%; top: calc(62px + var(--safe-t)); transform: translateX(-50%); background: var(--pinnie); color: var(--ink); font-weight: 700; font-size: 13px; padding: 6px 12px; border-radius: 10px; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.25); z-index: 6; }
+/* speaker is off screen: show who's talking, drop the pointer */
+.flabel.off::before { content: attr(data-who) ": "; color: var(--cone-deep); }
+.flabel.call.off::before { color: #fff; opacity: 0.85; }
+.flabel.off::after { display: none; }

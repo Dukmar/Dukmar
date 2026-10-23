@@ -26,7 +26,7 @@
       App.leave();
       App.setCurrent({ destroy: function () { alive = false; } });
       App.topbar('Keeper Hero', back, '<span class="chip" id="kp-score">Saves <b>0</b></span>');
-      var s = App.sheet('<div class="eyebrow">You\'re the keeper</div><p class="caption">The attacker dribbles, then shoots. <b>Drag anywhere</b> on the field to move' + (PIQ.hasKeys ? ' (or use the arrow keys)' : '') + '. Stand between the ball and the middle of the goal, a few steps off your line.</p>' +
+      var s = App.sheet('<div class="eyebrow">You\'re the keeper</div><p class="caption">The attacker dribbles, then shoots. <b>Drag anywhere</b> on the field to move' + (PIQ.hasKeys ? ' (or use the arrow keys)' : '') + '. Stand between the ball and the middle of the goal, a few steps out from the goal line.</p>' +
         '<div class="row end"><button class="btn" id="kp-go">Start ' + I.next + '</button></div>', 'mini');
 
       PIQ.buildScene(stage, {
@@ -77,14 +77,14 @@
         stage.clearAnnotations(); stage.clearLabels(true);
         var spot = [PIQ.lerp(-17, -9, Math.random()), (Math.random() * 2 - 1) * 11];
         if (Math.abs(spot[1]) > 7 && spot[0] < -14) spot[0] = -12;
-        var speed = 3.6 + n * 0.35;
+        var speed = 2.8 + n * 0.3; // first shots come slowly so she has time to get set
         var dur = Math.max(0.9, PIQ.dist(att.pos, spot) / speed);
         stage.giveBall('away:F');
         att.faceBall = false;
         stage.moveTo('away:F', spot, dur);
-        s.innerHTML = '<div class="eyebrow">Shot ' + n + ' of ' + SHOTS + '</div><p class="caption">Get your angle right!</p>';
+        s.innerHTML = '<div class="eyebrow">Shot ' + n + ' of ' + SHOTS + '</div><p class="caption">Get between the ball and the middle of the goal!</p>';
         s._fit();
-        stage.after(dur + 0.55 - Math.min(0.3, n * 0.03), function () { take(spot); });
+        stage.after(dur + 1.1 - Math.min(0.5, n * 0.05), function () { take(spot); });
       }
 
       function take(ball) {
@@ -129,8 +129,8 @@
           stage.zone(ideal, 0.9, { color: PIQ.COLORS.good, pulse: true });
           stage.arrow(ball, [GX, -POST], 'pass', { color: PIQ.COLORS.bad, startCut: 0.5, endCut: 0 });
           stage.arrow(ball, [GX, POST], 'pass', { color: PIQ.COLORS.bad, startCut: 0.5, endCut: 0 });
-          var tip = chip ? 'You came out too far and she chipped it over you. Stay a few steps off your line.'
-            : saved ? (off < 1.2 ? 'Perfect angle!' : 'Saved! The green circle is the textbook spot.')
+          var tip = chip ? 'You came out too far and she chipped it over you. Stay a few steps out from the goal line.'
+            : saved ? (off < 1.2 ? 'Perfect spot!' : 'Saved! The green circle shows the very best spot.')
             : off > 1.2 ? 'The green circle shows the best spot: on the line from the ball to the middle of the goal.'
             : 'Good spot, but she found the corner. Keep your feet set before the shot!';
           s.innerHTML = '<div class="eyebrow">Shot ' + n + ' of ' + SHOTS + '</div><p class="caption">' + tip + '</p>' +

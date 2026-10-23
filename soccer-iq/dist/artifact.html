@@ -44,13 +44,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 /* ---------- floating labels over players ---------- */
 .flabel { position: absolute; left: 0; top: 0; white-space: nowrap; font-weight: 700; will-change: transform; }
 .flabel.you { background: var(--pinnie); color: var(--ink); font-family: var(--display); font-size: 15px; letter-spacing: 0.08em; padding: 2px 8px; border-radius: 6px; box-shadow: 0 2px 0 rgba(0,0,0,0.25); }
-.flabel.you::after { content: ''; position: absolute; left: 50%; bottom: -6px; margin-left: -6px; border: 6px solid transparent; border-bottom: 0; border-top-color: var(--pinnie); }
+.flabel.you::after { content: ''; position: absolute; left: var(--tail, 50%); bottom: -6px; margin-left: -6px; border: 6px solid transparent; border-bottom: 0; border-top-color: var(--pinnie); }
 .flabel.tag { background: rgba(11,58,38,0.88); color: var(--chalk); font-size: 12px; padding: 2px 7px; border-radius: 6px; border: 1px solid rgba(245,245,236,0.35); }
 .flabel.opt { background: var(--chalk); color: var(--ink); font-family: var(--display); font-size: 18px; width: 30px; height: 30px; line-height: 30px; text-align: center; border-radius: 50%; border: 3px solid var(--cone); }
 .flabel.think { background: #fff; color: var(--ink); font-family: var(--marker); font-weight: 400; font-size: 14px; padding: 6px 10px; border-radius: 14px; max-width: 200px; white-space: normal; width: max-content; box-shadow: 0 3px 10px rgba(0,0,0,0.25); }
-.flabel.think::after { content: ''; position: absolute; left: 50%; bottom: -7px; margin-left: -7px; border: 7px solid transparent; border-bottom: 0; border-top-color: #fff; }
+.flabel.think::after { content: ''; position: absolute; left: var(--tail, 50%); bottom: -7px; margin-left: -7px; border: 7px solid transparent; border-bottom: 0; border-top-color: #fff; }
 .flabel.talk { background: #fff; color: var(--ink); font-family: var(--body); font-weight: 700; font-size: 14px; line-height: 1.3; padding: 6px 11px; border-radius: 12px; max-width: 220px; white-space: normal; width: max-content; box-shadow: 0 3px 10px rgba(0,0,0,0.25); border: 2px solid var(--pinnie); animation: pop 0.3s ease-out; }
-.flabel.talk::after { content: ''; position: absolute; left: 22px; bottom: -8px; border: 8px solid transparent; border-bottom: 0; border-left: 0; border-top-color: var(--pinnie); }
+.flabel.talk::after { content: ''; position: absolute; left: var(--tail, 50%); bottom: -9px; margin-left: -8px; border: 8px solid transparent; border-bottom: 0; border-top-color: var(--pinnie); }
+.flabel.call::after { content: ''; position: absolute; left: var(--tail, 50%); bottom: -6px; margin-left: -6px; border: 6px solid transparent; border-bottom: 0; border-top-color: var(--cone); }
 .flabel.call { background: var(--cone); color: #fff; font-family: var(--display); font-size: 20px; letter-spacing: 0.04em; padding: 3px 10px; border-radius: 10px; transform-origin: 50% 100%; animation: pop 0.35s ease-out; }
 .flabel.good { background: var(--good); color: var(--ink); font-size: 13px; padding: 3px 8px; border-radius: 8px; }
 .flabel.bad { background: var(--bad); color: var(--ink); font-size: 13px; padding: 3px 8px; border-radius: 8px; }
@@ -246,6 +247,40 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 .item .num svg { width: 20px; height: 20px; }
 .badge.trophy svg { width: 22px; height: 22px; display: block; margin-bottom: 4px; }
 .badge.trophy.on svg { color: #a66b00; }
+
+/* ---------- the panel's hide/show tab ---------- */
+.sheet { transition: max-height 0.22s ease, max-width 0.22s ease; }
+.sheet.collapsed { max-height: 14px !important; padding-top: 0; padding-bottom: env(safe-area-inset-bottom, 0px); overflow: hidden; }
+.sheet.collapsed > * { visibility: hidden; }
+.sheet-tab { position: absolute; z-index: 5; width: 80px; height: 30px; border: 0; border-radius: 12px 12px 0 0; background: var(--board-2); color: var(--chalk); display: flex; align-items: center; justify-content: center; gap: 2px; font-size: 12px; font-weight: 700; cursor: pointer; box-shadow: 0 -4px 10px rgba(0,0,0,0.2); }
+.sheet-tab svg { width: 18px; height: 18px; transition: transform 0.2s; }
+.sheet-tab.collapsed svg { transform: rotate(180deg); }
+.sheet-tab.side { width: 44px; height: 64px; border-radius: 12px 0 0 12px; flex-direction: column; }
+.sheet-tab.side svg { transform: rotate(-90deg); }
+.sheet-tab.side.collapsed svg { transform: rotate(90deg); }
+
+/* ---------- phones: tighter panel, slightly smaller type ---------- */
+@media (max-width: 480px) {
+  .sheet { padding-top: 12px; max-height: 50%; }
+  .sheet.tall { max-height: 74%; }
+  .sheet.mini { max-height: 42%; }
+  .caption { font-size: 16px; line-height: 1.4; min-height: 0; }
+  .sheet h2 { font-size: 26px; }
+  .answer { padding: 9px 12px; min-height: 44px; font-size: 15px; }
+  .answers { gap: 6px; }
+  .btn { min-height: 44px; padding: 10px 14px; }
+  .why { padding: 8px 10px; font-size: 15px; }
+  .camdock button { width: 40px; height: 40px; }
+  .topbar .title { font-size: 19px; }
+}
+@media (max-height: 520px) and (orientation: landscape) {
+  .sheet.collapsed { max-width: 0 !important; padding-left: 0; padding-right: 0; border: 0; }
+}
+.rotate-tip { position: absolute; left: 50%; top: calc(62px + var(--safe-t)); transform: translateX(-50%); background: var(--pinnie); color: var(--ink); font-weight: 700; font-size: 13px; padding: 6px 12px; border-radius: 10px; white-space: nowrap; box-shadow: 0 4px 12px rgba(0,0,0,0.25); z-index: 6; }
+/* speaker is off screen: show who's talking, drop the pointer */
+.flabel.off::before { content: attr(data-who) ": "; color: var(--cone-deep); }
+.flabel.call.off::before { color: #fff; opacity: 0.85; }
+.flabel.off::after { display: none; }
 
 </style>
 <div id="app">
@@ -1120,9 +1155,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     m.needsUpdate = true;
   };
 
-  PIQ.FIG_SCALE = 1.35; // players drawn a bit larger than life so they read on a phone
+  // players drawn larger than life so they read on screen; bigger still on a phone
+  var shortSide = Math.min(window.screen ? window.screen.width : 800, window.screen ? window.screen.height : 800);
+  PIQ.SMALL_SCREEN = shortSide < 600;
+  PIQ.FIG_SCALE = PIQ.SMALL_SCREEN ? 1.75 : 1.35;
   PIQ.HEAD_TOP = 2.0 * PIQ.FIG_SCALE; // top of the tallest hairstyle, for placing bubbles
-  PIQ.BALL_R = 0.21;    // same for the ball (a real size 4 is about 0.1 m)
+  PIQ.BALL_R = PIQ.SMALL_SCREEN ? 0.27 : 0.21; // same for the ball (a real size 4 is about 0.1 m)
   PIQ.makeBall = function () {
     var R = PIQ.BALL_R;
     var root = new THREE.Group();
@@ -1372,7 +1410,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     this.ends = new PIQ.TeamEnds(this.scene, world.goals);
     PIQ.cheerHook = function () { self.cheer(); };
     // a ring in the team's colour under whoever has the ball
-    this.ownerRing = new THREE.Mesh(new THREE.RingGeometry(0.95, 1.18, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false }));
+    this.ownerRing = new THREE.Mesh(new THREE.RingGeometry(0.7 * PIQ.FIG_SCALE, 0.87 * PIQ.FIG_SCALE, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.85, depthWrite: false }));
     this.ownerRing.rotation.x = -Math.PI / 2;
     this.ownerRing.position.y = 0.017;
     this.ownerRing.visible = false;
@@ -1543,6 +1581,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       if (portrait && preset.portraitTheta != null) g.theta = preset.portraitTheta;
       if (portrait && preset.portraitDist) g.dist = preset.portraitDist;
       else if (portrait && preset.theta == null) { g.theta = -Math.PI / 2; g.dist *= 1.25; }
+      else if (portrait) {
+        // a tall, narrow screen sees much less side to side: pull back in proportion
+        // and look down more so the field's depth fills the height
+        g.dist *= PIQ.clamp(0.9 / asp, 1, 2.1);
+        g.phi = Math.max(0.5, g.phi - 0.2);
+      }
     } else if (preset === 'top') {
       g.phi = 0.3;
       if (portrait) { g.theta = -Math.PI / 2; g.dist = Math.max((F.L / 2 + 1) / tan, (F.W / 2 + 1) / (tan * asp)) * 0.95; }
@@ -1863,6 +1907,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     el.innerHTML = html;
     this.labelLayer.appendChild(el);
     var l = { el: el, target: target, y: opts.y != null ? opts.y : PIQ.HEAD_TOP + 0.25, ttl: opts.ttl || 0, born: this.time || 0, you: cls === 'you' };
+    if (typeof target === 'string' && this.players[target] && /talk|think|call/.test(cls || '')) {
+      // who is talking, shown when she's off screen
+      var sp = this.players[target];
+      l.who = sp.team === 'away' ? 'Other team' : (PIQ.ROLES[sp.role] ? PIQ.ROLES[sp.role].name : 'Teammate');
+      el.setAttribute('data-who', l.who);
+    }
     if (cls === 'talk' && typeof target === 'string') {
       // one speech bubble per player at a time
       var self = this;
@@ -1907,7 +1957,22 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         y -= used;
         stack[l.target] = used + (l.el.offsetHeight || 20) + 6;
       }
-      l.el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) translate(-50%,-100%)';
+      // a speaker who is off screen (or hidden behind the panel) gets a name tag instead of a pointer
+      if (l.who) {
+        var hiddenBottom = h - ((self.inset && self.inset.bottom) || 0) - 10;
+        var hiddenRight = w - ((self.inset && self.inset.right) || 0) - 10;
+        var off = x < 10 || x > hiddenRight || y < 70 || y > hiddenBottom + 40;
+        if (off !== !!l.off) { l.off = off; l.el.classList.toggle('off', off); l.w = 0; }
+        if (off) { x = PIQ.clamp(x, 10, hiddenRight); y = PIQ.clamp(y, 110, hiddenBottom); }
+      }
+      // keep the bubble on screen, and move its pointer so it still lands on the player
+      if (!l.w || l.w !== l.el.offsetWidth) l.w = l.el.offsetWidth || 40;
+      var maxX = w - ((self.inset && self.inset.right) || 0);
+      var left = Math.max(6, Math.min(maxX - l.w - 6, x - l.w / 2));
+      var tail = Math.max(12, Math.min(l.w - 12, x - left));
+      if (l.tail !== tail) { l.el.style.setProperty('--tail', tail.toFixed(0) + 'px'); l.tail = tail; }
+      var top = Math.max(l.el.offsetHeight + 56, y); // never under the top bar
+      l.el.style.transform = 'translate(' + left.toFixed(1) + 'px,' + top.toFixed(1) + 'px) translateY(-100%)';
       if (l.ttl && self.time - l.born > l.ttl) dead.push(l);
     });
     dead.forEach(function (l) { self.removeLabel(l); });
@@ -2135,7 +2200,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     if (!o || this.ballTween) return;
     var hd = o.obj.rotation.y;
     var bob = o.speed > 0.4 ? Math.sin(o.phase) * 0.12 : 0;
-    PIQ.setBallPos(b, o.pos[0] + Math.sin(hd) * (0.62 + bob), o.pos[1] + Math.cos(hd) * (0.62 + bob), 0);
+    PIQ.setBallPos(b, o.pos[0] + Math.sin(hd) * (0.46 * PIQ.FIG_SCALE + bob), o.pos[1] + Math.cos(hd) * (0.46 * PIQ.FIG_SCALE + bob), 0);
   };
 
   // ---------- frame ----------
@@ -2329,25 +2394,25 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   PIQ.UNITS = [
     // =====================================================================
     {
-      id: 'field', title: 'Know Your Field', blurb: 'The 7v7 field, your team and why spreading out matters.',
+      id: 'field', title: 'Know Your Field', blurb: 'The 7v7 field, your team, and why we spread out.',
       lessons: [
         {
-          id: 'field-1', title: 'The 7v7 field', sub: 'Thirds, boxes and retreat lines',
+          id: 'field-1', title: 'The 7v7 field', sub: 'Thirds, boxes and the dashed lines',
           scene: { home: S.kickoff, away: S.kickoffAway, ball: [0, 0], camera: 'broadcast' },
           beats: [
-            { say: 'Your game is <b>7 v 7</b>: six players plus a keeper on each team. In Pitch IQ we wear <b>blue</b> and we always attack to the <b>right</b>.',
+            { say: 'Each team has six players plus a keeper. That\'s <b>7 v 7</b>. In Pitch IQ we wear <b>blue</b>, and we always attack to the right.',
               arrows: [[[-6, -15], [8, -15], 'run']], tags: { GK: 'Our keeper', 'away:GK': 'Their keeper' } },
-            { say: 'The field splits into <b>three thirds</b>. Our <b>defending third</b> is by our goal, then the <b>middle third</b>, then the <b>attacking third</b> by their goal.',
+            { say: 'The field is cut into three parts, called <b>thirds</b>. Near our goal is our <b>defending third</b>. Then comes the middle third. Near their goal is the attacking third.',
               zones: [{ rect: [-25, -17, -RL, 17], color: BLUE, opacity: 0.18 }, { rect: [-RL, -17, RL, 17], color: YEL, opacity: 0.14 }, { rect: [RL, -17, 25, 17], color: ORANGE, opacity: 0.18 }],
               notes: [[[-17, 0], 'Defending third'], [[0, -9], 'Middle third'], [[17, 0], 'Attacking third']], cam: 'top' },
-            { say: 'Be careful in your defending third, where a mistake can cost a goal. Be brave in the attacking third, where a risk can score one.',
+            { say: 'Near our goal, be <b>careful</b>. A mistake there can give away a goal. Near their goal, be <b>brave</b>. Trying something there can score one!',
               zones: [{ rect: [-25, -17, -RL, 17], color: BLUE, opacity: 0.18 }, { rect: [RL, -17, 25, 17], color: ORANGE, opacity: 0.18 }],
               notes: [[[-17, 0], 'Be careful'], [[17, 0], 'Be brave']] },
-            { say: 'See the <b>dashed lines</b>? Those are <b>retreat lines</b>. When our keeper has the ball or we take a goal kick, the other team has to back off behind that line. It gives us room to pass out from the back.',
+            { say: 'See the dashed lines? They\'re called <b>retreat lines</b>. When our keeper has the ball, or we take a goal kick, the other team must go back behind that line. That gives us room to pass.',
               zones: [{ rect: [-RL - 0.35, -17, -RL + 0.35, 17], color: BLUE, opacity: 0.5 }], notes: [[[-RL, -12], 'Retreat line']], cam: 'broadcast' },
             { say: 'The big box in front of each goal is the <b>penalty area</b>. The keeper can only use her hands inside her own box.',
               zones: [{ rect: [-25, -11, -14, 11], color: YEL, opacity: 0.2 }], rings: { GK: YEL }, cam: { target: [-17, 0], dist: 30, theta: 0.3, phi: 0.95 } },
-            { say: 'Good news: 7v7 has <b>no offside</b>, so you can stand anywhere. But standing in a <b>smart</b> spot still wins games. That\'s what Pitch IQ is all about!',
+            { say: 'Good news: 7v7 has <b>no offside</b> rule, so you can stand anywhere. But standing in a <b>smart</b> spot still wins games. That\'s what Pitch IQ is all about!',
               cam: 'broadcast', think: { ST: 'No offside? Cool!' } }
           ]
         },
@@ -2355,36 +2420,36 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
           id: 'field-2', title: 'Meet your team', sub: 'The 2-3-1 and what each player does',
           scene: { home: S.midBall, ball: 'CM', camera: 'broadcast' },
           beats: [
-            { say: 'Lots of 7v7 teams play a <b>2-3-1</b>: the keeper, then <b>2</b> defenders, <b>3</b> across the middle, and <b>1</b> striker. Count from the back and skip the keeper.',
+            { say: 'Lots of 7v7 teams line up in a <b>2-3-1</b>. Skip the keeper and count from our goal. That\'s 2 defenders, 3 in the middle, and 1 striker up front.',
               tags: { GK: 'Keeper', LD: 'Left back', RD: 'Right back', LW: 'Left wing', CM: 'Centre mid', RW: 'Right wing', ST: 'Striker' } },
-            { say: '<b>Keeper</b>: stops shots, talks to her team and starts our attacks with a roll or a throw.',
+            { say: 'The <b>keeper</b> stops shots and talks to her team. She starts our attacks by rolling or throwing the ball.',
               rings: { GK: YEL }, think: { GK: 'I can see the whole field from here!' }, cam: { target: [-14, 0], dist: 28, theta: 0.2, phi: 0.95 } },
-            { say: '<b>Defenders</b> (left back and right back) defend first. When we have the ball they spread wide to give an easy pass.',
+            { say: 'Our two <b>defenders</b> are the left back and the right back. Their first job is to defend. When we have the ball, they spread out to the sides for an easy pass.',
               rings: { LD: YEL, RD: YEL }, cam: { target: [-9, 0], dist: 32, theta: 0, phi: 0.95 } },
-            { say: '<b>Wingers</b> keep our team wide, one on each side. They attack down the sides, then run back to help defend.',
+            { say: 'The <b>wingers</b> play out near the sidelines, one on each side. They attack down the sides, then run back to help defend.',
               rings: { LW: YEL, RW: YEL }, arrows: [['LW', [16, -13], 'run'], ['RW', [16, 13], 'run']], cam: { target: [7, 0], dist: 34, theta: 0, phi: 0.95 } },
-            { say: '<b>Centre mid</b> is the link. She stays close to the ball to help, in attack and in defence.',
-              rings: { CM: YEL }, think: { CM: 'Always an option!' }, cam: { target: [0, 0], dist: 28, theta: 0, phi: 0.95 } },
-            { say: '<b>Striker</b> is our highest player. She stretches the other team and is first to chances in front of their goal.',
+            { say: 'The <b>centre mid</b> plays in the middle. She connects our defenders and our striker. She stays close to the ball to help, when we attack and when we defend.',
+              rings: { CM: YEL }, think: { CM: 'Pass to me anytime!' }, cam: { target: [0, 0], dist: 28, theta: 0, phi: 0.95 } },
+            { say: 'The <b>striker</b> plays closest to their goal. She keeps their defenders pushed back, which gives us more room. She is often first to the ball in front of their goal.',
               rings: { ST: YEL }, cam: { target: [12, 0], dist: 28, theta: 0, phi: 0.95 } },
-            { say: 'Your coach might use a different shape, like a <b>3-2-1</b> with three at the back. Every shape has the same idea: spread out and help each other. Good coaches also let everyone try different positions.',
+            { say: 'Coaches call the way we line up our <b>shape</b>. Yours might be a 3-2-1, with three defenders. Every shape has one idea: spread out and help each other. Good coaches let everyone try each position.',
               links: [['GK', 'LD'], ['GK', 'RD'], ['LD', 'CM'], ['RD', 'CM'], ['LD', 'LW'], ['RD', 'RW'], ['CM', 'ST'], ['LW', 'ST'], ['RW', 'ST']], cam: 'broadcast' }
           ]
         },
         {
-          id: 'field-3', title: 'Spread out!', sub: 'Width, depth and the beehive',
+          id: 'field-3', title: 'Spread out!', sub: 'Use the whole field',
           scene: { home: S.midBall, away: S.midBallAway, ball: 'CM', camera: 'broadcast' },
           beats: [
             { say: 'When everyone runs to the ball it\'s called <b>bunching</b>, or the <b>beehive</b>. Watch...',
               move: { LW: [2.5, -2.5], RW: [2.5, 2.5], ST: [3.5, 0.5], LD: [-2, -2.5], RD: [-2, 2.5], 'away:M1': [3, -1.5], 'away:M3': [3.5, 2.8], 'away:F': [-1.5, 1] }, dur: 1.8 },
-            { say: 'Bunched up, there\'s nobody to pass to, and one big kick clears everyone. Not good!',
+            { say: 'All bunched up, there\'s nobody to pass to. And one big kick gets the ball past all of us. Not good!',
               think: { CM: 'Help! Nowhere to pass!' }, cam: { target: [1, 0], dist: 20, theta: 0.4, phi: 0.9 } },
-            { say: '<b>Width</b> means using the whole field, side to side. The wingers go out near the sidelines and the defenders split apart.',
+            { say: '<b>Width</b> means using the whole field, from side to side. The wingers go out near the sidelines. The defenders move apart.',
               move: { LW: [7, -13], RW: [7, 13], LD: [-9, -8], RD: [-9, 8], 'away:M1': [6, -8], 'away:M3': [6, 8], 'away:F': [-4, -2] },
               arrows: [[[2.5, -2.5], [7, -13], 'run'], [[2.5, 2.5], [7, 13], 'run']], cam: 'broadcast', dur: 1.6 },
-            { say: '<b>Depth</b> means someone ahead of the ball and someone behind it. The striker stays high, the defenders stay back.',
+            { say: '<b>Depth</b> means someone ahead of the ball and someone behind it. The striker stays up near their goal. The defenders stay back.',
               move: { ST: [13, 0] }, links: [['ST', 'CM'], ['CM', 'LD'], ['CM', 'RD']], tags: { ST: 'Ahead', LD: 'Behind', RD: 'Behind' } },
-            { say: 'Spread out, our team looks like a big kite with passing lanes everywhere. Rule of thumb: stay <b>a good pass away</b> from your teammates, not right on top of them.',
+            { say: 'Spread out, our team looks like a big kite. Now there are open paths to pass along everywhere. Tip: stay <b>one good pass away</b> from your teammates, not right next to them.',
               links: [['GK', 'LD'], ['GK', 'RD'], ['LD', 'CM'], ['RD', 'CM'], ['LD', 'LW'], ['RD', 'RW'], ['CM', 'ST'], ['LW', 'ST'], ['RW', 'ST'], ['CM', 'LW'], ['CM', 'RW']],
               pass: { to: 'RW', delay: 1.2 } }
           ]
@@ -2393,26 +2458,26 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     },
     // =====================================================================
     {
-      id: 'shape', title: 'Where Do I Stand?', blurb: 'Our shape when the ball is at the back, in the middle and up front.',
+      id: 'shape', title: 'Where Do I Stand?', blurb: 'Where to stand when the ball is near our goal, in the middle, or near theirs.',
       lessons: [
         {
-          id: 'shape-1', title: 'Keeper has the ball', sub: 'Split wide and use the retreat line',
+          id: 'shape-1', title: 'Keeper has the ball', sub: 'Spread out and use the retreat line',
           scene: {
             home: { GK: [-23, 0], LD: [-19, -4], RD: [-19, 4], CM: [-14, 0], LW: [-10, -11], RW: [-10, 11], ST: [-4, 0] },
             away: { GK: [23, 0], D1: [4, -6], D2: [4, 6], M1: [-14, -7], M2: [-13, 3], M3: [-15, 8], F: [-17, -1] },
             ball: 'GK', camera: { target: [-12, 0], dist: 38, theta: 0.15, phi: 0.95 }
           },
           beats: [
-            { say: 'Our keeper just caught the ball. Now the other team has to <b>retreat</b> behind the dashed line.',
+            { say: 'Our keeper just caught the ball. Now the other team has to <b>go back</b> behind the dashed line. That\'s the retreat line.',
               whistle: true, move: { 'away:M1': [-5, -9], 'away:M2': [-3, 2], 'away:M3': [-5, 9], 'away:F': [-7, 0], 'away:D1': [8, -6], 'away:D2': [8, 6] },
               zones: [{ rect: [-RL - 0.35, -17, -RL + 0.35, 17], color: BLUE, opacity: 0.55 }], dur: 2 },
-            { say: 'Our <b>defenders split wide</b>, near the edge of the box and close to the sidelines. That stretches the other team apart.',
+            { say: 'Our <b>defenders spread out</b> to the sides, by the edge of the big box. That pulls the other team apart.',
               move: { LD: [-16, -11], RD: [-16, 11] }, arrows: [['LD', [-16, -11], 'run'], ['RD', [-16, 11], 'run']] },
-            { say: 'Our <b>centre mid</b> drops into the middle to show for the ball. The <b>wingers</b> stay wide and the <b>striker</b> stays high to push their defenders back.',
+            { say: 'Our <b>centre mid</b> comes back to the middle, open for a pass. The wingers stay out wide. The <b>striker</b> stays up front to push their defenders back.',
               move: { CM: [-11, 1], LW: [-3, -14], RW: [-3, 14], ST: [5, 0] }, cam: 'broadcast' },
-            { say: 'Now the keeper has easy choices. She rolls it to a defender out wide, away from danger in the middle.',
+            { say: 'Now the keeper has easy choices. She rolls it to a defender out by the side, away from danger in the middle.',
               pass: { to: 'RD', delay: 0.3, dur: 1 }, arrows: [['GK', 'RD', 'pass']] },
-            { say: 'Once we touch it, they can come forward. A defender presses, so our right back looks up the line and passes to her winger.',
+            { say: 'Once we touch the ball, they can come forward. One of them runs at our right back. So she looks up the sideline and passes to her winger.',
               move: { 'away:M3': [-12, 9.5] }, pass: { to: 'RW', delay: 1.1, dur: 0.9 }, arrows: [['RD', 'RW', 'pass']], dur: 1.2 }
           ]
         },
@@ -2423,20 +2488,20 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
             away: S.midBallAway, ball: 'CM', camera: 'broadcast'
           },
           beats: [
-            { say: 'When the ball moves up the field, the whole team moves up with it, as if we were tied together with a <b>rubber band</b>.',
+            { say: 'When the ball moves up the field, the whole team moves up too. It\'s like we\'re all tied together with a <b>rubber band</b>.',
               dribble: { who: 'CM', to: [0, 0] }, move: { GK: [-18, 0], LD: [-9, -8], RD: [-9, 8], LW: [7, -13], RW: [7, 13], ST: [13, 0] }, dur: 2.2 },
             { say: 'The defenders step up but <b>stay behind the ball</b>. If we lose it, they\'re ready.',
               rings: { LD: YEL, RD: YEL }, links: [['LD', 'RD']] },
-            { say: 'The keeper moves up to the top of her box. She\'s like an extra defender behind the team.',
+            { say: 'The keeper moves up to the front edge of her box. She\'s like an extra defender behind the team.',
               rings: { GK: YEL }, zones: [{ rect: [-25, -11, -14, 11], color: YEL, opacity: 0.12 }] },
-            { say: 'The <b>wingers</b> stay <b>wide and high</b>. The <b>striker</b> stays our highest player, up near their last defender.',
+            { say: 'The <b>wingers</b> stay out wide and up the field. The <b>striker</b> stays closest to their goal, up near their last defender.',
               rings: { LW: YEL, RW: YEL, ST: YEL } },
-            { say: 'Now our centre mid has a triangle on each side to pass to. She picks the left.',
+            { say: 'On each side, our centre mid and two teammates make a <b>triangle</b>. That gives her two passes to choose from. She picks the left.',
               links: [['CM', 'LW'], ['CM', 'ST'], ['LW', 'ST'], ['CM', 'RW'], ['RW', 'ST']], pass: { to: 'LW', delay: 1.4 } }
           ]
         },
         {
-          id: 'shape-3', title: 'In their end', sub: 'Scoring spots in the attacking third',
+          id: 'shape-3', title: 'In their end', sub: 'Where to stand to score',
           scene: {
             home: { GK: [-16, 0], LD: [-6, -7], RD: [-4, 6], CM: [6, 2], RW: [10, 13], ST: [15, 0], LW: [12, -12] },
             away: S.attBallAway, ball: 'RW', camera: { target: [12, 0], dist: 38, theta: 0.15, phi: 0.95 }
@@ -2444,13 +2509,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
           beats: [
             { say: 'Our right wing dribbles into their end. Time to get into <b>scoring spots</b>!',
               dribble: { who: 'RW', to: [16, 12] }, dur: 1.6 },
-            { say: 'The <b>striker</b> goes to the middle in front of goal. The <b>far winger</b> runs to the <b>back post</b>, the far side of the goal.',
+            { say: 'The <b>striker</b> goes to the middle, in front of goal. Our other winger runs to the <b>back post</b>. That\'s the far side of the goal.',
               move: { ST: [20, 0], LW: [18, -7] }, arrows: [['ST', [20, 0], 'run'], ['LW', [18, -7], 'run']] },
-            { say: 'The <b>centre mid</b> waits near the top of the box. Lots of goals come from passes rolled back to that spot.',
+            { say: 'The <b>centre mid</b> waits near the front edge of the big box. Lots of goals come from passes rolled back to that spot.',
               move: { CM: [12, 2] }, zones: [{ at: [12, 2], r: 2.5, pulse: true }] },
-            { say: 'Our defenders push up toward halfway, ready to win the ball if it gets cleared. The keeper steps up too.',
+            { say: 'Our defenders move up toward the halfway line. If they kick it away, we\'re ready to win it back. The keeper steps up too.',
               move: { LD: [-2, -7], RD: [0, 6], GK: [-13, 0] }, cam: 'broadcast' },
-            { say: 'The winger rolls it across the goal... and the back-post run pays off!',
+            { say: 'The winger rolls it across the goal... and the run to the back post pays off!',
               cam: { target: [16, 0], dist: 28, theta: 0.2, phi: 0.9 }, pass: { to: 'LW', delay: 0.3, dur: 1 }, shoot: { from: 'LW', delay: 1.6, to: [25.6, -1.4] } }
           ]
         },
@@ -2460,14 +2525,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
           beats: [
             { say: 'Their player has the ball on our <b>right</b>. The whole team slides toward it. The side with the ball is the <b>ball side</b>.',
               zones: [{ rect: [-25, 2, 25, 17], color: ORANGE, opacity: 0.14 }], notes: [[[-14, 12], 'Ball side']] },
-            { say: 'The far side is the <b>weak side</b>. Players over there <b>tuck in</b> toward the middle, because the ball can\'t hurt us from way over there.',
+            { say: 'The side away from the ball is the <b>weak side</b>. Players there <b>move in</b> toward the middle. The ball can\'t hurt us from way over there.',
               zones: [{ rect: [-25, -17, 25, -2], color: BLUE, opacity: 0.14 }], notes: [[[-14, -12], 'Weak side']], rings: { LW: BLUE, LD: BLUE } },
-            { say: 'Now they switch it across to the other side...',
+            { say: 'Now they kick it all the way across to the other side...',
               pass: { from: 'away:M1', to: 'away:M3', lofted: 2.4, dur: 1.4 } },
-            { say: 'Everyone slides across together! The left side moves up to press, the right side tucks in.',
+            { say: 'Everyone slides across together! Our left side moves up to <b>press</b>: they run at the ball to win it. Our right side moves in.',
               move: { LW: [7.2, -11], LD: [-4, -9], CM: [-2, -3], RD: [-8, 0], RW: [-4, 5], ST: [5, 1], GK: [-20, -1.5] },
               arrows: [['LW', [7.2, -11], 'run'], ['RW', [-4, 5], 'run']], dur: 1.8 },
-            { say: 'Think of our team as one shape that slides left and right like a windshield wiper, staying close together the whole time.',
+            { say: 'Our team moves like one big shape. It slides left and right like a <b>windshield wiper</b>. We stay close together the whole time.',
               links: [['LW', 'LD'], ['LD', 'CM'], ['CM', 'RD'], ['RD', 'RW'], ['RW', 'CM'], ['CM', 'LW'], ['ST', 'CM']] }
           ]
         }
@@ -2475,46 +2540,46 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     },
     // =====================================================================
     {
-      id: 'attack', title: 'We Have the Ball', blurb: 'Get open, make triangles, scan, decide, and switch.',
+      id: 'attack', title: 'We Have the Ball', blurb: 'Get open, make triangles, look around, choose, and switch sides.',
       lessons: [
         {
-          id: 'attack-1', title: 'Get open', sub: 'Find a clear passing lane',
+          id: 'attack-1', title: 'Get open', sub: 'Find a clear path for the pass',
           scene: {
             home: { GK: [-18, 0], LD: [-9, -8], RD: [-9, 8], CM: [-2, 0], LW: [6, -7], RW: [7, 13], ST: [13, 0] },
             away: { GK: [23, 0], D1: [14, -5], D2: [14, 5], M1: [3, -4.5], M2: [4, 2], M3: [6, 9], F: [-5, 2] },
             ball: 'CM', you: 'LW', camera: { target: [3, -3], dist: 30, theta: 0.1, phi: 0.95 }
           },
           beats: [
-            { say: 'Our centre mid has the ball and you want it. But there\'s a defender standing <b>right in the passing lane</b>.',
+            { say: 'Our centre mid has the ball, and you want it. But a defender is standing <b>right in the way</b> of the pass.',
               arrows: [['CM', 'LW', 'pass', 0, 'bad']], tags: { 'away:M1': 'Blocking!' } },
-            { say: 'To <b>get open</b>, move until you can see the ball with nobody in between. A few steps can change everything.',
+            { say: 'To <b>get open</b>, move until you can see the ball with nobody in between. A few steps can make a big difference.',
               move: { LW: [7, -12.5] }, arrows: [['LW', [7, -12.5], 'run']], dur: 1.2 },
-            { say: 'Now the lane is clear. Pass!',
+            { say: 'Now the path is clear. Pass!',
               arrows: [['CM', 'LW', 'pass', 0, 'good']], pass: { to: 'LW', delay: 0.6 } },
-            { say: 'Rule of thumb: if you can draw a straight line from the ball to you without crossing a defender, you\'re <b>open</b>. If not, move!',
+            { say: 'Tip: picture a straight line from the ball to you. If no defender is on it, you\'re <b>open</b>. If one is, move!',
               think: { LW: 'I\'m open!' } }
           ]
         },
         {
-          id: 'attack-2', title: 'Triangles', sub: 'Always give two options',
+          id: 'attack-2', title: 'Triangles', sub: 'Always give two choices',
           scene: {
             home: { GK: [-20, 0], LD: [-8, -10], RD: [-10, 7], CM: [-4, -3], LW: [0, -14], RW: [6, 12], ST: [8, 0] },
             away: { GK: [23, 0], D1: [12, -6], D2: [12, 5], M1: [-6, -8.5], M2: [2, -2], M3: [5, 8], F: [-12, 2] },
             ball: 'LD', camera: { target: [-3, -7], dist: 30, theta: 0.15, phi: 0.95 }
           },
           beats: [
-            { say: 'A defender is pressing our left back. She needs <b>options</b>. Two teammates nearby, at different angles, make a <b>triangle</b>.',
+            { say: 'A defender runs at our left back to win the ball. She needs someone to pass to! Two teammates come close, in different spots. Together they make a <b>triangle</b>.',
               links: [['LD', 'CM'], ['CM', 'LW'], ['LW', 'LD']] },
-            { say: 'Now she has two easy passes, one up the line and one inside. The defender can\'t block both!',
+            { say: 'Now she has two easy passes: one up the sideline, and one to the middle. The defender can\'t block <b>both</b>!',
               links: [['LD', 'CM'], ['CM', 'LW'], ['LW', 'LD']], arrows: [['LD', 'LW', 'pass'], ['LD', 'CM', 'pass']] },
-            { say: 'She passes inside. Straight away the triangle moves with the ball: the striker comes over to make a new angle.',
+            { say: 'She passes to the middle. Right away, the triangle moves with the ball. The striker comes over to make a new one.',
               pass: { to: 'CM' }, move: { ST: [5, -6] }, wait: 0.2, dur: 1.4 },
-            { say: 'New triangle, new options. Triangles everywhere means there\'s always someone to pass to.',
+            { say: 'New triangle, new choices. With <b>triangles</b> everywhere, there\'s always someone to pass to.',
               links: [['CM', 'LW'], ['CM', 'ST'], ['LW', 'ST']], pass: { to: 'ST', delay: 1 } }
           ]
         },
         {
-          id: 'attack-3', title: 'Check your shoulder', sub: 'Scanning before the ball arrives',
+          id: 'attack-3', title: 'Check your shoulder', sub: 'Look around before the ball comes',
           scene: {
             home: { GK: [-20, 0], LD: [-10, -9], RD: [-10, 8], CM: [-3, 0], LW: [5, -13], RW: [6, 12], ST: [12, 0] },
             away: { GK: [23, 0], D1: [13, -6], D2: [13, 5], M1: [3, -7], M2: [-1, -2.5], M3: [6, 7], F: [-12, 3] },
@@ -2523,13 +2588,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
           beats: [
             { say: 'Great players look around <b>before</b> the ball arrives. It\'s called <b>scanning</b>. Let\'s see the field through your eyes.',
               pov: 'CM' },
-            { say: 'Quick look over one shoulder, then the other. Who\'s near you? Where\'s the space?',
+            { say: 'Quick look over one shoulder, then the other. Who\'s near you? Where\'s the open space?',
               pov: 'CM', scan: true, dur: 4 },
-            { say: 'You spotted a defender behind your <b>left</b> shoulder, and space on your <b>right</b>. You know your plan before the ball even gets to you!',
+            { say: 'You saw a defender behind your <b>left</b> shoulder. And open space on your <b>right</b>. Now you have a plan before the ball even gets to you!',
               tags: { 'away:M2': 'Defender here' }, zones: [{ at: [3, 4], r: 3, color: GOOD, pulse: true }] },
-            { say: 'The pass comes in, and your first touch goes into the space, away from the defender.',
+            { say: 'Here comes the pass. Your first touch pushes the ball into the open space, away from the defender.',
               pass: { to: 'CM' }, dribble: { who: 'CM', to: [3, 4], dur: 1.3 }, wait: 0.9, arrows: [['CM', [3, 4], 'dribble']] },
-            { say: 'Researchers who study pro players found the ones who look around more tend to complete more passes. Rule of thumb: <b>look, then look again</b>.',
+            { say: 'Scientists studied pro players. The ones who looked around more usually made more passes that reached a teammate. Tip: <b>look, then look again</b>.',
               think: { CM: 'Saw it coming!' } }
           ]
         },
@@ -2542,35 +2607,35 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
           },
           beats: [
             { say: 'You have the ball. You have three choices: <b>pass</b>, <b>dribble</b> or <b>shoot</b>. Smart players choose fast.' },
-            { say: '<b>Shoot</b> when you can see the goal and you\'re close enough to score. Here, defenders block the way and you\'re far out.',
+            { say: '<b>Shoot</b> when you can see the goal and you\'re close enough to score. Here, defenders block the way, and you\'re too far away.',
               arrows: [['CM', [25, 0], 'pass', 0, 'bad']] },
-            { say: '<b>Pass</b> when a teammate is in a better spot than you, like more open or closer to goal. Our right wing is open!',
+            { say: '<b>Pass</b> when a teammate is in a better spot than you. Maybe she\'s more open, or closer to goal. Our right wing is open!',
               arrows: [['CM', 'RW', 'pass', 0, 'good']], rings: { RW: GOOD } },
             { say: '<b>Dribble</b> when there\'s open space in front of you. Run with the ball into it.',
               arrows: [['CM', [12, -2], 'dribble', 0, 'good']], zones: [{ at: [13.5, -2], r: 2.2, color: GOOD }] },
-            { say: 'Rule of thumb: <b>look forward first</b>. Can I score? Can I pass forward? If not, keep the ball with a pass sideways or back. That\'s not giving up, it\'s smart!',
+            { say: 'Tip: <b>look forward first</b>. Can I score? Can I pass forward? If not, keep the ball with a pass sideways or back. That\'s not giving up. It\'s smart!',
               pass: { to: 'RW', delay: 0.8 } }
           ]
         },
         {
-          id: 'attack-5', title: 'First touch and open body', sub: 'Turn forward with one touch',
+          id: 'attack-5', title: 'Your first touch', sub: 'Stand sideways and turn in one touch',
           scene: {
             home: { GK: [-20, 0], LD: [-10, -9], RD: [-9, 9], CM: [-2, 2], LW: [5, -13], RW: [6, 13], ST: [12, 0] },
             away: { GK: [23, 0], D1: [13, -5], D2: [13, 5], M1: [4, -6], M2: [-1, -4], M3: [7, 7], F: [-13, 3] },
             ball: 'RD', you: 'CM', camera: { target: [-3, 2], dist: 24, theta: 0.3, phi: 0.95 }
           },
           beats: [
-            { say: 'Before the pass arrives, <b>open your body</b>: stand sideways, so you can see where the ball is coming from <b>and</b> where you want to go.',
+            { say: 'Before the pass comes, stand <b>sideways</b>. Now you can see where the ball is coming from and where you want to go. Coaches call this opening your body.',
               think: { CM: 'I can see both ways!' }, arrows: [['RD', 'CM', 'pass'], ['CM', [8, 0], 'run', 0, YEL]] },
-            { say: 'Get ready to take it on the foot <b>farther from the ball</b>, your back foot. That turns you to face forward in one touch.' },
-            { say: 'Her first touch goes forward, away from the defender. One touch and she\'s facing their goal!',
+            { say: 'Get ready to take the ball on the foot <b>farther from it</b>. Coaches call that your back foot. It turns you to face forward in one touch.' },
+            { say: 'Her first touch pushes the ball forward, away from the defender. One touch, and she\'s facing their goal!',
               pass: { to: 'CM' }, dribble: { who: 'CM', to: [4, 4], dur: 1.1 }, wait: 0.9 },
-            { say: 'If a defender is tight behind you and you can\'t turn, <b>shield</b>: keep your body between her and the ball, then pass back to a teammate who can see forward.',
-              move: { 'away:M2': [3, 3] }, think: { CM: 'Too tight, I\'ll shield.' }, dur: 1 }
+            { say: 'Is a defender right behind you, so you can\'t turn? Then <b>shield</b> it: keep your body between her and the ball. Then pass back to a teammate who is facing forward.',
+              move: { 'away:M2': [3, 3] }, think: { CM: 'Too close! I\'ll shield it.' }, dur: 1 }
           ]
         },
         {
-          id: 'attack-6', title: 'Give-and-go', sub: 'Beat a defender with a 2 v 1',
+          id: 'attack-6', title: 'Give-and-go', sub: 'Two of us beat one defender',
           scene: {
             home: { GK: [-16, 0], LD: [-5, -8], RD: [-5, 8], CM: [3, 2], LW: [6, -12], RW: [9, 13], ST: [13, -5] },
             away: { GK: [23, 0], D1: [13, -10], D2: [15, 2], M1: [5, -5], M2: [6, 5], M3: [8, 10], F: [-6, 0] },
@@ -2583,27 +2648,27 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
               dribble: { who: 'LW', to: [9.5, -11] }, move: { 'away:D1': [11.3, -10.6] }, dur: 1.2 },
             { say: '...pass to your teammate and <b>sprint past</b> the defender...',
               pass: { to: 'ST' }, move: { LW: [16, -11] }, arrows: [['LW', [16, -11], 'run']], wait: 0.1, dur: 1.4 },
-            { say: '...and get it straight back. That\'s a <b>give-and-go</b>, also called a wall pass. Now shoot!',
+            { say: '...and get the ball right back. You give it, then go! That\'s a <b>give-and-go</b>, also called a wall pass. Now shoot!',
               pass: { from: 'ST', to: 'LW', dur: 0.6 }, shoot: { from: 'LW', delay: 1.1, to: [25.6, -1.6] } }
           ]
         },
         {
-          id: 'attack-7', title: 'Switch the play', sub: 'Crowded side? Go to the other side',
+          id: 'attack-7', title: 'Switch sides', sub: 'Crowded side? Go to the other side',
           scene: {
             home: { GK: [-16, 0], LD: [-6, -8], RD: [-3, 9], CM: [2, 3], LW: [8, -13], RW: [7, 13], ST: [13, 4] },
             away: { GK: [23, 0], D1: [13, -1], D2: [12, 8], M1: [8, 10], M2: [5, 6], M3: [9, 12.5], F: [-3, 8] },
             ball: 'RW', camera: 'top'
           },
           beats: [
-            { say: 'The other team has crowded our <b>right</b> side. Lots of legs, no space.',
+            { say: 'The other team has lots of players on our <b>right</b> side. Lots of legs, no space.',
               zones: [{ rect: [2, 4, 16, 17], color: BAD, opacity: 0.18 }] },
             { say: 'Look at the <b>other</b> side: our left wing is all alone!',
               rings: { LW: GOOD }, zones: [{ rect: [4, -17, 18, -6], color: GOOD, opacity: 0.18 }] },
-            { say: 'Move it across: right wing to centre mid, centre mid to the left wing. That\'s a <b>switch</b>.',
+            { say: 'Move the ball across: right wing to centre mid, then centre mid to left wing. Moving it to the other side is a <b>switch</b>.',
               pass: { to: 'CM' }, arrows: [['RW', 'CM', 'pass'], ['CM', 'LW', 'pass']] },
             { say: 'Switch!',
               pass: { from: 'CM', to: 'LW', delay: 0.2, dur: 1.1 }, calls: { RW: 'SWITCH!' } },
-            { say: 'Now our left wing has space to run into, and their whole team has to run across. Switch when one side is crowded!',
+            { say: 'Now our left wing has space to run into. Their whole team has to run across. Switch when one side is crowded!',
               dribble: { who: 'LW', to: [16, -12] }, move: { 'away:D1': [15, -6], 'away:M2': [8, -2] }, dur: 1.6 }
           ]
         }
@@ -2611,7 +2676,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     },
     // =====================================================================
     {
-      id: 'defend', title: 'They Have the Ball', blurb: 'Goal-side, pressure-cover-balance, squeeze, 1 v 1, recovery runs.',
+      id: 'defend', title: 'They Have the Ball', blurb: 'Guard our goal, help each other, squeeze in, stop a dribbler and sprint back.',
       lessons: [
         {
           id: 'defend-1', title: 'Goal-side', sub: 'Between your player and your goal',
@@ -2621,34 +2686,34 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
             ball: 'away:M3', you: 'RD', camera: { target: [-8, 4], dist: 30, theta: 0.15, phi: 0.95 }
           },
           beats: [
-            { say: 'When they have the ball, ask: am I <b>goal-side</b>? That means standing between your player and your own goal.',
+            { say: 'When they have the ball, ask: am I <b>goal-side</b>? That means standing between the player you\'re guarding and our goal.',
               arrows: [['away:M3', 'ourgoal', 'run', 0, BAD]] },
             { say: 'Right now you\'re on the <b>wrong side</b>. Your player is closer to our goal than you are!',
               rings: { RD: BAD }, tags: { RD: 'Wrong side!' } },
-            { say: 'Run back on a line toward our goal until you\'re between the attacker and the goal.',
+            { say: 'Run back toward our goal. Keep going until you\'re between her and the goal.',
               move: { RD: [-10.5, 4.5] }, arrows: [['RD', [-10.5, 4.5], 'run']], dur: 1.5 },
-            { say: 'Goal-side, and a little toward the middle. Now you can see the ball and your player, and you\'re protecting the goal.',
+            { say: 'Goal-side, and a little toward the middle. Now you can see the ball <b>and</b> your player. And you\'re guarding our goal.',
               rings: { RD: GOOD }, tags: { RD: 'Goal-side' } }
           ]
         },
         {
-          id: 'defend-2', title: 'Pressure, cover, balance', sub: 'Three jobs when they have it',
+          id: 'defend-2', title: 'Pressure, cover, balance', sub: 'Three jobs when they have the ball',
           scene: { home: S.defMid, away: S.defMidAway, ball: 'away:M1', camera: { target: [-2, 3], dist: 34, theta: 0.15, phi: 0.95 } },
           beats: [
-            { say: 'When they have the ball, three jobs need doing. Job 1: <b>Pressure</b>. The closest player goes to the ball.',
+            { say: 'When they have the ball, we have three jobs. Job 1: <b>Pressure</b>. The closest player runs at the ball to try to win it.',
               rings: { RW: ORANGE }, tags: { RW: 'Pressure' }, arrows: [[[4, 12], 'RW', 'run', 0, ORANGE]] },
-            { say: 'Job 2: <b>Cover</b>. Teammates stand behind the presser, at an angle, ready if she gets beaten.',
+            { say: 'Job 2: <b>Cover</b>. Nearby teammates stand just behind her, off to the side. If the dribbler gets past her, they\'re ready to help.',
               rings: { RD: YEL, CM: YEL }, tags: { RD: 'Cover', CM: 'Cover', RW: 'Pressure' } },
-            { say: 'Job 3: <b>Balance</b>. Everyone else tucks in toward the middle to guard the space in front of our goal.',
+            { say: 'Job 3: <b>Balance</b>. Everyone else moves in toward the middle. They guard the space in front of our goal.',
               rings: { LD: BLUE, LW: BLUE }, tags: { LD: 'Balance', LW: 'Balance', RW: 'Pressure', RD: 'Cover', CM: 'Cover' } },
-            { say: 'Pressure, cover, balance. Like a stack of shields: if one gets beaten, the next one is ready.',
+            { say: 'Pressure, cover, balance. It\'s like a stack of shields. If someone gets past the first one, the next one is ready.',
               links: [['RW', 'RD', ORANGE], ['RW', 'CM', ORANGE], ['CM', 'LD'], ['LD', 'LW'], ['RD', 'LD']] },
-            { say: 'Who presses? Whoever is closest. Who covers? The next closest. Talk to sort it out!',
+            { say: 'Who goes to the ball? Whoever is closest. Who covers? The next closest. <b>Talk</b> to each other to sort it out!',
               calls: { RW: 'I\'VE GOT BALL!', RD: 'COVERING!' } }
           ]
         },
         {
-          id: 'defend-3', title: 'Squeeze together', sub: 'Stay compact',
+          id: 'defend-3', title: 'Squeeze together', sub: 'Stay close together',
           scene: {
             home: { GK: [-22, 0], LD: [-10, -13], RD: [-10, 13], CM: [2, 0], LW: [6, -14], RW: [6, 14], ST: [12, 0] },
             away: { GK: [23, 0], D1: [12, -6], D2: [12, 6], M1: [-2, -6], M2: [6, 1], M3: [-1, 7], F: [-9, 1] },
@@ -2657,29 +2722,29 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
           beats: [
             { say: 'Uh-oh. We\'re too spread out when <b>they</b> have the ball. Big gaps between us mean easy passes for them.',
               arrows: [['away:M2', 'away:F', 'pass', 0, BAD], ['away:M2', 'away:M1', 'pass', 0, BAD]], zones: [{ at: [-4, 0], r: 5, color: BAD }] },
-            { say: '<b>Squeeze!</b> Get closer together and goal-side of the ball. Now the gaps are gone.',
+            { say: '<b>Squeeze!</b> Get closer together, between the ball and our goal. Now the gaps are gone.',
               move: { LD: [-11, -4], RD: [-11, 4], CM: [-3, 0.5], LW: [-2, -7], RW: [-1.5, 6.5], ST: [4, 0.5], GK: [-21, 0] }, dur: 1.8 },
-            { say: 'Compact means hard to play through. They have to go around us, out wide, where it\'s less dangerous.',
+            { say: 'Coaches call this <b>compact</b>. Close together, we\'re hard to get through. They have to go around us, out to the sides, where it\'s less dangerous.',
               links: [['LD', 'RD'], ['LW', 'CM'], ['CM', 'RW'], ['LD', 'LW'], ['RD', 'RW'], ['CM', 'ST']] },
-            { say: 'Rule of thumb: when we have the ball, make the field <b>big</b>. When they have it, make it <b>small</b>.',
+            { say: 'Tip: when we have the ball, make the field <b>big</b>. When they have it, make it <b>small</b>.',
               notes: [[[-4, -15], 'Make it small']] }
           ]
         },
         {
-          id: 'defend-4', title: 'Defending 1 v 1', sub: 'Patient, side-on, show her outside',
+          id: 'defend-4', title: 'Defending 1 v 1', sub: 'Be patient and send her to the side',
           scene: {
             home: { GK: [-22, 0], LD: [-11, -7], RD: [-10, 7], CM: [-4, 0], LW: [2, -8], RW: [3, 9], ST: [9, 0] },
             away: { GK: [23, 0], D1: [10, -6], D2: [10, 5], M1: [-2, -11], M2: [3, 1], M3: [1, 9], F: [-12, 3] },
             ball: 'away:M1', you: 'LD', camera: { target: [-8, -8], dist: 22, theta: 0.2, phi: 0.92 }
           },
           beats: [
-            { say: 'An attacker is dribbling at you. Don\'t panic, and <b>don\'t dive in</b>!',
+            { say: 'An attacker is dribbling right at you. Stay calm, and <b>don\'t dive in</b>. That means don\'t rush in and kick at the ball.',
               dribble: { who: 'away:M1', to: [-5, -10] }, dur: 1.2 },
-            { say: 'Get close, about an arm\'s length away. Stand <b>side-on</b> with your knees bent, ready to move either way.',
+            { say: 'Get close, about an arm\'s length away. Stand <b>sideways</b> with your knees bent. Now you can move either way.',
               move: { LD: [-7.4, -9] }, think: { LD: 'Patient... patient...' }, dur: 0.9 },
-            { say: '<b>Show her the sideline</b>: stand a little to the inside so the only way forward is toward the sideline, away from our goal.',
+            { say: 'Now <b>make her go toward the sideline</b>. Stand a little closer to the middle than she is. Then her only way forward is along the sideline, away from our goal.',
               dribble: { who: 'away:M1', to: [-8.5, -14], dur: 1.6 }, move: { LD: [-9.6, -12.4] }, arrows: [[[-5, -10], [-9, -15], 'run', 0.1, YEL]], dur: 1.6 },
-            { say: 'The sideline is like an extra defender. When she takes a big touch, pounce and win the ball!',
+            { say: 'The sideline is like an extra defender. When she kicks the ball too far ahead, <b>jump in</b> and win it!',
               pass: { from: 'away:M1', to: [-10.2, -14.6], dur: 0.5 }, move: { LD: [-10.4, -13.8] }, giveTo: 'LD', wait: 0.6, dur: 0.6,
               calls: { LD: 'GOT IT!' } }
           ]
@@ -2692,13 +2757,13 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
             ball: 'away:M1', you: 'LW', camera: { target: [-2, -3], dist: 34, theta: 0.15, phi: 0.95 }
           },
           beats: [
-            { say: 'We lost the ball and they\'re running at our goal. If you\'re beaten, don\'t walk. <b>Sprint back!</b>',
+            { say: 'We lost the ball, and they\'re running at our goal. If they got past you, don\'t walk. <b>Sprint back!</b>',
               dribble: { who: 'away:M1', to: [-4, -6] }, dur: 1.4 },
-            { say: 'But where to? <b>Not</b> straight at the ball. Run on a line toward <b>our goal</b>, so you end up goal-side.',
+            { say: 'But where to? <b>Not</b> straight at the ball. Run toward <b>our goal</b>. Then you end up between the ball and our goal.',
               arrows: [['LW', [-6, -7], 'run', 0, BAD], ['LW', [-11, -2], 'run', 0, GOOD]], notes: [[[-4, -10], 'Chasing the ball', 'bad'], [[-11, 2], 'Toward our goal', 'good']] },
-            { say: 'Recovery run!',
+            { say: 'That\'s a <b>recovery run</b>: a sprint back to help!',
               move: { LW: [-10, -3.5], CM: [-7, 1] }, dribble: { who: 'away:M1', to: [-7, -7], dur: 2 }, dur: 2 },
-            { say: 'Now you\'re back between the ball and our goal, and the team is safe again. Recovery runs are a big part of being a great teammate.',
+            { say: 'Now you\'re back between the ball and our goal. The team is safe again. Sprinting back is a big part of being a great teammate.',
               rings: { LW: GOOD } }
           ]
         }
@@ -2984,80 +3049,80 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
 
   PIQ.QUIZ = [
     // ---------- field ----------
-    { id: 'q1', lesson: 'field-1', q: 'How many players does each team have on the field in 7v7?', a: ['6 players plus a keeper', '7 players plus a keeper', '5 players plus a keeper', '11 players'], c: 0, why: '7v7 means <b>7 players a side</b>: six field players and one keeper.' },
-    { id: 'q2', lesson: 'field-1', q: 'Is there offside in 7v7?', a: ['No, there\'s no offside in 7v7', 'Yes, from the halfway line', 'Only in the penalty area', 'Only after half-time'], c: 0, why: 'Ontario 7v7 has <b>no offside</b>. You can stand anywhere, so pick smart spots!' },
-    { id: 'q3', lesson: 'field-1', q: 'What are the dashed lines across the field for?', a: ['Retreat lines: the other team backs off behind them on our goal kicks and keeper\'s ball', 'Offside lines', 'Where the subs stand', 'Where you take penalties from'], c: 0, why: 'They\'re <b>retreat lines</b>. On our goal kicks, or when our keeper has the ball in her hands, the other team must get behind the line.' },
-    { id: 'q4', lesson: 'field-1', q: 'In which third should you be the most careful with the ball?', a: ['Our defending third, near our goal', 'The attacking third', 'The middle third', 'It doesn\'t matter'], c: 0, why: 'A mistake near <b>our</b> goal can give away a goal. Be careful there and brave in their end.' },
-    { id: 'q5', lesson: 'field-2', q: 'In a 2-3-1, what does the "1" stand for?', a: ['One striker up front', 'One keeper', 'One defender', 'One sub'], c: 0, why: 'You count from the back and skip the keeper: <b>2</b> defenders, <b>3</b> in the middle, <b>1</b> striker.' },
-    { id: 'q6', lesson: 'field-2', q: 'What is a winger\'s main job when we have the ball?', a: ['Stay wide, near the sideline', 'Stand next to the ball', 'Stay in our penalty area', 'Stand behind the keeper'], c: 0, why: 'Wingers give the team <b>width</b>, stretching the other team so there\'s more space for everyone.' },
-    { id: 'q7', lesson: 'field-3', q: 'Everyone on your team is crowded around the ball. What is this called?', a: ['Bunching (the beehive)', 'Pressing', 'A triangle', 'A switch'], c: 0, why: 'That\'s <b>bunching</b>. It leaves no one to pass to. Spread out a good pass away from each other.' },
-    { id: 'q8', lesson: 'field-3', q: 'What does "depth" mean?', a: ['Having someone ahead of the ball and someone behind it', 'Running really fast', 'Kicking the ball high', 'Standing near the sideline'], c: 0, why: '<b>Depth</b> means our team is long as well as wide: a striker up high and defenders behind.' },
+    { id: 'q1', lesson: 'field-1', q: 'In 7v7 soccer, how many players does each team have on the field?', a: ['6 players plus a keeper', '7 players plus a keeper', '5 players plus a keeper', '11 players in all'], c: 0, why: 'In 7v7, each team has <b>7 players</b> on the field: six players and one keeper.' },
+    { id: 'q2', lesson: 'field-1', q: 'In older kids\' soccer, the offside rule stops you from waiting by their goal for a pass. Does 7v7 have it?', a: ['No, there is no offside in 7v7', 'Yes, past the halfway line', 'Only in the penalty box', 'Only after half-time'], c: 0, why: 'Ontario 7v7 has <b>no offside</b> rule. You can stand anywhere, so pick smart spots!' },
+    { id: 'q3', lesson: 'field-1', q: 'What are the dashed lines across the field for?', a: ['The other team must back up behind them', 'You can\'t pass the ball past them', 'The subs wait there to come on', 'You take penalty kicks from there'], c: 0, why: 'They\'re <b>retreat lines</b>. On our goal kicks, or when our keeper holds the ball, the other team must get behind the line.' },
+    { id: 'q4', lesson: 'field-1', q: 'Think of the field in three parts. In which part should you be the most careful with the ball?', a: ['The part near our own goal', 'The part near their goal', 'The part in the middle', 'It doesn\'t matter'], c: 0, why: 'A mistake near <b>our</b> goal can give away a goal. Be careful there and brave near their goal.' },
+    { id: 'q5', lesson: 'field-2', q: 'Our team lines up in a 2-3-1. What does the "1" stand for?', a: ['One striker up front', 'One keeper in goal', 'One defender at the back', 'One sub on the bench'], c: 0, why: 'Count from our goal and skip the keeper: <b>2</b> defenders, <b>3</b> in the middle, <b>1</b> striker up front.' },
+    { id: 'q6', lesson: 'field-2', q: 'A winger plays on the side of the field. When we have the ball, what is her main job?', a: ['Stay out wide, near the sideline', 'Stand right next to the ball', 'Stay back near our own goal', 'Stand behind our keeper'], c: 0, why: 'Wingers keep the team spread <b>wide</b>. That pulls the other team apart, so there\'s more space for everyone.' },
+    { id: 'q7', lesson: 'field-3', q: 'Everyone on your team is crowded around the ball. Why is that a problem?', a: ['Nobody is free to get a pass', 'It isn\'t, it\'s the best way to play', 'The ref will give a free kick', 'It makes the field too big'], c: 0, why: 'That\'s <b>bunching</b> (coaches call it the beehive). Spread out, about one good pass away from each other.' },
+    { id: 'q8', lesson: 'field-3', q: 'We have the ball. Where should our players be?', a: ['Some ahead of the ball, some behind it', 'All crowded right next to the ball', 'All up by their goal, waiting', 'All back by our goal, guarding'], c: 0, why: 'Coaches call this <b>depth</b>. We want a striker up near their goal and defenders back near ours.' },
 
     // ---------- shape ----------
-    { id: 'q10', lesson: 'shape-1', q: 'Our keeper has the ball. Where should our two defenders go?', a: ['Split wide, near the edge of the box', 'Stand right next to the keeper', 'Run up front', 'Stand in the middle together'], c: 0, why: 'Splitting <b>wide</b> stretches the other team and gives the keeper two safe passes.',
+    { id: 'q10', lesson: 'shape-1', q: 'Our keeper has the ball. Where should our two defenders go?', a: ['Spread out to each side of the box', 'Stand right next to the keeper', 'Run all the way up front', 'Stand together in the middle'], c: 0, why: 'Spreading out <b>wide</b> pulls the other team apart and gives the keeper two safe passes.',
       scene: { home: S.gkBall, away: S.gkBallAway, ball: 'GK', camera: { target: [-12, 0], dist: 36, theta: 0.15, phi: 0.95 } } },
-    { id: 'q11', lesson: 'shape-1', q: 'Our keeper has the ball. Where should the striker be?', a: ['High up the field, to push their defenders back', 'Right beside the keeper', 'On the sideline by the bench', 'In our penalty area'], c: 0, why: 'A high striker pushes their defenders back and leaves more room for our team to build.' },
-    { id: 'q12', lesson: 'shape-2', q: 'The ball moves up the field. What should our defenders do?', a: ['Move up too, but stay behind the ball', 'Stay on our goal line', 'Run past the ball', 'Stand still'], c: 0, why: 'The team moves like a <b>rubber band</b>. Defenders step up but stay behind the ball, ready if we lose it.' },
-    { id: 'q13', lesson: 'shape-3', q: 'Our right wing has the ball near their goal. Where should our LEFT wing run?', a: ['To the back post, the far side of the goal', 'Back to our goal', 'Over to the right wing', 'To the corner flag'], c: 0, why: 'Lots of goals come from a pass across the goal to a player arriving at the <b>back post</b>.',
+    { id: 'q11', lesson: 'shape-1', q: 'Our keeper has the ball. Where should our striker be?', a: ['Far up the field, near their goal', 'Right beside our keeper', 'By the sideline near our bench', 'In our own penalty box'], c: 0, why: 'A striker far up the field pushes their defenders back. That leaves more room for our team to bring the ball up.' },
+    { id: 'q12', lesson: 'shape-2', q: 'The ball moves up the field. What should our defenders do?', a: ['Move up too, but stay behind the ball', 'Stay back on our own goal line', 'Run way up past the ball', 'Stay right where they are'], c: 0, why: 'The team moves like a <b>rubber band</b>. Defenders move up but stay behind the ball, ready if we lose it.' },
+    { id: 'q13', lesson: 'shape-3', q: 'Our player on the right side has the ball near their goal. You play on the LEFT side. Where should you run?', a: ['To the far side of their goal', 'Back toward our own goal', 'Over to the right side', 'Out to the corner flag'], c: 0, why: 'Lots of goals come from a pass across the goal to a player running in at the far side. Coaches call that spot the <b>back post</b>.',
       scene: { home: S.attBall, away: S.attBallAway, ball: 'RW', camera: { target: [14, 0], dist: 34, theta: 0.15, phi: 0.95 } } },
-    { id: 'q14', lesson: 'shape-3', q: 'We\'re attacking near their goal. Where is a great spot for our centre mid?', a: ['Near the top of their box, ready for a pass back', 'In our penalty area', 'Behind the keeper', 'On the halfway line by the sideline'], c: 0, why: 'A pass rolled back to the <b>top of the box</b> is one of the best chances in soccer.' },
-    { id: 'q15', lesson: 'shape-4', q: 'The ball is on the far right. You are our left wing and they have it. What do you do?', a: ['Tuck in toward the middle', 'Stay right on the left sideline', 'Run to the ball', 'Sit down'], c: 0, why: 'You\'re on the <b>weak side</b>. Tuck in toward the middle to help guard the space in front of goal.',
+    { id: 'q14', lesson: 'shape-3', q: 'We\'re attacking near their goal. Where is a great spot for our middle player (the centre mid)?', a: ['Just outside their box, ready for a pass', 'Back in our own penalty box', 'Behind their keeper, by the net', 'By the sideline at the halfway line'], c: 0, why: 'A pass rolled back to the <b>top of the box</b>, just outside it, is one of the best chances to score.' },
+    { id: 'q15', lesson: 'shape-4', q: 'The other team has the ball on the far right side. You play on our left side. What should you do?', a: ['Move in toward the middle', 'Stay right on the left sideline', 'Run all the way to the ball', 'Sit down and rest'], c: 0, why: 'You\'re on the side away from the ball (the <b>weak side</b>). Move in toward the middle to help guard the space in front of our goal.',
       scene: { home: S.defMid, away: S.defMidAway, ball: 'away:M1', you: 'LW', camera: 'top' } },
-    { id: 'q16', lesson: 'shape-4', q: 'What is the "ball side"?', a: ['The side of the field where the ball is', 'The side of the ball you kick', 'Where the ball bag is', 'The goal you attack'], c: 0, why: 'The <b>ball side</b> is where the ball is. The team slides toward it; the far side is the weak side.' },
+    { id: 'q16', lesson: 'shape-4', q: 'The ball is on the left side of the field. Coaches say "ball side." Which side is that?', a: ['The left side, where the ball is', 'The right side, away from the ball', 'The side where the ball bag is', 'The end with the goal we attack'], c: 0, why: 'The <b>ball side</b> is where the ball is, and the team slides toward it. The other side is the weak side.' },
 
     // ---------- attack ----------
-    { id: 'q20', lesson: 'attack-1', q: 'There\'s a defender standing between you and the ball. What should you do?', a: ['Move a few steps so the passing lane is clear', 'Wave your arms and wait', 'Stand still', 'Run to the ball carrier'], c: 0, why: 'If you can draw a straight line from the ball to you without crossing a defender, you\'re <b>open</b>. If not, move!' },
-    { id: 'q21', lesson: 'attack-2', q: 'Why do we make triangles?', a: ['So the ball carrier always has two passing options', 'Because it looks cool', 'So we can all stand together', 'To confuse the referee'], c: 0, why: 'A <b>triangle</b> gives the player with the ball two passes, and a defender can\'t block both.' },
-    { id: 'q22', lesson: 'attack-3', q: 'When should you look over your shoulder?', a: ['Before the ball arrives', 'After you lose the ball', 'Only at half-time', 'Never, keep your eyes on the ball'], c: 0, why: '<b>Scan before the ball arrives</b>, so you already know where the defenders and the space are.' },
-    { id: 'q23', lesson: 'attack-3', q: 'You scanned and saw a defender behind your left shoulder. Where should your first touch go?', a: ['Away from her, to your right', 'Toward her, to your left', 'Straight up in the air', 'Stop the ball dead and wait'], c: 0, why: 'Your first touch goes <b>away from pressure</b>, into the space you saw.' },
-    { id: 'q24', lesson: 'attack-4', q: 'When is a good time to shoot?', a: ['When you can see the goal and you\'re close enough to score', 'Every time you get the ball', 'Only from the halfway line', 'Never, always pass'], c: 0, why: 'See the goal, close enough, path not blocked? <b>Shoot!</b>' },
-    { id: 'q25', lesson: 'attack-4', q: 'There\'s lots of open space in front of you and no defender near. What\'s a smart choice?', a: ['Dribble into the space', 'Kick it out of bounds', 'Pass backward to the keeper', 'Stop and wait'], c: 0, why: 'Open space in front of you? <b>Run with the ball</b> into it.' },
-    { id: 'q26', lesson: 'attack-4', q: 'No forward pass, no space, no shot. What do you do?', a: ['Keep the ball with a pass sideways or back', 'Kick it as far as you can', 'Dribble into three defenders', 'Pick it up'], c: 0, why: 'Keeping the ball is smart. A sideways or back pass lets the team start again.' },
-    { id: 'q27', lesson: 'attack-5', q: 'Which foot is best for receiving so you can turn forward?', a: ['The foot farther from the ball (your back foot)', 'The foot closest to the ball', 'Your hands', 'It doesn\'t matter'], c: 0, why: 'Receiving on your <b>back foot</b> with your body open turns you forward in one touch.' },
-    { id: 'q28', lesson: 'attack-5', q: 'A defender is right behind you and you can\'t turn. What do you do?', a: ['Shield the ball and pass back to a teammate', 'Turn into her anyway', 'Kick it out of bounds', 'Stop playing'], c: 0, why: '<b>Shield</b>: keep your body between her and the ball, then find a teammate who can see forward.' },
-    { id: 'q29', lesson: 'attack-6', q: 'What is a give-and-go?', a: ['You pass, run past your defender, and get the ball straight back', 'Giving the ball to the other team', 'A long kick up the field', 'Going to get water'], c: 0, why: 'A <b>give-and-go</b> (wall pass) beats a defender using a teammate as a wall.' },
-    { id: 'q30', lesson: 'attack-7', q: 'The other team has crowded one side of the field. What\'s smart?', a: ['Switch the ball to the other side', 'Keep dribbling into the crowd', 'Kick it out', 'Everyone run to that side too'], c: 0, why: 'One side crowded means the other side is open. <b>Switch</b> it!' },
+    { id: 'q20', lesson: 'attack-1', q: 'A defender is standing between you and the ball. What should you do?', a: ['Move a few steps so a pass can reach you', 'Wave your arms and wait for it', 'Stand still right where you are', 'Run right up next to the ball'], c: 0, why: 'If you can draw a straight line from the ball to you without crossing a defender, you\'re <b>open</b>. If not, move!' },
+    { id: 'q21', lesson: 'attack-2', q: 'Why do coaches want three teammates to stand in a triangle shape?', a: ['So the player with the ball has two passes', 'Because triangle shapes look cool', 'So we can all stand close together', 'So the ref can see us better'], c: 0, why: 'A <b>triangle</b> gives the player with the ball two people to pass to, and one defender can\'t block both.' },
+    { id: 'q22', lesson: 'attack-3', q: 'When should you look over your shoulder?', a: ['Before the ball gets to you', 'After you lose the ball', 'Only at half-time', 'Never, just watch the ball'], c: 0, why: 'Take a quick look around <b>before the ball gets to you</b> (coaches call it scanning). Then you know where the defenders and the open space are.' },
+    { id: 'q23', lesson: 'attack-3', q: 'A pass is coming. You looked and saw a defender behind you on your left. When the ball gets to you, which way should you push it?', a: ['Away from her, to your right', 'Toward her, to your left', 'Straight up in the air', 'Nowhere, stop it and wait'], c: 0, why: 'Your first touch should go <b>away from the defender</b>, into the open space you saw.' },
+    { id: 'q24', lesson: 'attack-4', q: 'When is a good time to shoot?', a: ['When you see the goal and you\'re close', 'Every single time you get the ball', 'Only from the halfway line', 'Never, always look to pass'], c: 0, why: 'Can you see the goal? Are you close enough? Is the way clear? Then <b>shoot!</b>' },
+    { id: 'q25', lesson: 'attack-4', q: 'There\'s lots of open space in front of you and no defender near. What\'s a smart choice?', a: ['Dribble into the space', 'Kick it out of bounds', 'Pass back to the keeper', 'Stop and wait'], c: 0, why: 'Open space in front of you? <b>Run with the ball</b> into it.' },
+    { id: 'q26', lesson: 'attack-4', q: 'You can\'t pass forward, there\'s no space, and you can\'t shoot. What do you do?', a: ['Pass it sideways or back', 'Kick it as far as you can', 'Dribble into three defenders', 'Pick the ball up'], c: 0, why: 'Keeping the ball is smart. A pass to the side or back lets the team start again.' },
+    { id: 'q27', lesson: 'attack-5', q: 'A pass is coming. Which foot should you take it with so you can turn and face their goal?', a: ['The foot farther from the ball', 'The foot closer to the ball', 'Neither, use your hands', 'It doesn\'t matter'], c: 0, why: 'Stand a bit sideways so you can see the field, and take it on the foot farther from the ball (your <b>back foot</b>). Then you can turn in one touch.' },
+    { id: 'q28', lesson: 'attack-5', q: 'A defender is right behind you and you can\'t turn. What do you do?', a: ['Guard it with your body, then pass back', 'Try to spin around into her anyway', 'Kick it out of bounds to be safe', 'Stop playing and wait'], c: 0, why: 'Keep your body between her and the ball (coaches call it <b>shielding</b>). Then pass to a teammate who can see forward.' },
+    { id: 'q29', lesson: 'attack-6', q: 'A defender is in your way and a teammate is close by. What\'s a smart way to get past?', a: ['Pass to her, run past, get it back', 'Give the ball to the other team', 'Kick it long up the field', 'Stop and go get some water'], c: 0, why: 'That\'s a <b>give-and-go</b>. Your teammate bounces the ball back to you, like kicking it off a wall.' },
+    { id: 'q30', lesson: 'attack-7', q: 'Lots of players from the other team are crowded on one side. What\'s smart?', a: ['Pass it over to the other side', 'Keep dribbling into the crowd', 'Kick it out of bounds', 'Everyone run to that side too'], c: 0, why: 'One side crowded means the other side is open, so move the ball there. Coaches call this a <b>switch</b>!' },
 
     // ---------- defend ----------
-    { id: 'q40', lesson: 'defend-1', q: 'What does "goal-side" mean?', a: ['Being between your player and your own goal', 'Standing in the goal', 'Being near their goal', 'Standing beside the goalpost'], c: 0, why: '<b>Goal-side</b> means you\'re between the attacker and our goal, so she can\'t just run at it.' },
-    { id: 'q41', lesson: 'defend-2', q: 'They have the ball. Who should press it?', a: ['The closest player', 'The striker, always', 'The keeper', 'Everyone at once'], c: 0, why: 'The <b>closest</b> player presses. The next closest covers behind her.' },
-    { id: 'q42', lesson: 'defend-2', q: 'Your teammate is pressing the ball. What does "cover" mean?', a: ['Stand behind her at an angle, ready if she gets beaten', 'Stand right next to her', 'Cover your eyes', 'Run up the field'], c: 0, why: '<b>Cover</b> is the second defender: close behind at an angle, ready to help.' },
-    { id: 'q43', lesson: 'defend-2', q: 'Pressure, cover, and...?', a: ['Balance', 'Bounce', 'Banana', 'Breakaway'], c: 0, why: '<b>Balance</b>: everyone else tucks in to guard the space in front of goal.' },
-    { id: 'q44', lesson: 'defend-3', q: 'When the other team has the ball, should we make the field big or small?', a: ['Small: squeeze together', 'Big: spread out', 'It doesn\'t matter', 'Stand on the sidelines'], c: 0, why: 'With the ball, make it <b>big</b>. Without it, make it <b>small</b> so there are no gaps.' },
-    { id: 'q45', lesson: 'defend-4', q: 'An attacker is dribbling at you. What should you do?', a: ['Get close, stay on your feet, and be patient', 'Dive in right away', 'Turn your back', 'Run away'], c: 0, why: 'Patient and side-on wins 1 v 1s. Diving in lets a good dribbler go right past you.' },
-    { id: 'q46', lesson: 'defend-4', q: 'When defending 1 v 1, which way should you show the attacker?', a: ['Toward the sideline, away from our goal', 'Toward the middle', 'Toward our goal', 'Toward the keeper'], c: 0, why: 'Show her the <b>sideline</b>. It works like an extra defender and keeps her away from goal.' },
-    { id: 'q47', lesson: 'defend-5', q: 'You\'ve been beaten and they\'re attacking. Where should your recovery run go?', a: ['Toward our goal, to get goal-side', 'Straight at the ball', 'To the sideline', 'Stop and watch'], c: 0, why: 'Recovery runs go toward <b>our goal</b>, so you end up between the ball and the net.' },
+    { id: 'q40', lesson: 'defend-1', q: 'You\'re guarding a player on the other team. Where should you stand?', a: ['Between her and our goal', 'Behind her, away from our goal', 'Up near their goal', 'Beside one of our goalposts'], c: 0, why: 'Stand between her and our goal (coaches call this <b>goal-side</b>). Then she can\'t just run at our net.' },
+    { id: 'q41', lesson: 'defend-2', q: 'The other team has the ball. Who should run at her to try to win it?', a: ['Our player who is closest', 'Our striker, every time', 'Our keeper', 'Everyone at once'], c: 0, why: 'The <b>closest</b> player goes (coaches call it pressing). The next closest stands just behind her to help.' },
+    { id: 'q42', lesson: 'defend-2', q: 'Your teammate runs at the player with the ball. You\'re the next closest. Where should you go?', a: ['Just behind her, a bit to the side', 'Right next to her, side by side', 'Far away, up near their goal', 'Out to the sideline to wait'], c: 0, why: 'Stand just behind your teammate, ready to help if she gets beaten. Coaches call this <b>cover</b>.' },
+    { id: 'q43', lesson: 'defend-2', q: 'One teammate runs at the ball. One stands just behind her to help. What should everyone else do?', a: ['Move toward the middle to guard our goal', 'All run at the ball too', 'Stay out wide by the sidelines', 'Run up the field to wait for a pass'], c: 0, why: 'Coaches call this <b>balance</b>: everyone else moves in to guard the space in front of our goal.' },
+    { id: 'q44', lesson: 'defend-3', q: 'When the other team has the ball, should we make the field big or small?', a: ['Small: move close together', 'Big: spread out wide', 'It doesn\'t matter', 'Stand on the sidelines'], c: 0, why: 'When we have the ball, spread out and make it <b>big</b>. When they have it, move close together and make it <b>small</b>, so there are no gaps.' },
+    { id: 'q45', lesson: 'defend-4', q: 'An attacker is dribbling at you. What should you do?', a: ['Get close, stay on your feet, be patient', 'Dive in for the ball right away', 'Turn your back and look away', 'Run away from her as fast as you can'], c: 0, why: 'Be patient and stand a bit sideways. If you dive in, a good dribbler goes right past you.' },
+    { id: 'q46', lesson: 'defend-4', q: 'An attacker is running at you with the ball. Where should you try to make her go?', a: ['Toward the sideline, away from our goal', 'Toward the middle of the field', 'Straight toward our goal', 'Toward our keeper in the goal'], c: 0, why: 'Push her toward the <b>sideline</b>. It works like an extra defender and keeps her away from our goal.' },
+    { id: 'q47', lesson: 'defend-5', q: 'An attacker got past you and they\'re going toward our goal. Where should you run?', a: ['Back toward our own goal', 'Straight at the ball', 'Out to the sideline', 'Nowhere, stop and watch'], c: 0, why: 'Sprint back toward <b>our goal</b> (coaches call it a recovery run), so you end up between the ball and our net.' },
 
     // ---------- transitions ----------
-    { id: 'q50', lesson: 'switch-1', q: 'You just won the ball! What\'s the first thing to do?', a: ['Look forward for a quick attack', 'Kick it out of bounds', 'Celebrate', 'Pass back to the keeper right away'], c: 0, why: 'Their team is out of position when they lose it. <b>Look forward first</b> for a counter-attack.' },
-    { id: 'q51', lesson: 'switch-2', q: 'We just lost the ball. What should the closest players do?', a: ['Press right away to win it back', 'Walk back slowly', 'Complain to the ref', 'Wait for the keeper'], c: 0, why: 'The <b>first few seconds</b> after losing it are the best time to win it back.' },
-    { id: 'q52', lesson: 'switch-2', q: 'We lost the ball and couldn\'t win it back quickly. Now what?', a: ['Everyone gets back into shape, goal-side', 'Keep chasing in a bunch', 'Stand still', 'Go to the bench'], c: 0, why: 'If the press doesn\'t work, everyone <b>recovers</b> into shape, goal-side of the ball.' },
+    { id: 'q50', lesson: 'switch-1', q: 'You just won the ball! What\'s the first thing to do?', a: ['Look forward for a quick attack', 'Kick it out of bounds', 'Stop and celebrate', 'Pass back to the keeper'], c: 0, why: 'When they lose the ball, their players are out of place. <b>Look forward first</b> and attack fast (coaches call it a counter-attack) before they get back.' },
+    { id: 'q51', lesson: 'switch-2', q: 'We just lost the ball. What should our closest players do?', a: ['Run at it right away to win it back', 'Walk back to our end slowly', 'Complain to the ref about it', 'Wait for the keeper to get it'], c: 0, why: 'The <b>first few seconds</b> after we lose it are the best time to win it back.' },
+    { id: 'q52', lesson: 'switch-2', q: 'We lost the ball and couldn\'t win it back fast. Now what?', a: ['Everyone runs back to their spots', 'Keep chasing in a big bunch', 'Stand still and watch', 'Go sit on the bench'], c: 0, why: 'If we can\'t win it back fast, everyone <b>runs back</b> to their spots, between the ball and our goal.' },
 
     // ---------- restarts ----------
-    { id: 'q60', lesson: 'restarts-1', q: 'On our goal kick in 7v7, where must the other team go?', a: ['Behind the retreat line until we touch the ball', 'Anywhere they want', 'Into our penalty area', 'Off the field'], c: 0, why: 'They must retreat behind the <b>retreat line</b>. They can come forward once our team touches the ball.' },
-    { id: 'q61', lesson: 'restarts-2', q: 'In Ontario 7v7, the ball goes out over the sideline. How do you restart?', a: ['A kick-in: pass it in or dribble it in', 'A throw-in', 'A drop ball', 'A goal kick'], c: 0, why: 'Ontario 7v7 uses a <b>pass-in or dribble-in</b> instead of a throw-in.' },
-    { id: 'q62', lesson: 'restarts-2', q: 'Can you score straight from a kick-in?', a: ['No, someone else has to touch it first', 'Yes, always', 'Only on Tuesdays', 'Only if it\'s a dribble-in'], c: 0, why: 'A goal can\'t come <b>straight</b> from a kick-in.' },
-    { id: 'q63', lesson: 'restarts-3', q: 'Why are short corners smart at your age?', a: ['A pass along the ground is easier than a high ball that needs a header', 'They\'re the only legal corner', 'The ref prefers them', 'They are worth two goals'], c: 0, why: 'Canada Soccer\'s guidelines say heading isn\'t taught in training at U10–U11, and coaches are asked to use <b>short corners</b>.' },
-    { id: 'q64', lesson: 'restarts-4', q: 'You take the kick-off. What\'s usually the smartest first pass?', a: ['Pass back to a teammate and keep the ball', 'Shoot from the centre spot', 'Kick it out of bounds', 'Kick it as high as you can'], c: 0, why: 'You <b>can</b> score from a kick-off, but keeping the ball is usually smarter.' },
-    { id: 'q66', lesson: 'restarts-5', q: 'Can you score straight from a free kick in 7v7?', a: ['No: someone else has to touch it first', 'Yes, from anywhere', 'Only from the halfway line', 'Only if the keeper is looking'], c: 0, why: 'In Ontario 7v7 every free kick is <b>indirect</b>, except a penalty kick.' },
-    { id: 'q67', lesson: 'restarts-2', q: 'How far back must the other team stand when you take a kick-in?', a: ['At least 3 metres', 'Right next to the ball', '20 metres', 'Behind the retreat line'], c: 0, why: 'Ontario\'s 7v7 rules say opponents stand at least <b>3 metres</b> away from a pass-in or dribble-in.' },
-    { id: 'q68', lesson: 'shape-1', q: 'Our keeper has the ball and they\'ve retreated. When can they come forward again?', a: ['When one of our players touches the ball, or it crosses the line', 'Straight away', 'After 10 seconds', 'Only at half-time'], c: 0, why: 'They stay behind the retreat line until one of our players touches the ball, the ball crosses the line, or it goes out.' },
-    { id: 'q65', lesson: 'restarts-5', q: 'You get a free kick and the other team isn\'t ready. What\'s smart?', a: ['Take it quickly', 'Wait for everyone to be ready', 'Ask for a timeout', 'Kick it to the other team'], c: 0, why: 'A <b>quick free kick</b> catches the other team out of position.' },
+    { id: 'q60', lesson: 'restarts-1', q: 'We have a goal kick in 7v7. Where must the other team go?', a: ['Behind the dashed line until we touch it', 'Anywhere on the field they want', 'Into our own penalty box', 'Off the field until we kick'], c: 0, why: 'They must move back behind the dashed <b>retreat line</b>. They can come forward once our team touches the ball.' },
+    { id: 'q61', lesson: 'restarts-2', q: 'In Ontario 7v7, the ball goes out over the sideline. How do you start play again?', a: ['A kick-in: pass it or dribble it in', 'A throw-in with your hands', 'The ref drops the ball', 'A goal kick from the box'], c: 0, why: 'Ontario 7v7 has no throw-ins. You <b>pass the ball in or dribble it in</b> with your feet.' },
+    { id: 'q62', lesson: 'restarts-2', q: 'You kick the ball in from the sideline. Can it go straight into the goal and count?', a: ['No, someone else must touch it first', 'Yes, kick-ins always count', 'Only on Tuesdays', 'Only if you dribble it in first'], c: 0, why: 'A goal can\'t come <b>straight</b> from a kick-in. Someone else has to touch it first.' },
+    { id: 'q63', lesson: 'restarts-3', q: 'On a corner kick, why is a short pass to a teammate nearby smart at your age?', a: ['A ground pass is easier than a high ball to head', 'It\'s the only kind of corner allowed', 'The ref likes short corners better', 'A short corner counts as two goals'], c: 0, why: 'Canada Soccer tells coaches not to teach heading in practice at your age, and to use <b>short corners</b>.' },
+    { id: 'q64', lesson: 'restarts-4', q: 'You take the kick-off from the centre spot. What\'s usually the smartest first pass?', a: ['Pass back to a teammate to keep it', 'Shoot right from the centre spot', 'Kick it out of bounds', 'Kick it as high as you can'], c: 0, why: 'You <b>can</b> score from a kick-off, but keeping the ball is usually smarter.' },
+    { id: 'q66', lesson: 'restarts-5', q: 'Can you score straight from a free kick in 7v7?', a: ['No, someone else has to touch it first', 'Yes, from anywhere on the field', 'Only from the halfway line', 'Only if the keeper is looking'], c: 0, why: 'In Ontario 7v7, every free kick except a penalty kick is <b>indirect</b>. That means someone else has to touch the ball before it can go in.' },
+    { id: 'q67', lesson: 'restarts-2', q: 'You\'re kicking the ball in from the sideline. How far away must the other team stand?', a: ['At least 3 metres away', 'Right next to the ball', '20 metres away', 'Behind the dashed line'], c: 0, why: 'When you pass or dribble the ball in, the other team must stand at least <b>3 metres</b> away. That\'s Ontario\'s 7v7 rule.' },
+    { id: 'q68', lesson: 'shape-1', q: 'Our keeper has the ball, so the other team moved back behind the dashed line. When can they come forward again?', a: ['When one of us touches it, or it crosses the line', 'Right away, as soon as she catches it', 'After 10 seconds go by', 'Only after half-time'], c: 0, why: 'They wait behind the <b>retreat line</b>. They can come forward when one of our players touches the ball, the ball crosses the line, or it goes out.' },
+    { id: 'q65', lesson: 'restarts-5', q: 'You get a free kick and the other team isn\'t ready. What\'s smart?', a: ['Take it quickly', 'Wait for everyone to be ready', 'Ask the ref for a timeout', 'Kick it to the other team'], c: 0, why: 'A <b>quick free kick</b> catches the other team before they\'re back in their spots.' },
 
     // ---------- keeper ----------
-    { id: 'q70', lesson: 'keeper-1', q: 'Where should the keeper stand when an attacker has the ball?', a: ['On the line between the ball and the middle of the goal', 'Always on the goal line in the middle', 'Beside a post', 'Out at the halfway line'], c: 0, why: 'Stand on the line from the ball to the <b>middle of the goal</b>, a few steps off your line.' },
-    { id: 'q71', lesson: 'keeper-1', q: 'Why does the keeper step off her line toward the shooter?', a: ['It makes the goal look smaller to the shooter', 'To get a better view of the crowd', 'To scare her', 'To get closer to the bench'], c: 0, why: 'Coming out <b>cuts the angle</b>. Just don\'t go so far that she can chip it over you.' },
-    { id: 'q72', lesson: 'keeper-2', q: 'After a save, where is the safest place to roll the ball?', a: ['To a defender out wide', 'Straight through the middle', 'To the other team\'s striker', 'Over the sideline'], c: 0, why: 'If we lose it <b>wide</b>, it\'s far from our goal. Losing it in the middle is dangerous.' },
+    { id: 'q70', lesson: 'keeper-1', q: 'An attacker has the ball. Where should the keeper stand?', a: ['In line with the ball and the middle of the goal', 'Always on the goal line in the middle', 'Right beside one goalpost, to guard it', 'Way out at the halfway line, to help'], c: 0, why: 'Picture a line from the ball to the <b>middle of the goal</b>. Stand on it, a few steps out from your goal line.' },
+    { id: 'q71', lesson: 'keeper-1', q: 'Why does the keeper take a few steps out toward the shooter?', a: ['It makes the goal look smaller to her', 'To get a better look at the crowd', 'To scare the shooter away', 'To get closer to the bench'], c: 0, why: 'Coming out means the shooter sees less open net (coaches say you <b>cut the angle</b>). Just don\'t come out so far that she can lift it over your head.' },
+    { id: 'q72', lesson: 'keeper-2', q: 'After a save, where is the safest place to roll the ball?', a: ['To a defender out by the side', 'Straight through the middle', 'To the other team\'s striker', 'Over the sideline'], c: 0, why: 'If we lose it near the <b>side</b>, it\'s far from our goal. Losing it in the middle, right in front of our goal, is dangerous.' },
     { id: 'q73', lesson: 'keeper-3', q: 'The keeper is coming out to catch the ball. What should she shout?', a: ['"Keeper!"', '"Away!"', '"Switch!"', 'Nothing'], c: 0, why: '<b>"Keeper!"</b> tells defenders she\'s got it, so they get out of the way.' },
 
     // ---------- lead ----------
-    { id: 'q80', lesson: 'lead-1', q: 'A defender is sneaking up behind your teammate. What do you shout?', a: ['"Man on!"', '"Time!"', '"Turn!"', '"Keeper!"'], c: 0, why: '<b>"Man on!"</b> warns her that someone is right on her.' },
-    { id: 'q81', lesson: 'lead-1', q: 'Your teammate has the ball and nobody is near her. What do you shout?', a: ['"Time!"', '"Man on!"', '"Away!"', '"Drop!"'], c: 0, why: '<b>"Time!"</b> tells her she can take a touch and look up.' },
-    { id: 'q82', lesson: 'lead-1', q: 'What does "Switch!" mean?', a: ['The other side is open, move the ball there', 'Swap shirts', 'Change positions with the keeper', 'Stop playing'], c: 0, why: '<b>"Switch!"</b> means move the ball to the other side of the field.' },
-    { id: 'q83', lesson: 'lead-1', q: 'Why should you say a teammate\'s name first?', a: ['So the right player knows you\'re talking to her', 'To be polite to the ref', 'It\'s the rule', 'To confuse the other team'], c: 0, why: 'A <b>name first</b> makes sure the right player listens: "Ava, man on!"' },
+    { id: 'q80', lesson: 'lead-1', q: 'A player from the other team is sneaking up behind your teammate. What do you shout?', a: ['"Man on!"', '"Time!"', '"Turn!"', '"Keeper!"'], c: 0, why: '<b>"Man on!"</b> warns her that someone is right behind her.' },
+    { id: 'q81', lesson: 'lead-1', q: 'Your teammate has the ball and nobody is near her. What do you shout?', a: ['"Time!"', '"Man on!"', '"Away!"', '"Drop!"'], c: 0, why: '<b>"Time!"</b> tells her she has time to control the ball and look up.' },
+    { id: 'q82', lesson: 'lead-1', q: 'A teammate shouts "Switch!" What does she mean?', a: ['The other side is open, pass it there', 'Swap shirts with a teammate', 'Trade places with the keeper', 'Stop playing right now'], c: 0, why: '<b>"Switch!"</b> means pass the ball over to the other side of the field.' },
+    { id: 'q83', lesson: 'lead-1', q: 'Why should you say a teammate\'s name first?', a: ['So the right player knows it\'s for her', 'To be polite to the referee', 'Because it\'s in the rules', 'To confuse the other team'], c: 0, why: 'Saying a <b>name first</b> makes sure the right player listens: "Ava, man on!"' },
     { id: 'q84', lesson: 'lead-2', q: 'Your teammate just missed an easy shot. What does a leader say?', a: ['"Unlucky! Next one!"', '"How did you miss that?"', 'Nothing, just sigh', '"Give me the ball next time"'], c: 0, why: 'Kind words make everyone braver. Mistakes are how we learn.' },
-    { id: 'q85', lesson: 'lead-2', q: 'A player on the other team is hurt and lying down. What\'s fair play?', a: ['Kick the ball out so she can get help', 'Keep attacking', 'Shoot quickly', 'Ignore it'], c: 0, why: 'Kick it out so she can be helped. The other team gives it back after. That\'s <b>fair play</b>.' },
-    { id: 'q86', lesson: 'lead-2', q: 'You think the ball went out, but the ref hasn\'t blown the whistle. What do you do?', a: ['Keep playing until the whistle', 'Stop and argue', 'Pick up the ball', 'Walk off'], c: 0, why: '<b>Play to the whistle.</b> Only the ref stops the game.' }
+    { id: 'q85', lesson: 'lead-2', q: 'A player on the other team is hurt and lying down. What\'s fair play?', a: ['Kick the ball out so she can get help', 'Keep attacking while she\'s down', 'Shoot quickly while you can', 'Ignore it and keep going'], c: 0, why: 'Kick it out so she can be helped. The other team gives it back after. That\'s <b>fair play</b>.' },
+    { id: 'q86', lesson: 'lead-2', q: 'You think the ball went out, but the ref hasn\'t blown the whistle. What do you do?', a: ['Keep playing until the whistle', 'Stop and argue with the ref', 'Pick up the ball', 'Walk off the field'], c: 0, why: '<b>Play until the whistle.</b> Only the ref can stop the game.' }
   ];
 
   PIQ.QUIZ_BY_ID = {};
@@ -3083,90 +3148,90 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     { id: 'so1', title: 'Keeper\'s ball', you: 'RD', prompt: 'You\'re the <b>right back</b>. Our keeper just caught the ball. Where do you go?',
       scene: { home: S.gkBall, away: S.gkBallAway, ball: 'GK', camera: CAM_BACK }, youAt: [-21, 3],
       target: { rect: [-19, 7, -12, 15] }, best: [-16, 11], payoff: 'pass',
-      explain: 'Split <b>wide</b>, near the edge of the box and close to the sideline. That stretches their team and gives the keeper a safe pass.' },
-    { id: 'so2', title: 'Keeper\'s ball', you: 'CM', prompt: 'You\'re the <b>centre mid</b>. Our keeper has the ball. Where do you show for it?',
+      explain: 'Run out <b>wide</b>, near the sideline at the edge of our box. Their players have to spread out to guard you. That gives the keeper a safe pass.' },
+    { id: 'so2', title: 'Keeper\'s ball', you: 'CM', prompt: 'You\'re the <b>centre mid</b>. Our keeper has the ball. Where do you go to get a pass?',
       scene: { home: S.gkBall, away: S.gkBallAway, ball: 'GK', camera: CAM_BACK }, youAt: [-3, 3],
       target: { rect: [-14, -3.5, -8.5, 4.5] }, best: [-11, 1], payoff: 'pass',
-      explain: 'Drop into the <b>middle</b> in front of our defenders, between the retreat line and our box. Now the keeper has three passes to choose from.' },
+      explain: 'Come back to the <b>middle</b>, just in front of our defenders. Stay on our side of the dashed retreat line. Now the keeper has three players she can pass to.' },
     { id: 'so3', title: 'Keeper\'s ball', you: 'ST', prompt: 'You\'re the <b>striker</b>. Our keeper has the ball. Where should you be?',
       scene: { home: S.gkBall, away: S.gkBallAway, ball: 'GK', camera: 'broadcast' }, youAt: [-14, 4],
       target: { rect: [1, -6, 13, 6] }, best: [5, 0], payoff: 'none',
-      explain: 'Stay <b>high</b>, in the middle. You push their defenders back and leave room for your teammates to build the attack.' },
+      explain: 'Stay <b>high</b>, up near their goal, in the middle. Their defenders have to back up to guard you. That leaves more room for your teammates.' },
     { id: 'so4', title: 'Ball in the middle', you: 'LW', prompt: 'You\'re the <b>left wing</b>. Our centre mid has the ball in the middle. Where do you go?',
       scene: { home: S.midBall, away: S.midBallAway, ball: 'CM', camera: 'broadcast' }, youAt: [1.5, -3],
       target: { rect: [3, -16.5, 13, -10] }, best: [7, -13], payoff: 'pass',
-      explain: '<b>Wide and high</b>, near the left sideline. You stretch their defence and you\'re open for a pass.' },
+      explain: 'Go <b>wide and high</b>: out by the left sideline, up toward their goal. Their defenders have to spread out, and you\'re open for a pass.' },
     { id: 'so5', title: 'Ball in the middle', you: 'RD', prompt: 'You\'re the <b>right back</b>. Our centre mid has the ball. Where should you be?',
       scene: { home: S.midBall, away: S.midBallAway, ball: 'CM', camera: 'broadcast' }, youAt: [4, 6],
       target: { rect: [-14, 3, -5, 13] }, best: [-9, 8], payoff: 'none',
-      explain: 'Step up, but <b>stay behind the ball</b>. If we lose it, you\'re already in a good spot to defend.' },
+      explain: 'Move up the field a bit, but <b>stay behind the ball</b>. If we lose it, you\'re already in a good spot to defend.' },
     { id: 'so6', title: 'In their end', you: 'LW', prompt: 'You\'re the <b>left wing</b>. Our right wing has the ball near their corner. Where do you run?',
       scene: { home: S.attBall, away: S.attBallAway, ball: 'RW', camera: { target: [13, 0], dist: 34, theta: 0.15, phi: 0.95 } }, youAt: [7, -13],
       target: { at: [19, -5.5], r: 3.2 }, best: [19, -5.5], payoff: 'goal',
-      explain: 'Attack the <b>back post</b>, the far side of the goal. A pass across the goal finds you there.' },
+      explain: 'Run to the <b>back post</b>. That\'s the far side of the goal. If she passes it across the goal, you\'re right there to score.' },
     { id: 'so7', title: 'In their end', you: 'CM', prompt: 'You\'re the <b>centre mid</b>. Our right wing is near the corner. Where\'s your best spot?',
       scene: { home: S.attBall, away: S.attBallAway, ball: 'RW', camera: { target: [13, 0], dist: 34, theta: 0.15, phi: 0.95 } }, youAt: [17, 9.5],
       target: { at: [12, 1.5], r: 3.2 }, best: [12, 1.5], payoff: 'goal',
-      explain: 'Wait near the <b>top of the box</b>. A pass rolled back to that spot is a great chance, and you\'re not crowding your winger.' },
-    { id: 'so8', title: 'They have the ball', you: 'LW', prompt: 'You\'re the <b>left wing</b>. They have the ball on the far right. Where do you go?',
+      explain: 'Wait at the <b>top of the box</b>, just outside their box in the middle. She can pass it back to you for a shot. And you\'re not crowding her.' },
+    { id: 'so8', title: 'They have the ball', you: 'LW', prompt: 'You\'re the <b>left wing</b>. They have the ball way over on our right side. Where do you go?',
       scene: { home: S.defMid, away: S.defMidAway, ball: 'away:M1', camera: 'top' }, youAt: [7, -14],
       target: { at: [-3.5, -6], r: 3.6 }, best: [-4, -6], payoff: 'none',
-      explain: 'You\'re on the <b>weak side</b>. Drop back and tuck in toward the middle to guard the space in front of our goal.' },
-    { id: 'so9', title: 'They have the ball', you: 'RW', prompt: 'You\'re the <b>right wing</b>, the closest player. Where do you go to put pressure on?',
+      explain: 'You\'re on the <b>weak side</b>, the side away from the ball. Run back and move toward the middle. Help guard the space in front of our goal.' },
+    { id: 'so9', title: 'They have the ball', you: 'RW', prompt: 'You\'re the <b>right wing</b>, the closest player to the ball. Where do you go to run at her?',
       scene: { home: S.defMid, away: S.defMidAway, ball: 'away:M1', camera: { target: [0, 5], dist: 30, theta: 0.15, phi: 0.95 } }, youAt: [9, 13],
       target: { at: [2.2, 7.4], r: 2.4 }, best: [2.2, 7.4], payoff: 'none',
-      explain: 'Press from the <b>goal-side</b>: between the ball and our goal, a little toward the middle, so she has to go toward the sideline.' },
-    { id: 'so10', title: 'They have the ball', you: 'RD', prompt: 'You\'re the <b>right back</b>. Our right wing is pressing. Where do you cover?',
+      explain: 'Get <b>between her and our goal</b>, a little toward the middle. Now she can\'t go straight at our goal. She has to go toward the sideline.' },
+    { id: 'so10', title: 'They have the ball', you: 'RD', prompt: 'You\'re the <b>right back</b>. Our right wing is running at the player with the ball. Where do you go to back her up?',
       scene: { home: S.defMid, away: S.defMidAway, ball: 'away:M1', camera: { target: [-4, 5], dist: 32, theta: 0.15, phi: 0.95 } }, youAt: [-14, 15],
       target: { at: [-4, 9], r: 3.2 }, best: [-4, 9], payoff: 'none',
-      explain: '<b>Cover</b>: a few steps behind the presser, at an angle, ready if she gets beaten.' },
-    { id: 'so11', title: 'Get open', you: 'LW', prompt: 'You\'re the <b>left wing</b>. A defender is blocking the pass from our centre mid. Get open!',
+      explain: '<b>Cover</b> her. Stand a few steps behind her, a bit to the side. If the attacker gets past her, you\'re ready to help.' },
+    { id: 'so11', title: 'Get open', you: 'LW', prompt: 'You\'re the <b>left wing</b>. A defender is in the way of a pass from our centre mid. Move so she can pass to you!',
       scene: { home: { GK: [-18, 0], LD: [-9, -8], RD: [-9, 8], CM: [-2, 0], LW: [6, -7], RW: [7, 13], ST: [13, 0] }, away: { GK: [23, 0], D1: [14, -5], D2: [14, 5], M1: [3, -4.5], M2: [4, 2], M3: [6, 9], F: [-5, 2] }, ball: 'CM', camera: { target: [3, -4], dist: 30, theta: 0.15, phi: 0.95 } },
       youAt: [6, -7], target: { rect: [3, -16.5, 11, -10.5] }, best: [7, -12.5], payoff: 'pass',
-      explain: 'A few steps toward the sideline opens a <b>clear passing lane</b>. No defender between you and the ball means you\'re open.' },
-    { id: 'so12', title: 'Kick-in', you: 'CM', prompt: 'Our right wing is taking a <b>kick-in</b>. You\'re the <b>centre mid</b>. Where do you get open?',
+      explain: 'Take a few steps toward the sideline. That opens a <b>passing lane</b>, a clear path for the ball to reach you. No defender in between means you\'re open.' },
+    { id: 'so12', title: 'Kick-in', you: 'CM', prompt: 'Our right wing is taking a <b>kick-in</b> from the sideline. You\'re the <b>centre mid</b>. Where do you go so she can pass to you?',
       scene: { home: { GK: [-20, 0], LD: [-8, -10], RD: [-7, 9], CM: [1, 3], LW: [6, -12], RW: [3, 17.5], ST: [11, 1] }, away: { GK: [23, 0], D1: [12, -5], D2: [12, 5], M1: [3, -6], M2: [6, 4], M3: [6, 13.5], F: [-6, 2] }, ball: [3, 17.6], camera: { target: [2, 9], dist: 28, theta: 0.15, phi: 0.95 } },
       youAt: [1, 3], target: { at: [0, 12], r: 3 }, best: [0, 12], payoff: 'pass',
-      explain: 'Come <b>toward the ball</b>, a short pass away, with no defender in the lane. Quick kick-ins catch the other team napping.' },
+      explain: 'Come <b>toward the ball</b>, close enough for a short pass. Make sure no defender is between you and her. A quick kick-in catches the other team before they\'re ready.' },
     { id: 'so13', title: 'Recovery run', you: 'LW', prompt: 'We lost the ball and they\'re attacking! You\'re the <b>left wing</b>. Where do you sprint back to?',
       scene: { home: { GK: [-22, 0], LD: [-11, -5], RD: [-11, 5], CM: [-6, 1], LW: [9, -10], RW: [10, 9], ST: [14, 0] }, away: { GK: [23, 0], D1: [12, -6], D2: [13, 4], M1: [-4, -6], M2: [-1, 3], M3: [3, 10], F: [-8, 1] }, ball: 'away:M1', camera: { target: [-3, -3], dist: 34, theta: 0.15, phi: 0.95 } },
       youAt: [9, -10], target: { at: [-10, -3], r: 4 }, best: [-10, -3], payoff: 'none',
-      explain: 'Run back toward <b>our goal</b>, not at the ball, so you end up goal-side, between the ball and the net.' },
+      explain: 'Run back toward <b>our goal</b>, not at the ball. Then you end up between the ball and our net, where you can help.' },
     { id: 'so14', title: 'Keeper angle', you: 'GK', prompt: 'You\'re the <b>keeper</b>. An attacker has the ball. Where do you stand?',
       scene: { home: { GK: [-24.5, 0], LD: [-17, 6], RD: [-12, 9], CM: [-6, 2] }, away: { F: [-14, -6], M2: [-6, -2] }, ball: 'away:F', camera: { target: [-19, -2], dist: 20, theta: 0.5, phi: 0.95 } },
       youAt: [-24.5, 2], target: { at: [-22.4, -1.45], r: 1.3 }, best: [-22.4, -1.45], payoff: 'none',
-      explain: 'On the line between the ball and the <b>middle of the goal</b>, a few steps off your line. That makes the goal look small.' },
+      explain: 'Picture a line from the ball to the <b>middle of the goal</b>. Stand on it, a few steps out from the goal line. Now the goal looks small to the shooter.' },
     { id: 'so15', title: 'Goal kick', you: 'LD', prompt: 'It\'s our <b>goal kick</b>. You\'re the <b>left back</b>. Where do you go?',
       scene: { home: { GK: [-22, -1.5], LD: [-20, -4], RD: [-16, 11], CM: [-11, 1], LW: [-3, -14], RW: [-3, 14], ST: [5, 0] }, away: S.gkBallAway, ball: [-21, -1.5], camera: CAM_BACK },
       youAt: [-20, -4], target: { rect: [-19, -15, -12, -7] }, best: [-16, -11], payoff: 'pass',
-      explain: 'Split <b>wide</b>, near the edge of the box. They have to stay behind the retreat line, so you\'ll have time on the ball.' }
+      explain: 'Run out <b>wide</b>, near the edge of the box. The other team must stay behind the dashed retreat line. So you\'ll have time with the ball.' }
   ];
 
   PIQ.MISTAKES = [
     { id: 'm1', prompt: 'Our keeper has the ball. Tap the player in the wrong spot.', scene: { home: sh('gkBall', { RD: [-21, 3.5] }), away: S.gkBallAway, ball: 'GK', camera: CAM_BACK },
-      wrong: 'RD', fix: [-16, 11], explain: 'The <b>right back</b> is hiding next to the keeper. She should split wide so the keeper has an easy pass.' },
+      wrong: 'RD', fix: [-16, 11], explain: 'The <b>right back</b> is hiding next to the keeper. She should run out wide, near the sideline. Then the keeper has an easy pass.' },
     { id: 'm2', prompt: 'Our centre mid has the ball. Who\'s out of position?', scene: { home: sh('midBall', { LW: [1.5, -2.5] }), away: S.midBallAway, ball: 'CM', camera: 'broadcast' },
-      wrong: 'LW', fix: [7, -13], explain: 'The <b>left wing</b> is bunched right next to the ball. She should be wide and high to stretch their team.' },
-    { id: 'm3', prompt: 'We\'re building an attack. Who\'s in the wrong place?', scene: { home: sh('midBall', { ST: [-5, 3] }), away: S.midBallAway, ball: 'CM', camera: 'broadcast' },
-      wrong: 'ST', fix: [13, 0], explain: 'The <b>striker</b> dropped behind the ball. She should stay high to give us depth and push their defenders back.' },
+      wrong: 'LW', fix: [7, -13], explain: 'The <b>left wing</b> is crowded right next to the ball. She should be out by the sideline and up the field. That makes their team spread out.' },
+    { id: 'm3', prompt: 'We have the ball and we\'re moving up the field. Who\'s in the wrong place?', scene: { home: sh('midBall', { ST: [-5, 3] }), away: S.midBallAway, ball: 'CM', camera: 'broadcast' },
+      wrong: 'ST', fix: [13, 0], explain: 'The <b>striker</b> came back behind the ball. She should stay up high, near their goal. Then their defenders have to stay back to guard her.' },
     { id: 'm4', prompt: 'We\'re attacking in their end. Who isn\'t helping?', scene: { home: sh('attBall', { LD: [-18, -7] }), away: S.attBallAway, ball: 'RW', camera: 'broadcast' },
-      wrong: 'LD', fix: [-2, -7], explain: 'The <b>left back</b> stayed back in our box. She should push up toward halfway to win the ball back if it gets cleared.' },
+      wrong: 'LD', fix: [-2, -7], explain: 'The <b>left back</b> stayed back in our box. She should move up near the halfway line. If they kick the ball away, she can win it back.' },
     { id: 'm5', prompt: 'They have the ball on our right. Who\'s out of position?', scene: { home: sh('defMid', { LW: [9, -14.5] }), away: S.defMidAway, ball: 'away:M1', camera: 'top' },
-      wrong: 'LW', fix: [-4, -6], explain: 'The <b>left wing</b> is still wide and high on the weak side. She should tuck in and drop back to help defend.' },
+      wrong: 'LW', fix: [-4, -6], explain: 'The <b>left wing</b> is still way out on the side away from the ball. She should run back and move toward the middle to help defend.' },
     { id: 'm6', prompt: 'They have the ball. Who\'s on the wrong side?', scene: { home: sh('defMid', { RD: [7, 12] }), away: S.defMidAway, ball: 'away:M1', camera: 'top' },
-      wrong: 'RD', fix: [-4, 9], explain: 'The <b>right back</b> is ahead of the ball, so she\'s not goal-side. She should be behind the presser, covering.' },
+      wrong: 'RD', fix: [-4, 9], explain: 'The <b>right back</b> is up past the ball, so she can\'t help stop it. She should be between the ball and our goal. Stand just behind our right wing, ready to help.' },
     { id: 'm7', prompt: 'They have the ball. Look carefully at the back. Who\'s wrong?', scene: { home: sh('defMid', { GK: [-24.8, -5.5] }), away: S.defMidAway, ball: 'away:M1', camera: { target: [-12, 2], dist: 34, theta: 0.15, phi: 0.95 } },
-      wrong: 'GK', fix: [-20, 1.5], explain: 'The <b>keeper</b> is hugging the wrong post. She should be off her line, between the ball and the middle of the goal.' },
+      wrong: 'GK', fix: [-20, 1.5], explain: 'The <b>keeper</b> is standing right by the wrong post. She should step out from her goal line. Stand between the ball and the middle of the goal.' },
     { id: 'm8', prompt: 'Our keeper has the ball. Two players are in the same space. Who should move?', scene: { home: sh('gkBall', { LW: [-14.5, -13] }), away: S.gkBallAway, ball: 'GK', camera: CAM_BACK },
-      wrong: 'LW', fix: [-3, -14], explain: 'The <b>left wing</b> came all the way back next to the left back. She should stay high and wide so we have someone to pass to up the field.' },
+      wrong: 'LW', fix: [-3, -14], explain: 'The <b>left wing</b> came all the way back, right next to the left back. She should stay up the field, out by the sideline. Then we have someone to pass to up there.' },
     { id: 'm9', prompt: 'It\'s our kick-off. Who\'s breaking the rules?', scene: { home: sh('kickoff', { LW: [3, -10] }), away: S.kickoffAway, ball: [0, 0], camera: 'broadcast' },
-      wrong: 'LW', fix: [-2, -12], explain: 'At kick-off everyone starts in <b>their own half</b>. The left wing is already over the halfway line.' },
+      wrong: 'LW', fix: [-2, -12], explain: 'At kick-off everyone starts in <b>their own half</b>. The left wing is already past the halfway line.' },
     { id: 'm10', prompt: 'We\'re attacking. Who\'s crowding the ball?', scene: { home: sh('attBall', { CM: [15.5, 9.5] }), away: S.attBallAway, ball: 'RW', camera: { target: [13, 2], dist: 32, theta: 0.15, phi: 0.95 } },
-      wrong: 'CM', fix: [12, 2], explain: 'The <b>centre mid</b> ran right next to the winger, bringing her defender along. She should wait at the top of the box.' },
+      wrong: 'CM', fix: [12, 2], explain: 'The <b>centre mid</b> ran right up to our right wing. Her defender came too. Now it\'s crowded. She should wait just outside their box, in the middle.' },
     { id: 'm11', prompt: 'They have the ball in the middle. Who left a big gap?', scene: { home: { GK: [-21, 0], LD: [-11, -15.5], RD: [-11, 4], CM: [-3, 0.5], LW: [-2, -7], RW: [-1.5, 6.5], ST: [4, 0.5] }, away: { GK: [23, 0], D1: [12, -6], D2: [12, 6], M1: [-2, -10], M2: [6, 1], M3: [-1, 9], F: [-9, -3] }, ball: 'away:M2', camera: 'top' },
-      wrong: 'LD', fix: [-11, -4], explain: 'The <b>left back</b> is way out on the sideline. When they have the ball, squeeze in so there\'s no gap in front of our goal.' },
-    { id: 'm12', prompt: 'It\'s our goal kick. Who should be showing for the ball?', scene: { home: { GK: [-22, -1.5], LD: [-16, -11], RD: [-16, 11], CM: [-1, 0], LW: [-3, -14], RW: [-3, 14], ST: [5, 0] }, away: S.gkBallAway, ball: [-21, -1.5], camera: CAM_BACK },
-      wrong: 'CM', fix: [-11, 1], explain: 'The <b>centre mid</b> is too far up the field. She should drop in front of our defenders to give the keeper a middle option.' }
+      wrong: 'LD', fix: [-11, -4], explain: 'The <b>left back</b> is way out on the sideline. When they have the ball, our defenders stay close together. Then there\'s no gap in front of our goal.' },
+    { id: 'm12', prompt: 'It\'s our goal kick. Who should be getting open for a pass?', scene: { home: { GK: [-22, -1.5], LD: [-16, -11], RD: [-16, 11], CM: [-1, 0], LW: [-3, -14], RW: [-3, 14], ST: [5, 0] }, away: S.gkBallAway, ball: [-21, -1.5], camera: CAM_BACK },
+      wrong: 'CM', fix: [-11, 1], explain: 'The <b>centre mid</b> is too far up the field. She should come back, just in front of our defenders. Then the keeper can pass to her in the middle.' }
   ];
 
   PIQ.DECISIONS = [
@@ -3175,70 +3240,70 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       options: [
         { key: 'A', type: 'pass', to: 'RW', grade: 'best', why: 'Our right wing is open and closer to goal. Great pass!' },
         { key: 'B', type: 'shoot', grade: 'bad', why: 'Two defenders are blocking the way and you\'re far out. A shot here usually gets blocked.' },
-        { key: 'C', type: 'dribble', to: [13, -2], grade: 'ok', why: 'There is a little space to dribble into, but the open winger was a better choice.' }
+        { key: 'C', type: 'dribble', to: [13, -2], grade: 'ok', why: 'There is a little space to dribble into. But passing to our open right wing was better.' }
       ] },
-    { id: 'd2', you: 'ST', prompt: 'You\'re in front of goal with the ball. The keeper is on the far post. What do you do?',
+    { id: 'd2', you: 'ST', prompt: 'You\'re in front of goal with the ball. Their keeper is over by one post. What do you do?',
       scene: { home: { GK: [-12, 0], LD: [0, -7], RD: [2, 6], CM: [11, 2], LW: [16, -9], RW: [17, 11], ST: [18.5, 1] }, away: { GK: [24, 2.2], D1: [21, 5], D2: [15, -4], M1: [13, 7], M2: [9, -3], M3: [6, 9], F: [-3, 0] }, ball: 'ST', camera: { target: [18, 1], dist: 22, theta: 0.3, phi: 0.92 } },
       options: [
         { key: 'A', type: 'shoot', target: [25.6, -1.6], grade: 'best', why: 'You can see the goal and you\'re close. Shoot to the open side!' },
         { key: 'B', type: 'pass', to: 'CM', grade: 'ok', why: 'Safe, but you had a great chance to score yourself.' },
         { key: 'C', type: 'pass', to: 'LD', grade: 'bad', why: 'Passing all the way back wastes a great scoring chance.' }
       ] },
-    { id: 'd3', you: 'LD', prompt: 'A defender is pressing you near our box. What\'s your best pass?',
+    { id: 'd3', you: 'LD', prompt: 'A defender is running at you near our box. What\'s your best pass?',
       scene: { home: { GK: [-22, 0], LD: [-12, -10], RD: [-13, 8], CM: [-8, -3], LW: [-4, -15], RW: [2, 12], ST: [8, 0] }, away: { GK: [23, 0], D1: [10, -5], D2: [10, 5], M1: [-10, -8.5], M2: [-2, 1], M3: [-6.5, -14], F: [-14, 3] }, ball: 'LD', camera: { target: [-10, -6], dist: 26, theta: 0.15, phi: 0.95 } },
       options: [
         { key: 'A', type: 'pass', to: 'CM', grade: 'best', why: 'The centre mid is open and close. A short, safe pass keeps the ball.' },
-        { key: 'B', type: 'pass', to: 'LW', grade: 'bad', why: 'A defender is standing right in that lane. It would likely get intercepted near our goal.' },
-        { key: 'C', type: 'pass', to: 'GK', grade: 'ok', why: 'A back pass to the keeper is safe. The open centre mid was even better.' }
+        { key: 'B', type: 'pass', to: 'LW', grade: 'bad', why: 'A defender is standing in the way. She could steal it right by our goal.' },
+        { key: 'C', type: 'pass', to: 'GK', grade: 'ok', why: 'Passing back to the keeper is safe. But the open centre mid was even better.' }
       ] },
     { id: 'd4', you: 'RW', prompt: 'You have the ball on the right. Nobody is in front of you. What do you do?',
       scene: { home: { GK: [-18, 0], LD: [-8, -8], RD: [-6, 9], CM: [2, 1], LW: [8, -12], RW: [7, 13], ST: [13, -1] }, away: { GK: [23, 0], D1: [16, -4], D2: [15, 3], M1: [6, -6], M2: [4, 3], M3: [3, 9], F: [-6, 0] }, ball: 'RW', camera: { target: [11, 8], dist: 30, theta: 0.15, phi: 0.95 } },
       options: [
         { key: 'A', type: 'dribble', to: [16, 12.5], grade: 'best', why: 'Open space in front of you? Run with it! You\'ll be near their box in seconds.' },
         { key: 'B', type: 'pass', to: 'RD', grade: 'ok', why: 'Safe, but you had lots of space to attack.' },
-        { key: 'C', type: 'shoot', grade: 'bad', why: 'You\'re far out at a tight angle. Get closer first.' }
+        { key: 'C', type: 'shoot', grade: 'bad', why: 'You\'re far away and way off to the side. Get closer first.' }
       ] },
     { id: 'd5', you: 'CM', prompt: 'Their team has crowded our right side. What\'s smart?',
       scene: { home: { GK: [-16, 0], LD: [-6, -8], RD: [-3, 9], CM: [2, 3], LW: [8, -13], RW: [7, 13], ST: [13, 4] }, away: { GK: [23, 0], D1: [13, -1], D2: [12, 8], M1: [8, 10], M2: [5, 6], M3: [9, 12.5], F: [-1, 5] }, ball: 'CM', camera: 'top' },
       options: [
-        { key: 'A', type: 'pass', to: 'LW', grade: 'best', why: 'Switch! The left side is wide open.' },
+        { key: 'A', type: 'pass', to: 'LW', grade: 'best', why: 'Switch it! Send the ball over to the left side. It\'s wide open.' },
         { key: 'B', type: 'pass', to: 'RW', grade: 'bad', why: 'Three defenders are around our right wing. That pass goes into the crowd.' },
-        { key: 'C', type: 'dribble', to: [6, 6], grade: 'bad', why: 'Dribbling into the crowd usually loses the ball.' }
+        { key: 'C', type: 'dribble', to: [6, 6], grade: 'bad', why: 'Too many defenders are there. They will most likely take it.' }
       ] },
     { id: 'd6', you: 'CM', prompt: 'You just won the ball! Their team was attacking. What now?',
       scene: { home: { GK: [-20, 0], LD: [-10, -7], RD: [-10, 7], CM: [-3, 1.3], LW: [0, -12], RW: [1, 11], ST: [10, -4] }, away: { GK: [23, 0], D1: [6, -7], D2: [9, 3], M1: [-6, -5], M2: [-1.5, 2.5], M3: [-5, 9], F: [-13, 0] }, ball: 'CM', camera: { target: [3, -1], dist: 34, theta: 0.15, phi: 0.95 } },
       options: [
-        { key: 'A', type: 'pass', to: [15, -5], runner: 'ST', grade: 'best', why: 'Look forward first! A pass into the space for our striker starts a counter-attack.' },
-        { key: 'B', type: 'pass', to: 'GK', grade: 'ok', why: 'Safe, but their team was out of position. You missed a chance to attack fast.' },
+        { key: 'A', type: 'pass', to: [15, -5], runner: 'ST', grade: 'best', why: 'Look forward first! Pass ahead of our striker and attack fast, before they get back.' },
+        { key: 'B', type: 'pass', to: 'GK', grade: 'ok', why: 'Safe, but their players were all up the field. You missed a chance to attack fast.' },
         { key: 'C', type: 'dribble', to: [-4, 6], grade: 'bad', why: 'Dribbling sideways gives them time to get back.' }
       ] },
-    { id: 'd7', you: 'RD', prompt: 'You\'re near our goal and a striker is right behind you. What\'s safest?',
+    { id: 'd7', you: 'RD', prompt: 'You\'re near our goal and their striker is right behind you. What\'s safest?',
       scene: { home: { GK: [-23, 0], LD: [-18, -8], RD: [-19, 10], CM: [-12, 2], LW: [-8, -13], RW: [-9, 15], ST: [0, 0] }, away: { GK: [23, 0], D1: [6, -6], D2: [6, 6], M1: [-12, -6], M2: [-14, 4], M3: [-6, 11], F: [-20.5, 8.5] }, ball: 'RD', camera: { target: [-16, 6], dist: 26, theta: 0.15, phi: 0.95 } },
       options: [
-        { key: 'A', type: 'pass', to: 'RW', grade: 'best', why: 'Up the line to the winger, away from our goal. Safe and it starts an attack.' },
-        { key: 'B', type: 'pass', to: 'LD', grade: 'bad', why: 'A pass across the front of our own goal is risky. If it\'s intercepted, they score.' },
-        { key: 'C', type: 'clear', to: [-14, 18.5], grade: 'ok', why: 'Kicking it out is safe, but it gives them the ball. The winger was open.' }
+        { key: 'A', type: 'pass', to: 'RW', grade: 'best', why: 'Pass up the sideline to our right wing, away from our goal. It\'s safe and starts an attack.' },
+        { key: 'B', type: 'pass', to: 'LD', grade: 'bad', why: 'A pass across the front of our own goal is risky. If they steal it, they could score.' },
+        { key: 'C', type: 'clear', to: [-14, 18.5], grade: 'ok', why: 'Kicking it out is safe, but it gives them the ball. Our right wing was open.' }
       ] },
-    { id: 'd8', you: 'LW', prompt: 'It\'s 2 v 1: you and our striker against one defender. What\'s best?',
+    { id: 'd8', you: 'LW', prompt: 'It\'s 2 v 1! That means you and our striker against just one defender. What\'s best?',
       scene: { home: { GK: [-16, 0], LD: [-5, -8], RD: [-5, 8], CM: [3, 2], LW: [10, -11], RW: [9, 13], ST: [12.5, -4] }, away: { GK: [23, 0], D1: [12, -9.5], D2: [16, 6], M1: [5, -5], M2: [6, 5], M3: [8, 10], F: [-6, 0] }, ball: 'LW', camera: { target: [12, -7], dist: 26, theta: 0.15, phi: 0.92 } },
       options: [
-        { key: 'A', type: 'pass', to: 'ST', grade: 'best', why: 'The defender came to you, so the striker is free. Pass and make your run!' },
-        { key: 'B', type: 'dribble', to: [13, -11], grade: 'bad', why: 'You\'d be dribbling straight into the defender while your teammate is free.' },
-        { key: 'C', type: 'shoot', grade: 'bad', why: 'Too far out and at a tight angle.' }
+        { key: 'A', type: 'pass', to: 'ST', grade: 'best', why: 'The defender came to you, so the striker is free. Pass to her, then run ahead!' },
+        { key: 'B', type: 'dribble', to: [13, -11], grade: 'bad', why: 'You\'d dribble right into the defender. And your teammate is free!' },
+        { key: 'C', type: 'shoot', grade: 'bad', why: 'Too far away and too far off to the side.' }
       ] },
     { id: 'd9', you: 'RW', prompt: 'You\'re taking a kick-in. What\'s the smart choice?',
       scene: { home: { GK: [-20, 0], LD: [-8, -10], RD: [-7, 9], CM: [1, 11.5], LW: [6, -12], RW: [3, 17.6], ST: [9, 9] }, away: { GK: [23, 0], D1: [12, -5], D2: [9.5, 10], M1: [3, -6], M2: [6, 4], M3: [6.5, 14.5], F: [-6, 2] }, ball: 'RW', camera: { target: [3, 11], dist: 26, theta: 0.15, phi: 0.95 } },
       options: [
-        { key: 'A', type: 'pass', to: 'CM', grade: 'best', why: 'She came toward you and nobody is in the lane. Quick and simple!' },
-        { key: 'B', type: 'pass', to: 'ST', grade: 'bad', why: 'A defender is right on our striker. That pass would likely be stolen.' },
+        { key: 'A', type: 'pass', to: 'CM', grade: 'best', why: 'She came toward you and nobody is in the way. Quick and simple!' },
+        { key: 'B', type: 'pass', to: 'ST', grade: 'bad', why: 'A defender is right on our striker. She would likely steal that pass.' },
         { key: 'C', type: 'dribble', to: [6, 16], grade: 'ok', why: 'You can dribble it in, but a defender is close. The open pass was easier.' }
       ] },
-    { id: 'd10', you: 'GK', prompt: 'You made a save. They\'re behind the retreat line. Where does the ball go?',
+    { id: 'd10', you: 'GK', prompt: 'You made a save! The other team is behind the dashed retreat line. Where does the ball go?',
       scene: { home: S.gkBall, away: { GK: [23, 0], D1: [8, -6], D2: [8, 6], M1: [-5, -9], M2: [-9, 1.5], M3: [-5, 9], F: [-7, 0] }, ball: 'GK', camera: CAM_BACK },
       options: [
-        { key: 'A', type: 'pass', to: 'LD', grade: 'best', why: 'Rolled out wide to a defender: safe, easy to control, away from danger.' },
-        { key: 'B', type: 'pass', to: 'CM', grade: 'bad', why: 'An opponent is right near our centre mid. Losing it in the middle in front of our goal is dangerous.' },
-        { key: 'C', type: 'punt', to: [10, 0], grade: 'ok', why: 'Ontario recommends that keepers don\'t drop-kick, and a long kick is often a 50/50 ball. A roll keeps it.' }
+        { key: 'A', type: 'pass', to: 'LD', grade: 'best', why: 'Roll it out wide to a defender. It\'s safe, easy to control and away from our goal.' },
+        { key: 'B', type: 'pass', to: 'CM', grade: 'bad', why: 'A player from their team is right by our centre mid. Losing it in front of our goal is dangerous.' },
+        { key: 'C', type: 'punt', to: [10, 0], grade: 'ok', why: 'Ontario asks keepers not to drop-kick (drop it and kick it as it bounces). A long kick could go to either team, but a roll keeps it ours.' }
       ] }
   ];
 })();
@@ -3252,22 +3317,22 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   'use strict';
   var PIQ = window.PIQ;
   PIQ.RULES = [
-    { t: 'Who plays', d: 'Seven a side: six players and a keeper. In Ontario and in Peel Halton district play this is the U10 and U11 game. Burlington Soccer Club\'s house league is different: U9 and U10 play 7v7, but U11 moves up to 9v9 with throw-ins.', check: true },
-    { t: 'The field', d: '30–36 m wide and 40–55 m long, 16 × 6 ft goals, size 4 ball. The penalty area is 20–24 m wide and 10–12 m deep, and there is no separate small box in front of goal.' },
-    { t: 'How long', d: 'Two 25-minute halves (or four 12.5-minute quarters) with a 5-minute half-time. Unlimited subs at any stoppage. Oakville and Burlington give everyone equal playing time, and Oakville rotates every player through every position.' },
-    { t: 'No offside', d: 'There\'s no offside in 7v7. You can stand anywhere, so stand somewhere smart.' },
-    { t: 'Retreat line', d: 'On our goal kicks, when our keeper has the ball in her hands, and on our free kicks in our own third, the other team must get behind the retreat line (the one-third line). They can come forward once one of our players touches the ball, or it crosses the line or goes out. If our keeper plays it before they\'ve retreated, play just goes on.', lesson: 'shape-1' },
-    { t: 'Kick-ins, not throw-ins', d: 'When the ball goes over the sideline, the other team restarts with a pass-in or dribble-in from where it went out. The ball must be still, and opponents stand at least 3 metres away. You can\'t score straight from a kick-in.', lesson: 'restarts-2' },
-    { t: 'Goal kicks', d: 'Taken from anywhere in the penalty area after the attacking team knocks the ball over the goal line. The retreat line applies. Ontario lets you score straight from a goal kick; Oakville doesn\'t, and has the keeper take every goal kick for practice.', check: true, lesson: 'restarts-1' },
-    { t: 'Corners', d: 'If a defender knocks it over her own goal line, the other team gets a corner kick from the corner nearest where it went out. Opponents stand 5 metres back. Short corners are encouraged at this age.', lesson: 'restarts-3' },
-    { t: 'Kick-off', d: 'Everyone starts in their own half and the other team stands 5 metres back. A goal can be scored straight from a kick-off.', lesson: 'restarts-4' },
-    { t: 'Free kicks', d: 'Every free kick in 7v7 is indirect: someone else has to touch the ball before it can go in. Opponents stand 5 metres back. If three or more defenders make a wall, attackers stay 1 metre away from it.', lesson: 'restarts-5' },
-    { t: 'Penalty kicks', d: 'Fouls like tripping, pushing or a handball inside the box give a penalty kick. Ontario puts the penalty mark 8 m from goal; Oakville\'s house league sheet says 9 m.', check: true },
-    { t: 'Keeper\'s hands', d: 'The keeper can use her hands only in her own box. She can\'t pick up a ball a teammate deliberately kicks back to her, or one straight from a teammate\'s kick-in.' },
-    { t: 'Keeper kicks', d: 'Ontario recommends that keepers don\'t drop-kick. Oakville allows drop kicks but encourages playing out from the back.', check: true },
-    { t: 'Heading', d: 'Canada Soccer\'s guidelines: heading is not taught in training at U10–U11, and coaches should use short corners and free kicks so it rarely happens in games.' },
-    { t: 'No scores', d: 'No scores or standings at U10–U11 (Ontario, Peel Halton, Oakville and Burlington). It\'s about learning and having fun.' },
-    { t: 'One referee', d: 'One referee, no assistants. Referees explain fouls to players and avoid yellow and red cards. Play until you hear the whistle.' }
+    { t: 'Who plays', d: 'Each team has seven players: a keeper and six others. In Ontario, 7v7 is for U10 and U11 (under 10 and under 11). Peel Halton district play is the same. Burlington Soccer Club\'s house league is different. There, U9 and U10 play 7v7. U11 moves up to 9v9, with throw-ins.', check: true },
+    { t: 'The field', d: 'The field is 30 to 36 metres wide and 40 to 55 metres long. The goals are 16 feet wide and 6 feet tall. You play with a size 4 ball. The penalty area (the box) is 20 to 24 metres wide. It is 10 to 12 metres deep. There is no small box in front of the goal.' },
+    { t: 'How long', d: 'A game is two halves of 25 minutes, with 5 minutes for half-time. Some games use four quarters of 12.5 minutes instead. Coaches can sub players in and out as often as they like. They can do it any time play stops. In Oakville and Burlington, everyone gets the same playing time. Oakville also has every player take turns at every position.' },
+    { t: 'No offside', d: 'Older players have an offside rule. It stops attackers from waiting past the defenders, near the goal, for a pass. There\'s no offside in 7v7. You can stand anywhere, so stand somewhere smart.' },
+    { t: 'Retreat line', d: 'The retreat line is the dashed line a third of the way up the field. Sometimes the other team must move back behind it. That happens on our goal kicks. It happens when our keeper holds the ball in her hands. It also happens on our free kicks in our own third of the field. They can come forward again once one of our players touches the ball. They can also come forward if the ball crosses the line or goes out. If our keeper plays the ball before they\'ve moved back, play just goes on.', lesson: 'shape-1' },
+    { t: 'Kick-ins, not throw-ins', d: 'When the ball goes over the sideline, the team that didn\'t touch it last gets it back. They start play again from the spot where it went out. They can pass it in or dribble it in. The ball must be still first. The other team stands at least 3 metres away. You can\'t score straight from a kick-in.', lesson: 'restarts-2' },
+    { t: 'Goal kicks', d: 'Sometimes attackers knock the ball over the goal line (the end line by the goal). Then the defending team gets a goal kick. They can take it from anywhere in the box. The other team must move behind the retreat line. Ontario\'s rules let you score straight from a goal kick. Oakville\'s rules don\'t. In Oakville, the keeper takes every goal kick, for practice.', check: true, lesson: 'restarts-1' },
+    { t: 'Corners', d: 'Sometimes a defender knocks the ball over her own goal line (the end line). Then the other team gets a corner kick. They kick it from the corner closest to where it went out. The defending team stands 5 metres back. At your age, short corners are encouraged. That means a short pass, not a big kick into the box.', lesson: 'restarts-3' },
+    { t: 'Kick-off', d: 'Everyone starts in their own half. The other team stands 5 metres back from the ball. You can score straight from a kick-off.', lesson: 'restarts-4' },
+    { t: 'Free kicks', d: 'Every free kick in 7v7 is indirect. That means someone else has to touch the ball before it can go in. The other team stands 5 metres back. Sometimes three or more defenders stand side by side to block the kick. That\'s called a wall. Then attackers must stay 1 metre away from the wall.', lesson: 'restarts-5' },
+    { t: 'Penalty kicks', d: 'Some fouls inside the box give the other team a penalty kick. Tripping, pushing and a handball are fouls like that. A penalty kick is one shot with only the keeper to beat. Ontario puts the penalty spot 8 metres from the goal. Oakville\'s house league rule sheet says 9 metres.', check: true },
+    { t: 'Keeper\'s hands', d: 'The keeper can use her hands only in her own box. Sometimes a teammate kicks the ball back to her on purpose. Then she can\'t pick it up. She also can\'t pick up a ball straight from a teammate\'s kick-in.' },
+    { t: 'Keeper kicks', d: 'In a drop-kick, the keeper drops the ball and kicks it as it bounces. Ontario asks keepers not to drop-kick. Oakville allows drop-kicks. But Oakville wants keepers to start with short passes to their defenders instead.', check: true },
+    { t: 'Heading', d: 'Heading means hitting the ball with your head. Canada Soccer says heading should not be taught at practice at U10 and U11. Coaches should use short corners and free kicks. That way heading rarely happens in games.' },
+    { t: 'No scores', d: 'At U10 and U11, no scores or standings are kept. Standings are the table that shows who is winning the league. That\'s true in Ontario, Peel Halton, Oakville and Burlington. It\'s about learning and having fun.' },
+    { t: 'One referee', d: 'There is one referee and no helpers on the sidelines. Referees explain fouls to players. They try not to give yellow or red cards. Keep playing until you hear the whistle.' }
   ];
 })();
 
@@ -3837,15 +3902,17 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
   'use strict';
   var PIQ = window.PIQ;
   PIQ.GAMES = PIQ.GAMES || {};
-  var TIME = 14; // seconds per decision: generous, it's about thinking, not twitch speed
+  // No clock by default: she needs time to spin the field and look around before deciding.
+  // "Beat the clock" is an opt-in challenge with a generous 30 seconds.
+  var TIME = 30;
 
   function optLabel(o) {
     var R = PIQ.ROLES;
     if (o.type === 'shoot') return 'Shoot!';
-    if (o.type === 'dribble') return 'Dribble into space';
+    if (o.type === 'dribble') return 'Dribble into the open grass';
     if (o.type === 'clear') return 'Kick it out of play';
     if (o.type === 'punt') return 'Kick it long';
-    if (o.runner) return 'Pass into space for the ' + R[o.runner].name.toLowerCase();
+    if (o.runner) return 'Pass ahead of the ' + R[o.runner].name.toLowerCase() + ' so she can run onto it';
     var who = R[o.to] ? R[o.to].name.toLowerCase() : 'teammate';
     return 'Pass to the ' + (o.to === 'GK' ? 'keeper' : who);
   }
@@ -3864,7 +3931,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       App.setCurrent({ destroy: function () { if (timerId) clearInterval(timerId); } });
       App.topbar('Pass, Dribble or Shoot?', back, '<span class="chip" id="dc-score"><b>0</b> pts</span>');
       App.camDock(null);
-      var timerBar = App.el('<div class="timer"><i style="width:100%"></i></div>');
+      var timed = !!PIQ.profile().settings.clock;
+      var timerBar = App.el('<div class="timer"' + (timed ? '' : ' hidden') + '><i style="width:100%"></i></div>');
       document.getElementById('ui').appendChild(timerBar);
       var s = App.sheet('', 'mini');
 
@@ -3890,7 +3958,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         s._fit();
         var t0 = Date.now();
         if (timerId) clearInterval(timerId);
-        timerId = setInterval(function () {
+        if (timed) timerId = setInterval(function () {
           var left = 1 - (Date.now() - t0) / (TIME * 1000);
           timerBar.firstChild.style.width = Math.max(0, left * 100) + '%';
           if (left <= 0) { clearInterval(timerId); timerId = null; if (!answered) choose(null); }
@@ -3926,7 +3994,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
             feedback(o, 0, 'Out of time! Here\'s the best choice.');
             return;
           }
-          if (o.grade === 'best') { pts = 3 + (secs < 5 ? 1 : 0); streak++; PIQ.sfx.good(); App.bigmsg(secs < 5 ? 'Quick &amp; smart!' : 'Smart!'); }
+          var quick = timed && secs < 10;
+          if (o.grade === 'best') { pts = 3 + (quick ? 1 : 0); streak++; PIQ.sfx.good(); App.bigmsg(quick ? 'Quick &amp; smart!' : 'Smart!'); }
           else if (o.grade === 'ok') { pts = 1; streak = 0; PIQ.sfx.ok(); }
           else { streak = 0; PIQ.sfx.bad(); }
           if (streak >= 5) PIQ.award('decider');
@@ -3985,14 +4054,31 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         PIQ.sfx.cheer();
         stage.clearAnnotations(); stage.clearLabels();
         s.innerHTML = '<div class="eyebrow">Round done</div><h2>' + score + ' points</h2>' +
-          '<p class="small">' + (best ? 'New best! ' : '') + '+' + score * 2 + ' XP. Best choices score 3, fast best choices score 4.</p>' +
+          '<p class="small">' + (best ? 'New best! ' : '') + '+' + score * 2 + ' XP. The best choice scores 3.' + (timed ? ' With the clock on, a best choice in under 10 seconds scores 4.' : '') + '</p>' +
           '<div class="row"><button class="btn ghost" id="dc-back">Games</button><button class="btn" id="dc-again">' + I.replay + ' Play again</button></div>';
         s._fit();
         s.querySelector('#dc-again').onclick = function () { PIQ.sfx.tap(); PIQ.GAMES.decide.start(App, back); };
         s.querySelector('#dc-back').onclick = function () { PIQ.sfx.tap(); back(); };
       }
 
-      play();
+      // start screen: take your time (default) or beat the clock
+      PIQ.buildScene(stage, round[0].scene, { instantCamera: true });
+      s.innerHTML = '<div class="eyebrow">Pass, Dribble or Shoot?</div><p class="caption">You have the ball. Look around the field, then pick the smartest play.</p>' +
+        '<p class="small">Spin the field with your finger (or the mouse) to see where everyone is.</p>' +
+        '<div class="row" style="margin:8px 0 12px"><span class="grow">Clock</span><div class="seg" id="dc-clock"><button data-c="0" class="' + (timed ? '' : 'on') + '">Take your time</button><button data-c="1" class="' + (timed ? 'on' : '') + '">Beat the clock (30 s)</button></div></div>' +
+        '<div class="row end"><button class="btn" id="dc-go">Start ' + I.next + '</button></div>';
+      s._fit();
+      s.querySelector('#dc-clock').onclick = function (e) {
+        var b = e.target.closest ? e.target.closest('[data-c]') : null;
+        if (!b) return;
+        PIQ.sfx.tap();
+        timed = b.getAttribute('data-c') === '1';
+        PIQ.profile().settings.clock = timed;
+        PIQ.saveProfile();
+        timerBar.hidden = !timed;
+        Array.prototype.forEach.call(this.children, function (x) { x.classList.toggle('on', x === b); });
+      };
+      s.querySelector('#dc-go').onclick = function () { PIQ.sfx.tap(); play(); };
     }
   };
 })();
@@ -4026,7 +4112,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       App.leave();
       App.setCurrent({ destroy: function () { alive = false; } });
       App.topbar('Keeper Hero', back, '<span class="chip" id="kp-score">Saves <b>0</b></span>');
-      var s = App.sheet('<div class="eyebrow">You\'re the keeper</div><p class="caption">The attacker dribbles, then shoots. <b>Drag anywhere</b> on the field to move' + (PIQ.hasKeys ? ' (or use the arrow keys)' : '') + '. Stand between the ball and the middle of the goal, a few steps off your line.</p>' +
+      var s = App.sheet('<div class="eyebrow">You\'re the keeper</div><p class="caption">The attacker dribbles, then shoots. <b>Drag anywhere</b> on the field to move' + (PIQ.hasKeys ? ' (or use the arrow keys)' : '') + '. Stand between the ball and the middle of the goal, a few steps out from the goal line.</p>' +
         '<div class="row end"><button class="btn" id="kp-go">Start ' + I.next + '</button></div>', 'mini');
 
       PIQ.buildScene(stage, {
@@ -4077,14 +4163,14 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
         stage.clearAnnotations(); stage.clearLabels(true);
         var spot = [PIQ.lerp(-17, -9, Math.random()), (Math.random() * 2 - 1) * 11];
         if (Math.abs(spot[1]) > 7 && spot[0] < -14) spot[0] = -12;
-        var speed = 3.6 + n * 0.35;
+        var speed = 2.8 + n * 0.3; // first shots come slowly so she has time to get set
         var dur = Math.max(0.9, PIQ.dist(att.pos, spot) / speed);
         stage.giveBall('away:F');
         att.faceBall = false;
         stage.moveTo('away:F', spot, dur);
-        s.innerHTML = '<div class="eyebrow">Shot ' + n + ' of ' + SHOTS + '</div><p class="caption">Get your angle right!</p>';
+        s.innerHTML = '<div class="eyebrow">Shot ' + n + ' of ' + SHOTS + '</div><p class="caption">Get between the ball and the middle of the goal!</p>';
         s._fit();
-        stage.after(dur + 0.55 - Math.min(0.3, n * 0.03), function () { take(spot); });
+        stage.after(dur + 1.1 - Math.min(0.5, n * 0.05), function () { take(spot); });
       }
 
       function take(ball) {
@@ -4129,8 +4215,8 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
           stage.zone(ideal, 0.9, { color: PIQ.COLORS.good, pulse: true });
           stage.arrow(ball, [GX, -POST], 'pass', { color: PIQ.COLORS.bad, startCut: 0.5, endCut: 0 });
           stage.arrow(ball, [GX, POST], 'pass', { color: PIQ.COLORS.bad, startCut: 0.5, endCut: 0 });
-          var tip = chip ? 'You came out too far and she chipped it over you. Stay a few steps off your line.'
-            : saved ? (off < 1.2 ? 'Perfect angle!' : 'Saved! The green circle is the textbook spot.')
+          var tip = chip ? 'You came out too far and she chipped it over you. Stay a few steps out from the goal line.'
+            : saved ? (off < 1.2 ? 'Perfect spot!' : 'Saved! The green circle shows the very best spot.')
             : off > 1.2 ? 'The green circle shows the best spot: on the line from the ball to the middle of the goal.'
             : 'Good spot, but she found the corner. Keep your feet set before the shot!';
           s.innerHTML = '<div class="eyebrow">Shot ' + n + ' of ' + SHOTS + '</div><p class="caption">' + tip + '</p>' +
@@ -4432,7 +4518,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
     };
     stage.on('groundDrag', steer);
     stage.on('ground', steer);
-    s.innerHTML = head + '<p class="caption">You\'re the keeper. Get your angle right, then tap <b>Ready</b>.</p><p class="small">Drag or tap on the field to move.' + keysHint + '</p>' +
+    s.innerHTML = head + '<p class="caption">You\'re the keeper. Stand between the ball and the middle of the goal, then tap <b>Ready</b>.</p><p class="small">Drag or tap on the field to move.' + keysHint + '</p>' +
       '<div class="row end"><button class="btn" id="mm-ready">Ready</button></div><div id="mm-foot"></div>';
     s._fit();
     var shoot = function () {
@@ -4452,7 +4538,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       stage.kickBall(hit, { height: chip ? 2.6 : 0.45, dur: chip ? 1 : 0.55, onDone: function () {
         stage.zone(ideal, 0.9, { color: PIQ.COLORS.good, pulse: true });
         if (saved) { stage.giveBall('GK'); gk.body.rotation.z = 0.8; stage.after(0.7, function () { gk.body.rotation.z = 0; }); }
-        finish(saved ? 'best' : 'bad', saved ? 'Great angle! The green circle is the textbook spot.' : chip ? 'Too far out: she chipped it over you.' : 'The green circle shows the best spot: on the line from the ball to the middle of the goal.');
+        finish(saved ? 'best' : 'bad', saved ? 'Great spot! The green circle shows the very best spot.' : chip ? 'Too far out: she chipped it over you.' : 'The green circle shows the best spot: on the line from the ball to the middle of the goal.');
       } });
     };
     s.querySelector('#mm-ready').onclick = shoot;
@@ -5136,18 +5222,43 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       return s;
     },
     fitInset: function (s) {
+      // a tab on the panel's edge tucks it away so she can see the whole field
+      var tab = el('<button class="sheet-tab" aria-label="Hide the panel" aria-expanded="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg><span>Hide</span></button>');
+      ui.appendChild(tab);
+      function landscapePhone() { return window.innerHeight <= 520 && window.innerWidth > window.innerHeight; }
       function fit() {
-        if (!s.parentNode) return;
-        var landscapePhone = window.innerHeight <= 520 && window.innerWidth > window.innerHeight;
-        if (landscapePhone) stage.setInset(0, s.offsetWidth + 8);
-        else stage.setInset(Math.min(s.offsetHeight, window.innerHeight * 0.6), 0);
+        if (!s.parentNode) { if (tab.parentNode) tab.parentNode.removeChild(tab); return; }
+        var lp = landscapePhone(), r = s.getBoundingClientRect();
+        if (lp) stage.setInset(0, s.classList.contains('collapsed') ? 0 : s.offsetWidth + 8);
+        else stage.setInset(s.classList.contains('collapsed') ? 0 : Math.min(s.offsetHeight, window.innerHeight * 0.6), 0);
+        tab.classList.toggle('side', lp);
+        if (lp) { tab.style.left = (r.left - 44) + 'px'; tab.style.top = (r.top + 8) + 'px'; }
+        else { tab.style.left = (r.left + r.width / 2 - 40) + 'px'; tab.style.top = (r.top - 30) + 'px'; }
       }
+      function setCollapsed(c) {
+        s.classList.toggle('collapsed', c);
+        tab.classList.toggle('collapsed', c);
+        tab.setAttribute('aria-expanded', c ? 'false' : 'true');
+        tab.setAttribute('aria-label', c ? 'Show the panel' : 'Hide the panel');
+        tab.querySelector('span').textContent = c ? 'Show' : 'Hide';
+        fit();
+        setTimeout(fit, 260);
+      }
+      tab.onclick = function () { PIQ.sfx.tap(); setCollapsed(!s.classList.contains('collapsed')); };
+      // new content (next question, feedback) always opens the panel again
+      if (window.MutationObserver) new MutationObserver(function () { if (s.classList.contains('collapsed')) setCollapsed(false); else fit(); }).observe(s, { childList: true });
       fit();
       setTimeout(fit, 60);
       s._fit = fit;
     },
     // camera buttons; youId enables "her eyes"
     camDock: function (youId, extra) {
+      if (PIQ.SMALL_SCREEN && window.innerWidth < window.innerHeight && !App._rotateTip) {
+        App._rotateTip = true;
+        var tip = el('<div class="rotate-tip">Tip: turn your phone sideways for a bigger field</div>');
+        ui.appendChild(tip);
+        setTimeout(function () { if (tip.parentNode) tip.parentNode.removeChild(tip); }, 5000);
+      }
       var html = '<div class="camdock">' +
         '<button data-cam="broadcast" aria-label="TV view">' + I.tv + 'TV</button>' +
         '<button data-cam="top" aria-label="Top view">' + I.top + 'TOP</button>' +
@@ -5433,7 +5544,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline: 3px s
       ['spoton', 'Spot On', 'Drag yourself to the right spot on the field.'],
       ['mistake', 'Spot the Mistake', 'One player is in the wrong place. Find her!'],
       ['decide', 'Pass, Dribble or Shoot?', 'You have the ball. Make the smart choice.'],
-      ['keeper', 'Keeper Hero', 'Get your angles right and make the save.'],
+      ['keeper', 'Keeper Hero', 'Stand in the right spot and make the save.'],
       ['quizblitz', 'Quiz Blitz', 'Quick-fire questions. Build a streak!']
     ];
     var html = '<div class="eyebrow">Play</div><h2>Games</h2><div class="list">' + list.map(function (g, i) {
