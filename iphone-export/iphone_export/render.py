@@ -14,6 +14,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from . import events
 from .timeutil import fmt
 
 CSS = """
@@ -264,6 +265,9 @@ class Exporter:
             self._check_disk(conversations)
         used, rows, index, search, gallery = set(), [], [], [], []
         copied = missing = 0
+        total = sum(len(m.attachments) for c in conversations for m in c.messages) if self.attachments else 0
+        if total:
+            events.stage("attachments", f"Copying {total:,} attachments")
         for ci, convo in enumerate(conversations):
             name = safe_name(convo.title, used)
             att_dir = msg_dir / "attachments" / name
@@ -279,6 +283,8 @@ class Exporter:
                             gallery.append((m.date, convo.title, name, a, anchor(m.guid)))
                     else:
                         missing += 1
+                    if (copied + missing) % 25 == 0 or copied + missing == total:
+                        events.progress("attachments", copied + missing, total)
             self._write(f"Messages/{name}.html", self._conversation_html(convo), pdf=True)
             self._write(f"Messages/{name}.txt", self._conversation_txt(convo))
             index.append((convo, name))

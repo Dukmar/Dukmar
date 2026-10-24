@@ -7,3 +7,5 @@ iPhone Backups/
 *.storedata
 __pycache__/
 .pytest_cache/
+mac-app/.build/
+mac-app/dist/

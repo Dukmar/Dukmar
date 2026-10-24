@@ -8,6 +8,7 @@ import json
 import os
 import queue
 import shutil
+import signal
 import subprocess
 import sys
 import threading
@@ -15,7 +16,7 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from . import __version__, calls, contacts, messages, notes, pdf, schedule, snapshots, sources, voicemail
+from . import __version__, calls, contacts, events, messages, notes, pdf, schedule, snapshots, sources, voicemail
 from .render import Exporter
 
 # Not ~/Documents: macOS blocks background jobs (the daily run) from Documents without a prompt they can't show.
@@ -90,7 +91,7 @@ def open_source(args):
 def _open_encrypted(info, args):
     if args.forget_password:
         _keychain_delete(info.udid)
-    key = _keychain_get(info.udid)
+    key = None if args.no_keychain else _keychain_get(info.udid)
     if key:
         try:
             say("Unlocking with the key saved in your Keychain...")
@@ -100,9 +101,11 @@ def _open_encrypted(info, args):
     password = os.environ.get("IPHONE_BACKUP_PASSWORD")
     if not password:
         if not sys.stdin.isatty():
+            events.emit("password_needed", device=info.device_name, udid=info.udid)
             raise sources.PasswordNeeded("This backup is encrypted. Set IPHONE_BACKUP_PASSWORD or run in a terminal.")
         password = getpass.getpass("Backup password (the one set in Finder/iTunes, not your phone passcode): ")
     say("Unlocking the backup (the first unlock takes a while - Apple makes it slow on purpose)...")
+    events.stage("unlock", "Unlocking the encrypted backup")
     t = time.time()
     src = sources.EncryptedBackupSource(info.path, info, password=password)
     say(f"  unlocked in {time.time() - t:.0f}s")
@@ -150,6 +153,19 @@ def _run_backup(cmd, passcode_wait):
     backup; when that prompt shows up, notify and give up after passcode_wait minutes. Returns the exit
     code, or None if the passcode never came."""
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+    try:
+        return _watch_backup(proc, passcode_wait)
+    except BaseException:
+        # Cancelled (the app's Cancel button sends SIGTERM): don't leave idevicebackup2 running on its own.
+        proc.terminate()
+        try:
+            proc.wait(timeout=20)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+        raise
+
+
+def _watch_backup(proc, passcode_wait):
     lines = queue.Queue()
     reader = threading.Thread(target=lambda: [lines.put(line) for line in proc.stdout] and None, daemon=True)
     reader.start()
@@ -163,6 +179,7 @@ def _run_backup(cmd, passcode_wait):
             print(line, end="", flush=True)
             if deadline is None and "passcode" in line.lower():
                 deadline = time.monotonic() + passcode_wait * 60
+                events.emit("passcode_wait", minutes=passcode_wait)
                 notify("Unlock your iPhone and enter its passcode to start the backup.")
             continue
         if proc.poll() is not None and not reader.is_alive():
@@ -195,14 +212,17 @@ def cmd_backup(args):
     dest.mkdir(parents=True, exist_ok=True)
     udid = args.udid or udids[0]
     say(f"Backing up {udid} into {dest} (only changes since the last backup are copied).")
+    events.stage("backup", "Backing up the iPhone" + (" over Wi-Fi" if args.wifi else ""))
     say("The phone will ask for its passcode (Apple requires it for every backup since iOS 16.1).")
     net = ["-n"] if args.wifi else []
     code = _run_backup([tool, *net, "-u", udid, "backup", str(dest)], args.passcode_wait)
     if code is None:
         say(f"Nobody entered the passcode within {args.passcode_wait} minutes, so the backup was stopped.")
+        events.emit("error", message="No passcode was entered on the iPhone, so the backup stopped.", kind="passcode")
         return 3
     if code != 0:
         say(f"idevicebackup2 stopped with code {code}.")
+        events.emit("error", message=f"The backup tool stopped with code {code}.", kind="backup")
         return code
     args.backup = str(dest / udid)
     if not args.no_snapshot:
@@ -254,11 +274,16 @@ def cmd_export(args):
     out = Path(args.out).expanduser()
     out.mkdir(parents=True, exist_ok=True)
 
+    events.stage("open", "Finding the backup")
     try:
         src = open_source(args)
+    except sources.PasswordNeeded as e:
+        say(str(e))
+        return 4
     except sources.SourceError as e:
         say(str(e))
-        return 1
+        events.emit("error", message=str(e), kind="bad_password" if "didn't work" in str(e) else "source")
+        return 5 if "didn't work" in str(e) else 1
     started = time.time()
     generated = datetime.now().astimezone()
     problems = []
@@ -294,6 +319,7 @@ def cmd_export(args):
                 problems.append("Messages: no messages database in this source.")
             else:
                 say("Reading messages...")
+                events.stage("messages", "Reading messages")
                 convos = messages.load(dbs["sms"], book, since, until, me=args.me_name or "Me",
                                        contact_filter=contact_filter)
                 if contact_filter and not convos:
@@ -305,6 +331,7 @@ def cmd_export(args):
                     convo_index = exporter.write_messages(convos)
                 except RuntimeError as e:
                     say(str(e))
+                    events.emit("error", message=str(e), kind="disk")
                     return 1
                 say(f"  {exporter.stats['messages']:,} messages in {exporter.stats['conversations']:,} conversations")
                 if exporter.stats.get("recently_deleted"):
@@ -319,12 +346,14 @@ def cmd_export(args):
                 problems.append("Calls: no call history found. iPhone backups only include call history "
                                 "when backup encryption is on.")
             else:
+                events.stage("calls", "Reading call history")
                 found = calls.load(dbs["calls"], book, since, until)
                 if contact_filter:
                     found = [c for c in found if _call_matches(c, contact_filter)]
                 exporter.write_calls(found)
                 say(f"  {exporter.stats['calls']:,} calls")
         if "voicemail" in only and dbs.get("voicemail"):
+            events.stage("voicemail", "Saving voicemail")
             items = voicemail.load(dbs["voicemail"], book)
             items = [v for v in items if (since is None or (v.date and v.date >= since))
                      and (until is None or (v.date and v.date < until))]
@@ -335,6 +364,7 @@ def cmd_export(args):
                 problems.append("Notes: no notes database in this source (notes kept only in iCloud aren't "
                                 "always in a phone backup; try --mac).")
             else:
+                events.stage("notes", "Saving notes")
                 exporter.write_notes(notes.load(dbs["notes"]))
                 say(f"  {exporter.stats['notes']:,} notes")
         if "contacts" in sections:
@@ -346,14 +376,66 @@ def cmd_export(args):
 
     if args.pdf:
         say(f"Making PDFs of {len(exporter.pages):,} pages...")
+        events.stage("pdf", "Making PDFs")
         made = pdf.to_pdf(exporter.pages, out, out / "PDF", log=say)
         say(f"  {made:,} PDFs in {out / 'PDF'}")
     for p in problems:
         say(f"Note: {p}")
     index = out / "index.html"
     say(f"Done in {time.time() - started:.0f}s. Open {index}")
+    events.emit("done", index=str(index), stats=exporter.stats, problems=problems)
     if args.open and sys.platform == "darwin":
         subprocess.run(["open", str(index)])
+    return 0
+
+
+def cmd_status(args):
+    """Everything the Mac app shows on its main screen, as one JSON object."""
+    out = Path(args.out).expanduser()
+    roots = [Path(args.backup_root)] if args.backup_root else sources.backup_roots()
+    access = "missing"
+    try:
+        list(sources.FINDER_BACKUP_ROOT.iterdir())
+        access = "ok"
+    except PermissionError:
+        access = "denied"
+    except OSError:
+        pass
+    try:
+        found = sources.find_backups(roots)
+    except sources.SourceError:
+        found = []
+    plan = schedule.status() if sys.platform == "darwin" else None
+    tool = shutil.which("idevicebackup2")
+    devices = {"usb": [], "wifi": []}
+    if tool and not args.no_devices:
+        devices = {"usb": _devices(False), "wifi": _devices(True)}
+    index = out / "index.html"
+
+    def iso(dt):
+        return dt.astimezone().isoformat(timespec="seconds") if dt else None
+
+    data = {
+        "version": __version__,
+        "python": sys.version.split()[0],
+        "tools": {"idevicebackup2": tool, "brew": shutil.which("brew"), "pdf_browser": pdf.find_browser()},
+        "devices": devices,
+        "access": {"finder_backups": access},
+        "backups": [{"device": b.device_name, "ios": b.ios_version, "udid": b.udid, "path": str(b.path),
+                     "last_backup": iso(b.last_backup), "encrypted": b.encrypted} for b in found],
+        "snapshots": [{"date": when.isoformat(timespec="minutes"), "device": info.device_name, "path": str(info.path)}
+                      for when, info in snapshots.all_snapshots(roots)],
+        "schedule": None if not plan else {
+            "hours": sorted(t["Hour"] for t in plan["StartCalendarInterval"]),
+            "wifi": "--wifi" in plan["ProgramArguments"],
+            "window": plan["ProgramArguments"][plan["ProgramArguments"].index("--window") + 1]
+            if "--window" in plan["ProgramArguments"] else None,
+        },
+        "last_export": {"path": str(index), "modified": iso(datetime.fromtimestamp(index.stat().st_mtime))}
+        if index.exists() else None,
+        "output": str(out),
+    }
+    print(json.dumps(data, indent=None if args.compact else 2))
     return 0
 
 
@@ -521,6 +603,11 @@ def build_parser():
     add_export_options(ap)
     ap.add_argument("--window", default="18:00-23:00", help="only try between these times (default 18:00-23:00)")
     ap.add_argument("--force", action="store_true", help="run now even if done today or outside the window")
+    stp = sub.add_parser("status", help="JSON summary of backups, phone, schedule and last export (for the app)")
+    stp.add_argument("--out", default=str(DEFAULT_OUT))
+    stp.add_argument("--backup-root")
+    stp.add_argument("--no-devices", action="store_true", help="skip looking for the phone (faster)")
+    stp.add_argument("--compact", action="store_true")
     scp = sub.add_parser("schedule", help="back up and export automatically every day (Mac)")
     scp.add_argument("--window", default="18:00-23:00",
                      help="try once an hour between these times until one backup works (default 18:00-23:00)")
@@ -535,11 +622,22 @@ def build_parser():
     return p
 
 
+def _stop_on_sigterm(signum, frame):
+    raise KeyboardInterrupt("cancelled")
+
+
 def main(argv=None):
+    if threading.current_thread() is threading.main_thread():
+        signal.signal(signal.SIGTERM, _stop_on_sigterm)  # cleanup (temp files, child tools) runs on Cancel
     args = build_parser().parse_args(argv)
     commands = {"list": cmd_list, "backup": cmd_backup, "export": cmd_export, "sync": cmd_sync,
-                "auto": cmd_auto, "schedule": cmd_schedule}
+                "auto": cmd_auto, "schedule": cmd_schedule, "status": cmd_status}
     if args.command in commands:
-        return commands[args.command](args)
+        try:
+            return commands[args.command](args)
+        except KeyboardInterrupt:
+            say("Cancelled.")
+            events.emit("error", message="Cancelled.", kind="cancelled")
+            return 130
     build_parser().print_help()
     return 0

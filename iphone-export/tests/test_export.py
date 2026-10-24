@@ -183,7 +183,7 @@ def test_encrypted_backup_export(encrypted_backup, tmp_path, monkeypatch):
 
 def test_encrypted_wrong_password(encrypted_backup, tmp_path, monkeypatch, capsys):
     monkeypatch.setenv("IPHONE_BACKUP_PASSWORD", "nope")
-    assert run_export(encrypted_backup, tmp_path / "out") == 1
+    assert run_export(encrypted_backup, tmp_path / "out") == 5  # the app shows "wrong password" for this code
     assert "password didn't work" in capsys.readouterr().out
 
 
@@ -477,3 +477,83 @@ def test_auto_skips_quietly(fake_phone, tmp_path, capsys):
     assert cli.main(base + ["--window", "00:00-23:59"]) == 0
     assert "not reachable on Wi-Fi" in capsys.readouterr().out
     assert not (tmp_path / "runs").exists() and notes_sent == []
+
+
+# --------------------------------------------------------------------------------------------- Mac app interface
+
+def _events(text):
+    import json
+    return [json.loads(line[len("@@EVENT "):]) for line in text.splitlines() if line.startswith("@@EVENT ")]
+
+
+def test_progress_events_for_the_app(plain_backup, tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("IPHONE_EXPORT_EVENTS", "1")
+    out = tmp_path / "out"
+    assert run_export(plain_backup, out) == 0
+    evs = _events(capsys.readouterr().out)
+    stages = [e["stage"] for e in evs if e["type"] == "stage"]
+    assert stages == ["open", "messages", "attachments", "calls", "voicemail", "notes"]
+    progress = [e for e in evs if e["type"] == "progress"]
+    assert progress[-1] == {"type": "progress", "stage": "attachments", "done": 3, "total": 3}
+    done = evs[-1]
+    assert done["type"] == "done" and done["index"] == str(out / "index.html")
+    assert done["stats"]["messages"] == 15 and done["problems"]
+
+
+def test_no_events_without_the_switch(plain_backup, tmp_path, capsys):
+    assert run_export(plain_backup, tmp_path / "out") == 0
+    assert "@@EVENT" not in capsys.readouterr().out
+
+
+def test_encrypted_without_password_asks_the_app(encrypted_backup, tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("IPHONE_EXPORT_EVENTS", "1")
+    monkeypatch.delenv("IPHONE_BACKUP_PASSWORD", raising=False)
+    monkeypatch.setattr("sys.stdin", open(os.devnull))  # not a terminal, like the app
+    assert run_export(encrypted_backup, tmp_path / "out") == 4
+    evs = _events(capsys.readouterr().out)
+    assert {"type": "password_needed", "device": "Colin's iPhone", "udid": encrypted_backup.name} in evs
+    monkeypatch.setenv("IPHONE_BACKUP_PASSWORD", "nope")
+    assert run_export(encrypted_backup, tmp_path / "out") == 5
+    assert any(e.get("kind") == "bad_password" for e in _events(capsys.readouterr().out))
+
+
+def test_status_json(plain_backup, tmp_path, capsys):
+    import json
+    out = tmp_path / "out"
+    assert run_export(plain_backup, out, "--only", "messages") == 0
+    capsys.readouterr()
+    assert cli.main(["status", "--backup-root", str(plain_backup.parent), "--out", str(out), "--no-devices"]) == 0
+    data = json.loads(capsys.readouterr().out)
+    assert data["backups"][0]["device"] == "Colin's iPhone" and data["backups"][0]["encrypted"] is False
+    assert data["last_export"]["path"] == str(out / "index.html")
+    assert data["devices"] == {"usb": [], "wifi": []} and data["snapshots"] == []
+    assert data["access"]["finder_backups"] in ("ok", "missing", "denied")
+    assert set(data["tools"]) == {"idevicebackup2", "brew", "pdf_browser"}
+
+
+def test_cancel_stops_the_backup_tool_too(tmp_path):
+    """The app's Cancel sends SIGTERM to the engine; idevicebackup2 must not keep running on its own."""
+    import signal
+    import subprocess
+    import sys
+    import time as _time
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    _fake_tool(bin_dir, "idevice_id", 'echo "PHONE1"\n')
+    _fake_tool(bin_dir, "idevicebackup2", f'echo $$ > "{tmp_path}/child.pid"; echo "Receiving files"; exec sleep 60\n')
+    env = dict(os.environ, PATH=f"{bin_dir}:{os.environ['PATH']}")
+    proc = subprocess.Popen([sys.executable, "-m", "iphone_export", "backup", "--dir", str(tmp_path / "b")],
+                            cwd=str(Path(__file__).parent.parent), env=env,
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    pid_file = tmp_path / "child.pid"
+    for _ in range(100):
+        if pid_file.exists() and pid_file.read_text().strip():
+            break
+        _time.sleep(0.1)
+    child = int(pid_file.read_text())
+    proc.send_signal(signal.SIGTERM)
+    assert proc.wait(timeout=30) == 130  # the app shows "Cancelled" for this code
+    assert b"Cancelled." in proc.stdout.read()
+    _time.sleep(0.5)
+    with pytest.raises(ProcessLookupError):
+        os.kill(child, 0)

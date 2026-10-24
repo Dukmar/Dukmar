@@ -1,0 +1,52 @@
+# Builds and tests iphone-export on a real Mac: Python tests, Swift tests, and the iPhone Export.app bundle.
+name: iphone-export Mac app
+
+on:
+  push:
+    paths:
+      - "iphone-export/**"
+      - ".github/workflows/iphone-export-mac.yml"
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: iphone-export
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Python dependencies
+        run: python -m pip install pytest pycryptodome pypdf iphone_backup_decrypt==0.11.2
+
+      - name: Python tests
+        run: python -m pytest -q
+
+      - name: Swift tests
+        working-directory: iphone-export/mac-app
+        run: TEST_PYTHON="$(which python)" swift test
+
+      - name: Build the app
+        working-directory: iphone-export/mac-app
+        run: ./build-app.sh
+
+      - name: Check the bundle
+        working-directory: iphone-export/mac-app
+        run: |
+          APP="dist/iPhone Export.app"
+          test -x "$APP/Contents/MacOS/iPhoneExport"
+          test -f "$APP/Contents/Resources/engine/iphone_export/cli.py"
+          test -f "$APP/Contents/Resources/AppIcon.icns"
+          codesign --verify --verbose "$APP"
+          plutil -lint "$APP/Contents/Info.plist"
+          ditto -c -k --keepParent "$APP" "dist/iPhone-Export.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iPhone-Export-app
+          path: iphone-export/mac-app/dist/iPhone-Export.zip
