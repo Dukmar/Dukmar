@@ -295,7 +295,7 @@ class Exporter:
                     " ".join(f"{k}:{v}" for k, v in m.reactions.items()),
                     fmt(m.delivered_at, True), fmt(m.read_at, True),
                     " | ".join(t for _, t in m.edits[:-1]), m.reply_preview, m.effect, m.app,
-                    fmt(m.deleted_at, True),
+                    fmt(m.deleted_at, True) or ("deleted conversation" if m.orphaned else ""),
                 ])
                 body = m.text or m.app or " ".join(a.name for a in m.attachments)
                 if body and not m.unsent:
@@ -310,7 +310,8 @@ class Exporter:
         self._write_gallery(gallery)
         self.stats.update(conversations=len(conversations), messages=len(rows), attachments_copied=copied,
                           attachments_missing=missing, photos=len(gallery),
-                          recently_deleted=sum(1 for c in conversations for m in c.messages if m.deleted_at))
+                          recently_deleted=sum(1 for c in conversations for m in c.messages if m.deleted_at),
+                          from_deleted=sum(1 for c in conversations for m in c.messages if m.orphaned))
         return index
 
     def _conversation_html(self, convo):
@@ -328,7 +329,7 @@ class Exporter:
             cls = "row me" if m.from_me else "row"
             if m.service.upper() in ("SMS", "RCS", "MMS"):
                 cls += " sms"
-            if m.deleted_at:
+            if m.deleted_at or m.orphaned:
                 cls += " deleted"
             inner = []
             if m.unsent:
@@ -363,6 +364,8 @@ class Exporter:
                 meta.append(" ".join(f"{v} {_esc(k)}" for k, v in m.reactions.items()))
             if m.deleted_at:
                 meta.append(f'<span class="tag">Recently deleted {fmt(m.deleted_at)}</span>')
+            elif m.orphaned:
+                meta.append('<span class="tag">From a deleted conversation</span>')
             meta_html = " \u00b7 ".join(meta)
             parts.append(
                 f'<div class="{cls}" id="{aid}" data-s="{search}">{head}<div class="b">{"".join(inner)}</div>'
@@ -407,6 +410,8 @@ class Exporter:
                 extras.append("(" + ", ".join(f"{k} {v}" for k, v in m.reactions.items()) + ")")
             if m.deleted_at:
                 extras.append(f"(recently deleted {fmt(m.deleted_at)})")
+            elif m.orphaned:
+                extras.append("(from a deleted conversation)")
             sender = "--" if m.system else m.sender
             lines.append(f"[{fmt(m.date)}] {sender}: {' '.join(p for p in [body] + extras if p)}")
         return "\n".join(lines) + "\n"
@@ -589,7 +594,8 @@ const p=new URLSearchParams(location.search).get('q');if(p){q.value=p;run()}
                                  ("photos", "photos & videos", "photos.html"), ("calls", "calls", "calls.html"),
                                  ("voicemails", "voicemails", "voicemail.html"), ("notes", "notes", "notes.html"),
                                  ("contacts", "contacts", "contacts.html"),
-                                 ("recently_deleted", "recently deleted", None)):
+                                 ("recently_deleted", "recently deleted", None),
+                                 ("from_deleted", "from deleted conversations", None)):
             if self.stats.get(key) or (key in self.stats and key in ("messages", "calls", "notes")):
                 inner = f"<b>{self.stats[key]:,}</b><span>{label}</span>"
                 cards.append(f'<a class="card" href="{href}">{inner}</a>' if href else f'<div class="card">{inner}</div>')

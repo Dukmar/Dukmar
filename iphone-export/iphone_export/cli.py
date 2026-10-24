@@ -16,7 +16,8 @@ import time
 from datetime import datetime
 from pathlib import Path
 
-from . import __version__, calls, contacts, events, messages, notes, pdf, schedule, snapshots, sources, voicemail
+from . import __version__, archive, calls, contacts, events, messages, notes, pdf, schedule, snapshots, sources, \
+    voicemail
 from .render import Exporter
 
 # Not ~/Documents: macOS blocks background jobs (the daily run) from Documents without a prompt they can't show.
@@ -148,13 +149,14 @@ def notify(message, title="iPhone Export"):
         subprocess.run(["osascript", "-e", script], capture_output=True)
 
 
-def _run_backup(cmd, passcode_wait):
+def _run_backup(cmd, passcode_wait, errors=None):
     """Run idevicebackup2, echoing its output. Since iOS 16.1 the phone asks for its passcode before every
     backup; when that prompt shows up, notify and give up after passcode_wait minutes. Returns the exit
-    code, or None if the passcode never came."""
+    code, or None if the passcode never came. The phone's own error lines ("ErrorCode 105: ...") go in
+    `errors`."""
     proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
     try:
-        return _watch_backup(proc, passcode_wait)
+        return _watch_backup(proc, passcode_wait, errors if errors is not None else [])
     except BaseException:
         # Cancelled (the app's Cancel button sends SIGTERM): don't leave idevicebackup2 running on its own.
         proc.terminate()
@@ -165,7 +167,7 @@ def _run_backup(cmd, passcode_wait):
         raise
 
 
-def _watch_backup(proc, passcode_wait):
+def _watch_backup(proc, passcode_wait, errors):
     lines = queue.Queue()
     reader = threading.Thread(target=lambda: [lines.put(line) for line in proc.stdout] and None, daemon=True)
     reader.start()
@@ -177,6 +179,8 @@ def _watch_backup(proc, passcode_wait):
             line = None
         if line is not None:
             print(line, end="", flush=True)
+            if line.startswith("ErrorCode "):
+                errors.append(line.strip())
             if deadline is None and "passcode" in line.lower():
                 deadline = time.monotonic() + passcode_wait * 60
                 events.emit("passcode_wait", minutes=passcode_wait)
@@ -191,6 +195,17 @@ def _watch_backup(proc, passcode_wait):
             except subprocess.TimeoutExpired:
                 proc.kill()
             return None
+
+
+def _backup_error(code, errors, dest):
+    """What to tell the person when idevicebackup2 fails: the phone's own reason if it gave one."""
+    if any(e.startswith("ErrorCode 105:") for e in errors):
+        free = shutil.disk_usage(dest).free / 1e9
+        return (f"Not enough free space for the backup: about {free:,.0f} GB is free where backups go ({dest}), "
+                "and the iPhone needs room for all of its data. Free up space or back up to a bigger drive.")
+    if errors:
+        return f"The iPhone stopped the backup: {errors[-1].split(':', 1)[-1].strip()}"
+    return f"The backup tool stopped with code {code}."
 
 
 def cmd_backup(args):
@@ -215,14 +230,15 @@ def cmd_backup(args):
     events.stage("backup", "Backing up the iPhone" + (" over Wi-Fi" if args.wifi else ""))
     say("The phone will ask for its passcode (Apple requires it for every backup since iOS 16.1).")
     net = ["-n"] if args.wifi else []
-    code = _run_backup([tool, *net, "-u", udid, "backup", str(dest)], args.passcode_wait)
+    errors = []
+    code = _run_backup([tool, *net, "-u", udid, "backup", str(dest)], args.passcode_wait, errors)
     if code is None:
         say(f"Nobody entered the passcode within {args.passcode_wait} minutes, so the backup was stopped.")
         events.emit("error", message="No passcode was entered on the iPhone, so the backup stopped.", kind="passcode")
         return 3
     if code != 0:
         say(f"idevicebackup2 stopped with code {code}.")
-        events.emit("error", message=f"The backup tool stopped with code {code}.", kind="backup")
+        events.emit("error", message=_backup_error(code, errors, dest), kind="backup")
         return code
     args.backup = str(dest / udid)
     if not args.no_snapshot:
@@ -336,6 +352,8 @@ def cmd_export(args):
                 say(f"  {exporter.stats['messages']:,} messages in {exporter.stats['conversations']:,} conversations")
                 if exporter.stats.get("recently_deleted"):
                     say(f"  {exporter.stats['recently_deleted']:,} recovered from Recently Deleted (marked in the pages)")
+                if exporter.stats.get("from_deleted"):
+                    say(f"  {exporter.stats['from_deleted']:,} from conversations since deleted (marked in the pages)")
                 if exporter.stats.get("attachments_missing"):
                     n = exporter.stats["attachments_missing"]
                     what = "attachment was" if n == 1 else "attachments were"
@@ -550,6 +568,86 @@ def cmd_schedule(args):
     return 0
 
 
+def cmd_archive(args):
+    """File every finished month's texts from this Mac into <dest>/YYYY-MM, then copy them to --copy-to."""
+    if args.off:
+        say("Old monthly archive job removed." if schedule.remove(schedule.ARCHIVE_PLIST)
+            else "No old monthly archive job to remove.")
+        return 0
+
+    dest = Path(args.dest).expanduser()
+    copy_to = Path(args.copy_to).expanduser() if args.copy_to else None
+
+    first = archive.parse_month(args.since_month) if args.since_month else archive.first_message_month()
+    if first is None:
+        say("Can't read this Mac's Messages. Is Messages in iCloud on, and does this app have Full Disk Access?")
+        notify("Monthly text archive couldn't read Messages. Check Full Disk Access for iPhone Export.")
+        return 1
+    dest.mkdir(parents=True, exist_ok=True)
+    filed, empty = [], archive.empty_months(dest)
+    for year, month in archive.finished_months(first, datetime.now().date()):
+        name = archive.month_name(year, month)
+        folder = dest / name
+        if archive.is_done(folder) or name in empty:
+            continue
+        since, until = archive.bounds(year, month)
+        say(f"--- {name}")
+        # Export into a side folder and rename it into place, so a half-made month never looks finished.
+        work = dest / f".{name}.partial"
+        shutil.rmtree(work, ignore_errors=True)
+        export_argv = ["export", "--mac", "--only", "messages", "--since", since, "--until", until,
+                       "--out", str(work)]
+        if args.no_attachments:
+            export_argv.append("--no-attachments")
+        else:
+            export_argv.append("--convert-media")
+        code = cmd_export(build_parser().parse_args(export_argv))
+        if code != 0:
+            say(f"{name}: export stopped with code {code}; it will be tried again next run.")
+            notify(f"Monthly text archive: {name} didn't export. It will try again tomorrow.")
+            return code
+        count = archive.message_count(work)
+        if count == 0:
+            shutil.rmtree(work, ignore_errors=True)
+            archive.add_empty_month(dest, name)
+            say(f"{name}: no messages, so no folder.")
+            continue
+        shutil.rmtree(folder, ignore_errors=True)
+        work.rename(folder)
+        archive.mark_done(folder, {"month": name, "messages": count, "version": __version__,
+                                   "filed": datetime.now().astimezone().isoformat(timespec="seconds")})
+        filed.append((name, count))
+
+    copied, copy_error = [], None
+    if copy_to:
+        for folder in sorted(p for p in dest.iterdir() if p.is_dir() and not p.name.startswith(".")):
+            if not archive.needs_copy(folder, copy_to):
+                continue
+            say(f"Copying {folder.name} to {copy_to}...")
+            ok, err = archive.copy_month(folder, copy_to)
+            if not ok:
+                # A cloud folder that's stalled or refusing writes usually stays that way for this run.
+                copy_error = f"{folder.name}: {err}"
+                break
+            copied.append(folder.name)
+
+    if filed:
+        say(f"Filed {len(filed)} month(s): " + ", ".join(f"{n} ({c:,} messages)" for n, c in filed))
+        if len(filed) == 1:
+            notify(f"Texts for {filed[0][0]} filed: {filed[0][1]:,} messages.")
+        else:
+            notify(f"Texts filed for {len(filed)} months, {filed[0][0]} to {filed[-1][0]}.")
+    else:
+        say("Every finished month is already filed.")
+    if copied:
+        say(f"Copied {len(copied)} month(s) to {copy_to}.")
+    if copy_error:
+        say(f"Couldn't copy to {copy_to}: {copy_error}. It will try again next run; the months are safe in {dest}.")
+        notify("Monthly text archive couldn't copy to Google Drive. It will try again tomorrow.")
+        return 1
+    return 0
+
+
 def build_parser():
     p = argparse.ArgumentParser(prog="iphone_export",
                                 description="Save iPhone texts, calls, voicemail, notes and contacts.")
@@ -619,6 +717,14 @@ def build_parser():
     scp.add_argument("--wifi", action="store_true", help="back up over Wi-Fi, no cable needed")
     scp.add_argument("--no-attachments", action="store_true")
     scp.add_argument("--convert-media", action="store_true")
+    arp = sub.add_parser("archive", help="file each finished month's texts from this Mac in its own folder")
+    arp.add_argument("--dest", default=str(DEFAULT_OUT / "Messages by month"),
+                     help=f"where the month folders go (default: {DEFAULT_OUT / 'Messages by month'})")
+    arp.add_argument("--copy-to", help="also copy each filed month here (a Google Drive folder, say)")
+    arp.add_argument("--from", dest="since_month", help="first month to file, YYYY-MM (default: the oldest message)")
+    arp.add_argument("--no-attachments", action="store_true", help="text only, no photos or files")
+    # Scheduling lives in the Mac app (Daily Backup tab), which has the Full Disk Access Messages needs.
+    arp.add_argument("--off", action="store_true", help="remove the old LaunchAgent version of this job")
     return p
 
 
@@ -631,7 +737,7 @@ def main(argv=None):
         signal.signal(signal.SIGTERM, _stop_on_sigterm)  # cleanup (temp files, child tools) runs on Cancel
     args = build_parser().parse_args(argv)
     commands = {"list": cmd_list, "backup": cmd_backup, "export": cmd_export, "sync": cmd_sync,
-                "auto": cmd_auto, "schedule": cmd_schedule, "status": cmd_status}
+                "auto": cmd_auto, "schedule": cmd_schedule, "status": cmd_status, "archive": cmd_archive}
     if args.command in commands:
         try:
             return commands[args.command](args)

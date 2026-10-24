@@ -47,16 +47,26 @@ def install(hours, extra_args, python=None, workdir=None):
     return result.returncode == 0, result.stderr.strip()
 
 
-def remove():
-    existed = PLIST.exists()
+def remove(plist_path=None):
+    plist_path = plist_path or PLIST
+    existed = plist_path.exists()
     if existed:
-        _launchctl("bootout", f"gui/{os.getuid()}", str(PLIST))
-        PLIST.unlink()
+        _launchctl("bootout", f"gui/{os.getuid()}", str(plist_path))
+        plist_path.unlink()
     return existed
 
 
-def status():
-    if not PLIST.exists():
+def status(plist_path=None):
+    plist_path = plist_path or PLIST
+    if not plist_path.exists():
         return None
-    with open(PLIST, "rb") as f:
+    with open(plist_path, "rb") as f:
         return plistlib.load(f)
+
+
+# The monthly text archive used to be a LaunchAgent here. It isn't any more: a job that starts the app's
+# executable doesn't get the app's Full Disk Access, and macOS answered the first run by switching that access
+# off. The Mac app runs the archive itself now (Daily Backup tab). This label is kept so --off can remove an
+# old agent.
+ARCHIVE_LABEL = f"{LABEL}.archive"
+ARCHIVE_PLIST = Path.home() / "Library/LaunchAgents" / f"{ARCHIVE_LABEL}.plist"

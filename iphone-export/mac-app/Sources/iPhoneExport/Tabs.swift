@@ -150,9 +150,68 @@ struct DailyTab: View {
                     Text("Install the backup tool on the Setup tab first.").foregroundStyle(.orange)
                 }
             }
+            MonthlyArchiveSection()
         }
         .formStyle(.grouped)
         .onAppear { model.loadDailyFromStatus() }
+    }
+}
+
+struct MonthlyArchiveSection: View {
+    @EnvironmentObject var model: AppModel
+    @EnvironmentObject var archive: MonthlyArchive
+
+    var body: some View {
+        Section("Monthly text archive") {
+            Toggle("File each month's texts in its own folder on the 1st", isOn: $archive.enabled)
+            Text("Reads this Mac's Messages (Messages in iCloud), so no phone or backup is needed. Deleting a text "
+                 + "on the iPhone deletes it here too after 30 days, so this keeps a copy that stays. iPhone Export "
+                 + "opens at login and waits in the menu bar to do it.")
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+            LabeledContent("Saved in") {
+                HStack {
+                    Text(MonthlyArchive.destination).lineLimit(1).truncationMode(.middle)
+                    Button("Show") { archive.revealDestination() }
+                }
+            }
+            LabeledContent("Also copy to") {
+                HStack {
+                    Text(archive.copyTo.isEmpty ? "Nowhere" : (archive.copyTo as NSString).abbreviatingWithTildeInPath)
+                        .lineLimit(1).truncationMode(.head)
+                    Button("Choose…") { archive.chooseCopyFolder() }
+                    if !archive.copyTo.isEmpty {
+                        Button("Clear") { archive.copyTo = "" }
+                    }
+                }
+            }
+            if archive.enabled && archive.loginItem == .requiresApproval {
+                HStack {
+                    Text("Allow iPhone Export in Login Items so it can open at login.").foregroundStyle(.orange)
+                    Spacer()
+                    Button("Open Settings") { archive.openLoginItemsSettings() }
+                }
+            }
+            if model.needsFullDiskAccess {
+                Text("Needs Full Disk Access (Setup tab) to read Messages.").foregroundStyle(.orange)
+            }
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    if archive.running {
+                        Text("Filing…")
+                    } else if !archive.lastResult.isEmpty {
+                        Text(archive.lastResult).lineLimit(3)
+                    }
+                    if let success = archive.lastSuccess {
+                        Text("Last finished \(AppModel.relative(success))").foregroundStyle(.secondary)
+                    }
+                }
+                .font(.caption)
+                Spacer()
+                Button("Run Now") { archive.runNow() }
+                    .disabled(archive.running || !model.engineReady)
+            }
+        }
     }
 }
 
@@ -178,8 +237,10 @@ struct SetupTab: View {
                         }
                     }
                 }
-                SetupRow(done: !model.needsFullDiskAccess, title: "Full Disk Access",
-                         detail: model.needsFullDiskAccess
+                // Until the engine has reported there's nothing to go on, so don't show a tick yet.
+                SetupRow(done: model.status != nil && !model.needsFullDiskAccess, title: "Full Disk Access",
+                         detail: model.status == nil ? "Checked once the Python environment is set up"
+                            : model.needsFullDiskAccess
                             ? "macOS is hiding Finder's backups from this app. Switch on iPhone Export in the list, then reopen the app."
                             : "Can read Finder's backups") {
                     if model.needsFullDiskAccess {

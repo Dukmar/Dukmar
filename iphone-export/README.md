@@ -158,6 +158,23 @@ python3 -m iphone_export export --mac --open
 
 This is the fastest route, but it only has what has synced to the Mac, and it has no voicemail.
 
+Messages from conversations you've deleted can stay in the Mac's database long after the conversation is gone (on one real Mac, 596 of a month's 625 messages). The export files them under the person and marks them "From a deleted conversation".
+
+### 5. Monthly text archive (Mac app)
+
+With Messages in iCloud on, deleting a text on the iPhone deletes it from the Mac too, once it has spent 30 days in Recently Deleted. The monthly archive keeps a copy that stays: each finished month's texts go into a folder of their own, `~/iPhone Export/Messages by month/2026-10/`, and can be copied on to another folder (a Google Drive folder, say).
+
+Turn it on in the app's **Daily Backup** tab, under **Monthly text archive**. The app then opens at login (menu bar only, no window) and files the month on the 1st, or the first time it's running after that. A month is filed once; months with no messages get no folder; a copy that fails is retried three hours later.
+
+It runs inside the app on purpose. A LaunchAgent that starts the app's executable doesn't get the app's Full Disk Access, and when one tried, macOS switched that access off.
+
+From the command line (a terminal with Full Disk Access):
+
+```bash
+python3 -m iphone_export archive --copy-to "/path/to/Drive/folder"
+python3 -m iphone_export archive --from 2023-03     # start at a given month
+```
+
 ## One-time Mac permission
 
 macOS hides both the backups and the Messages database from apps by default. The first time, give your terminal access: **System Settings > Privacy & Security > Full Disk Access**, switch on **Terminal** (or iTerm), then quit and reopen it. The tool says so if this is the problem.
@@ -199,6 +216,8 @@ The double-click launcher handles this itself by building a private environment 
 - **Stickers, handwriting, Digital Touch drawings and link preview images** aren't drawn. The text, links and a label come through.
 - **Voicemail audio** is Apple's `.amr` unless `--convert-media` turns it into `.m4a`. iLEAPP doesn't confirm the time format voicemail dates are stored in, so the tool detects it. Check the first real export's voicemail dates against the phone.
 - **iCloud backups** can't be read; this needs a backup on the Mac.
+- **No partial backups.** Apple's backup service sends the whole phone, so a phone backup needs free space for all of its data. For texts alone, use the Mac's own copy (routes 4 and 5).
+- **Rebuilding the app resets Full Disk Access.** It's signed ad hoc, so each build is a new app to macOS. After `build-app.sh`, switch iPhone Export off and on in Full Disk Access.
 
 ## Tests
 

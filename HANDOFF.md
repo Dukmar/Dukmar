@@ -87,19 +87,23 @@ Other changes:
 - `sips`, `afconvert`, `idevicebackup2`, `idevice_id`, `osascript`, `launchctl` and `cp -c` (APFS clones) were tested only with stand-ins.
 - Not verified that idevicebackup2's passcode message contains the word "passcode" on current iOS. The text I matched ("Waiting for passcode to be entered on the device") comes from a Corellium support log. If the Mac never shows the notification, check `~/Library/Logs/iphone-export.log` for the real wording.
 
-## Open
-- **First real run.** Make a Finder backup, double-click `Export iPhone.command`, and spot-check a few conversations, calls, voicemail and notes against the phone.
-- **Voicemail dates.** iLEAPP doesn't confirm how voicemail dates are stored, so the tool detects the format. Check that the first export's voicemail dates match the phone.
-- **Mac app.** On the laptop: `cd iphone-export/mac-app && ./build-app.sh --install`, then work through the Setup tab. It compiles on a Mac (CI) but nobody has launched it yet, so tell me anything that looks off.
-- **Daily run.** In the app's Daily Backup tab (or `Set Up Daily Backup.command`). Default window is 18:00-23:00; say if you'd rather a different one. Each backup still needs the passcode typed on the phone (Apple rule, iOS 16.1+).
-- **New repo pending.** GitHub refused to let Claude create `Dukmar/iphone-export` (403, the app can't create repos). Colin needs to create it (private, no README) and give the Claude GitHub app access, then I push with history and remove the folder from this branch.
-- **Encrypted backup?** Is your Finder backup encrypted? It needs to be for call history. The first run asks for the backup password (the one set in Finder, not the phone passcode).
-- **iMazing's backups.** I don't know where iMazing keeps its own backups. If yours are there, pass `--backup <folder>`.
-- **Not built:**
-  - WhatsApp chats (iMazing and TouchCopy do them; it's a separate database and a bigger job);
-  - drawing stickers, handwriting and Digital Touch;
+## Round 5 (2026-10-24 evening, Colin's P Mac, local session)
+Colin: "Build and install my iPhone Export Mac app ... walk me through its Setup tab", then "just getting the text messages onto this computer" and "at the start of each month, the previous month's text messages get filed away into this folder" (the Drive folder `Historical Files/iPhone Text Messages`). He picked the app-at-login option for scheduling.
+- Built and installed first try. Setup done: Python environment, libimobiledevice 1.4.0, Full Disk Access, Finder "Show this iPhone when on Wi-Fi" (a Finder "Sync and Replace" prompt about media from Colin's iMac was cancelled; the Wi-Fi setting stuck anyway, `EnableWifiConnections: true`).
+- **Phone backup failed: ErrorCode 105**, not enough space (about 140 GB free on the Mac, about 370 GB of data on the phone). Apple's backup can't be partial.
+- **Texts come from the Mac instead.** New `archive` command + `archive.py`; the app's Daily Backup tab has a Monthly text archive section and the app registers as a login item (SMAppService), opening menu-bar-only at login.
+- **Found and fixed:** the Mac's database keeps messages from deleted conversations with no chat row (596 of 625 in Dec 2024). They were silently skipped; now exported and marked.
+- **Don't use launchd for anything that reads Messages.** A LaunchAgent running the app's executable got no Full Disk Access, and macOS switched the app's access off (auth_reason 5) when it ran. The `--engine` launch mode and `archive --schedule` were removed.
+- Backfilled 49 months (36,599 messages, 8.8 GB) and copied them to Drive `.../iPhone Text Messages/Messages by month/`; the copy matches file for file. A run from the app returned "Every finished month is already filed."
+- Correction to my own earlier claim: the Mac's history starts March 2023, not May 2019. The Drive folder's older `iMessages/` archive covers Oct 2013 to Apr 2015 (iMazing-style PDFs/CSVs made 2015-04-14).
+- Nothing committed. Changes are in the worktree `~/Projects/Dukmar-iphone-export` (branch `claude/iphone-texts-export`).
 
-  Say if any of these matter.
+## Open
+- **Commit and push** this session's changes, then bump the version. Every rebuild resets Full Disk Access (ad-hoc signature), so rebuild once and re-toggle.
+- **Login item:** confirm after the next login that the app is in the menu bar with no window, and on Nov 1 that `2026-10` appears locally and in Drive.
+- **Phone backups (calls, voicemail):** free about 250 GB, or add a backup-location setting for the My Book Duo.
+- **Swift test** `testEncryptedBackupAsksForPasswordThenUnlocks` fails on this Mac before and after these changes (fixture setup exits 1). Not investigated.
+- **Voicemail dates**, **new repo**, **not built** (WhatsApp etc.): unchanged from round 4.
 
 ## Needs the laptop
 - Everything above: the iPhone, the cable, Finder backups, Full Disk Access for Terminal, the Keychain prompt, and launchd for the nightly run.

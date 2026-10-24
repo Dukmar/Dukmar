@@ -557,3 +557,79 @@ def test_cancel_stops_the_backup_tool_too(tmp_path):
     _time.sleep(0.5)
     with pytest.raises(ProcessLookupError):
         os.kill(child, 0)
+
+
+# --------------------------------------------------------------------------------------------- monthly archive
+
+def test_archive_months():
+    from datetime import date
+    from iphone_export import archive
+
+    assert archive.finished_months((2025, 11), date(2026, 2, 1)) == [(2025, 11), (2025, 12), (2026, 1)]
+    assert archive.finished_months((2026, 2), date(2026, 2, 28)) == []
+    assert archive.bounds(2025, 12) == ("2025-12-01", "2026-01-01")
+    assert archive.parse_month("2019-05") == (2019, 5)
+    with pytest.raises(SystemExit):
+        archive.parse_month("May 2019")
+
+
+def test_archive_files_each_month_once_and_copies(tmp_path, monkeypatch):
+    """Every finished month gets its own folder, a done month is never redone, and the copy is retried."""
+    from datetime import datetime as real_datetime
+    from iphone_export import archive
+
+    staging = tmp_path / "staging"
+    staging.mkdir()
+    fixture.make_sms_db(staging / "chat.db")
+    monkeypatch.setattr(sources.sys, "platform", "darwin")
+    monkeypatch.setattr(sources, "MAC_FILES", {"sms": staging / "chat.db"})
+    monkeypatch.setattr(sources, "MAC_CONTACTS_ROOT", tmp_path / "no-address-book")
+    monkeypatch.setattr(archive, "MESSAGES_DB", staging / "chat.db")
+    monkeypatch.setattr(cli, "notify", lambda *a, **k: None)
+    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+
+    class December(real_datetime):
+        @classmethod
+        def now(cls, tz=None):
+            return real_datetime(2026, 12, 3, 9, 0).astimezone(tz)
+    monkeypatch.setattr(cli, "datetime", December)
+
+    dest, drive = tmp_path / "months", tmp_path / "drive"
+    real_copy = archive.copy_month
+    monkeypatch.setattr(archive, "copy_month", lambda folder, target: (False, "Operation not permitted"))
+    assert cli.main(["archive", "--dest", str(dest), "--copy-to", str(drive), "--from", "2026-10"]) == 1
+    # December isn't over, and November had no messages so it gets no folder.
+    assert sorted(p.name for p in dest.iterdir() if not p.name.startswith(".")) == ["2026-10"]
+    assert archive.empty_months(dest) == {"2026-11"}
+    assert archive.message_count(dest / "2026-10") == len(read_csv(dest / "2026-10" / "messages.csv")) > 0
+    assert not drive.exists()
+
+    # Next run: nothing re-exported, and the failed copy goes through.
+    monkeypatch.setattr(archive, "copy_month", real_copy)
+    (dest / "2026-10" / "marker.txt").write_text("kept")
+    assert cli.main(["archive", "--dest", str(dest), "--copy-to", str(drive), "--from", "2026-10"]) == 0
+    assert (dest / "2026-10" / "marker.txt").exists()
+    assert (drive / "2026-10" / "messages.csv").exists() and not (drive / "2026-11").exists()
+    assert not (drive / "2026-10" / archive.DONE_MARK).exists()
+
+
+def test_messages_from_deleted_conversations_are_kept(tmp_path):
+    """A deleted conversation's messages can outlive its chat rows; they're filed under the person, marked."""
+    import sqlite3
+    from iphone_export import messages
+
+    db = tmp_path / "chat.db"
+    fixture.make_sms_db(db)
+    conn = sqlite3.connect(db)
+    before = conn.execute("SELECT count(*) FROM chat_message_join").fetchone()[0]
+    (rowid, handle) = conn.execute("SELECT m.ROWID, h.id FROM message m JOIN handle h ON h.ROWID = m.handle_id "
+                                   "WHERE m.is_from_me = 0 AND m.text != '' ORDER BY m.ROWID LIMIT 1").fetchone()
+    conn.execute("DELETE FROM chat_message_join WHERE message_id = ?", (rowid,))
+    conn.commit()
+    conn.close()
+    assert before > 0
+
+    convos = messages.load(db)
+    kept = [m for c in convos for m in c.messages if m.orphaned]
+    assert len(kept) == 1 and kept[0].sender_handle == handle
+    assert all(not m.orphaned for c in convos for m in c.messages if m is not kept[0])

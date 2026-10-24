@@ -74,6 +74,7 @@ class Message:
     edits: list = field(default_factory=list)  # [(datetime, text)] oldest first, when the phone kept them
     unsent: bool = False
     deleted_at: object = None  # set for messages sitting in Recently Deleted
+    orphaned: bool = False  # its conversation was deleted but the message row is still in the database
     system: bool = False
     reply_to: str | None = None  # guid of the message this replies to
     reply_preview: str = ""
@@ -208,6 +209,12 @@ def _load(conn, contacts, since, until, me):
     tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
     if "chat_recoverable_message_join" in tables:
         joins += " UNION ALL SELECT chat_id, message_id, delete_date FROM chat_recoverable_message_join"
+    # Deleting a conversation removes its chat rows, but the Mac's synced database can keep the messages for
+    # a long time (years, on Colin's Mac). They're still readable; file them under the person they were with.
+    joins += (" UNION ALL SELECT NULL, ROWID, NULL FROM message WHERE ROWID NOT IN "
+              "(SELECT message_id FROM chat_message_join)")
+    if "chat_recoverable_message_join" in tables:
+        joins += " AND ROWID NOT IN (SELECT message_id FROM chat_recoverable_message_join)"
     clauses, params = _date_filter("date", since, until)
     where = ("WHERE " + " AND ".join(clauses)) if clauses else ""
     rows = conn.execute(
@@ -238,10 +245,22 @@ def _load(conn, contacts, since, until, me):
                     convos[key].participants.append(p)
         convo_for_chat[chat_id] = convos[key]
 
+    def convo_for_orphan(handle_id):
+        # A message with no chat row: the handle is the other person in a one-to-one thread (a sent message
+        # in a group has none, so those go together under one heading).
+        person = handles.get(handle_id)
+        key = contacts.person_for(person) if person else "deleted-conversations"
+        if key not in convos:
+            title = contacts.label(person) if person else "Deleted conversations (other people unknown)"
+            convos[key] = Conversation(key=key, title=title, participants=[person] if person else [],
+                                       is_group=False)
+        return convos[key]
+
     by_guid = {}
     reactions = []  # applied after every message is known
     for r in rows:
-        convo = convo_for_chat.get(r["chat_id"])
+        orphaned = r["chat_id"] is None
+        convo = convo_for_orphan(r["handle_id"]) if orphaned else convo_for_chat.get(r["chat_id"])
         if convo is None or r["guid"] in by_guid:
             continue
         assoc_type = r["associated_message_type"] or 0
@@ -283,6 +302,7 @@ def _load(conn, contacts, since, until, me):
             edits=edits if len(edits) > 1 else [],
             unsent=bool(r["date_retracted"]),
             deleted_at=from_apple(r["deleted_at"]) if r["deleted_at"] else None,
+            orphaned=orphaned,
             system=system,
             reply_to=r["thread_originator_guid"],
             delivered_at=from_apple(r["date_delivered"]),
