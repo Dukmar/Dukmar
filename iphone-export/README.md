@@ -2,7 +2,37 @@
 
 Saves iPhone texts (iMessage, SMS and RCS, with photos and attachments), call history, voicemail, Apple Notes and contacts to a folder on the Mac. It's a home-made stand-in for iMazing's exports: same source data, no licence, and it can back the phone up over Wi-Fi every evening and keep a month of dated versions.
 
-> **Status (2026-10-24):** version 0.3. Tested against a synthetic backup and against real Messages data blobs. It has **not** been run on a real iPhone backup yet. The first real run is the real test.
+> **Status (2026-10-24):** version 0.4, now with a Mac app. Tested against a synthetic backup and against real Messages data blobs. It has **not** been run on a real iPhone backup yet. The first real run is the real test.
+
+## The Mac app
+
+**iPhone Export.app** puts everything below behind buttons: no Terminal.
+
+- **Main window:** shows whether the iPhone is connected (cable or Wi-Fi) and when the last backup and export happened. Three buttons: **Back Up & Export**, **Export Latest Backup**, **Open Last Export**. While it works you see the current step and a progress bar for copying attachments, and an orange banner while the iPhone waits for its passcode. **Cancel** stops everything, including the backup tool.
+- **Export Options:** what to include, a date range, only certain people, your name instead of "Me", PDFs, photo conversion, where to save. The app remembers your choices.
+- **Dated Versions:** every dated copy of the backup, each with an Export button.
+- **Daily Backup:** turn the evening Wi-Fi backup on or off and pick the hours.
+- **Setup:** a checklist (Python environment, backup tool, Full Disk Access, Wi-Fi, PDFs), with a button for each missing piece.
+- **Menu bar:** an iPhone icon with Back Up & Export Now, Export Latest Backup and Open Last Export, without opening the window.
+- **Encrypted backups:** a password dialog appears the first time; after that the app remembers the key.
+
+### Build and install it
+
+Needs Xcode (or the Xcode Command Line Tools) on the Mac:
+
+```bash
+cd iphone-export/mac-app
+./build-app.sh --install
+```
+
+That builds `iPhone Export.app`, copies it to Applications and opens it. On first launch it sets up its Python environment (about a minute, once). Then, from the Setup tab:
+
+1. If the backup tool is missing, click **Install** (uses Homebrew).
+2. If Full Disk Access is missing, click **Open Settings**, switch on **iPhone Export**, and reopen the app. macOS needs this before any app can read Finder's backups.
+
+Rebuilding changes the app's signature, so macOS may ask for Full Disk Access again: switch iPhone Export off and on in that list.
+
+The app is a small SwiftUI front end (`mac-app/`). The work is still done by the Python engine in `iphone_export/`, which the app carries inside it. The double-click `.command` files and the command line keep working as before.
 
 ## What you get
 
@@ -174,10 +204,13 @@ The double-click launcher handles this itself by building a private environment 
 
 ```bash
 python3 -m pip install pytest pycryptodome pypdf iphone_backup_decrypt==0.11.2
-python3 -m pytest
+python3 -m pytest                   # the engine
+cd mac-app && swift test            # the app's engine-driving code, against the real engine
 ```
 
-The tests build a fake backup (plain and encrypted) using Apple's real Messages table layout, export it, and check every output, including the Mac route, PDFs, scheduling, dated versions, the passcode wait and the once-a-day logic. Media conversion and `idevicebackup2` are exercised with stand-in scripts, because those tools only exist on a Mac. Text and edit-history decoding are checked against blobs from real Messages databases when the [imessage-exporter](https://github.com/ReagentX/imessage-exporter) test data is on disk (set `TYPEDSTREAM_SAMPLES` to its `imessage-database/test_data/typedstream` folder).
+The engine tests build a fake backup (plain and encrypted) using Apple's real Messages table layout, export it, and check every output. They also cover the Mac route, PDFs, scheduling, dated versions, the passcode wait, the once-a-day logic and Cancel. Media conversion and `idevicebackup2` are exercised with stand-in scripts. Text and edit-history decoding are checked against blobs from real Messages databases when the [imessage-exporter](https://github.com/ReagentX/imessage-exporter) test data is on disk (set `TYPEDSTREAM_SAMPLES` to its `imessage-database/test_data/typedstream` folder).
+
+The Swift tests run the real engine from Swift: streaming progress, the password dialog flow, the status summary, and Cancel. A GitHub Actions workflow builds and tests everything on a macOS runner and keeps the built app as a download.
 
 ## Credits
 

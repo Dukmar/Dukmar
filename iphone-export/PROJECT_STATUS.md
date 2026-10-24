@@ -3,10 +3,10 @@
 **Updated:** 2026-10-24
 
 ## What it is
-A Python command-line tool, plus a double-click `Export iPhone.command`. It reads a local iPhone backup, or the Mac's own synced copies, and saves texts, calls, voicemail, notes and contacts as HTML, TXT, CSV, vCard and optional PDF. A home-made stand-in for iMazing's export.
+A Mac app (`mac-app/`, SwiftUI) on top of a Python engine (`iphone_export/`), which also runs from the command line and the double-click `.command` files. It reads a local iPhone backup, or the Mac's own synced copies, and saves texts, calls, voicemail, notes and contacts as HTML, TXT, CSV, vCard and optional PDF. A home-made stand-in for iMazing's export.
 
 ## State
-- v0.3.0. 23 automated tests pass on Python 3.13 and 3.9 (3.9 is what the macOS Command Line Tools ship).
+- v0.4.0. 28 Python tests and 12 Swift tests pass. The Python tests run on 3.13 and 3.9 (3.9 is what the macOS Command Line Tools ship); the Swift tests ran with Swift 6.1.2 on Linux.
 - v0.2 added features copied from iMazing, imessage-exporter, Decipher TextMessage and TouchCopy:
   - search across all messages, a photo gallery, reply quotes, edit history, recovery of Recently Deleted messages;
   - read and delivered times, send effects, app message labels;
@@ -21,12 +21,18 @@ A Python command-line tool, plus a double-click `Export iPhone.command`. It read
   - a daily Wi-Fi backup + export (`auto`, scheduled hourly in an evening window, passcode notification, gives up after 15 minutes);
   - dated versions of each backup (APFS clones, 30 days);
   - `Set Up Daily Backup.command`.
-- **Never run on a real iPhone backup yet.**
+- v0.4 added the Mac app:
+  - a main window with phone status, Back Up & Export, progress, a passcode banner, Cancel and results;
+  - four tabs: Export Options, Dated Versions, Daily Backup, Setup;
+  - a menu bar icon and a password dialog;
+  - `build-app.sh`, plus the engine's progress events and status summary;
+  - a macOS CI build that uploads the app as a download.
+- **Never run on a real iPhone backup yet. The app has never been launched on a Mac; only built.**
 
 ## Next
 1. On the laptop: `git fetch && git switch claude/iphone-texts-export`, then double-click `iphone-export/Export iPhone.command` against the latest Finder backup.
 2. Spot-check against the phone: a few conversations (replies, edits, reactions), the call list, voicemail dates and notes.
-3. Try `--pdf` on one conversation, then double-click `Set Up Daily Backup.command`.
+3. Build the app: `cd mac-app && ./build-app.sh --install`, work through its Setup tab, try Back Up & Export, then turn on Daily Backup.
 4. Move to its own private repo, `Dukmar/iphone-export` (Colin decided this 2026-10-24). That waits on Colin creating the empty repo, because Claude's GitHub app can't create one.
 
 ## Files
@@ -39,4 +45,8 @@ A Python command-line tool, plus a double-click `Export iPhone.command`. It read
 - `iphone_export/schedule.py`: nightly LaunchAgent
 - `iphone_export/cli.py`: `list`, `backup`, `export`, `sync`, `auto`, `schedule`
 - `Export iPhone.command`, `Set Up Daily Backup.command`: double-click launchers
+- `iphone_export/events.py`: progress events for the app
+- `mac-app/Sources/ExportCore/`: runs the engine, parses events and status (tested)
+- `mac-app/Sources/iPhoneExport/`: SwiftUI app
+- `mac-app/build-app.sh`: builds and installs `iPhone Export.app`
 - `tests/`: fixture builder, real Messages schema, tests
