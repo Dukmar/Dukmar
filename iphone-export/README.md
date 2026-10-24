@@ -76,7 +76,15 @@ brew install libimobiledevice
 python3 -m iphone_export sync --open
 ```
 
-`sync` backs the phone up with `idevicebackup2` into `~/iPhone Backups/`, then exports. The double-click launcher does this automatically when it sees the tool and a plugged-in phone. Unlock the phone and tap **Trust** the first time. Encrypted backups also ask for the phone's passcode on the phone itself.
+`sync` backs the phone up with `idevicebackup2` into `~/iPhone Backups/`, then exports. The double-click launcher does this automatically when it sees the tool and a phone, plugged in or on Wi-Fi.
+
+Without the cable, any time (once Wi-Fi is set up, see route 3):
+
+```bash
+python3 -m iphone_export sync --wifi --only messages --open
+```
+
+The phone still asks for its passcode, as it does for every backup. Unlock the phone and tap **Trust** the first time. Encrypted backups also ask for the phone's passcode on the phone itself.
 
 This keeps its own backup, separate from Finder's. A full backup is as big as the phone's used storage, so if you also keep Finder backups you'll have two copies. Pick one route and stick with it.
 

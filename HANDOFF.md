@@ -55,6 +55,7 @@ Other changes:
 - New `snapshots.py`: after each backup, a dated APFS clone (`cp -c`) goes to `~/iPhone Backups/Snapshots/<UDID>/<date time>/`, pruned after `--keep-days` (default 30, iMazing's default). `list` shows the dated versions and `export --snapshot YYYY-MM-DD` exports one.
 - New `Set Up Daily Backup.command`: a one-time double-click setup that installs libimobiledevice, does the Finder Wi-Fi tick, runs the first cable backup (saving the Keychain key) and sets up the schedule.
 - Default output moved from `~/Documents/iPhone Export` to `~/iPhone Export`, because macOS blocks background jobs from Documents.
+- `Export iPhone.command` now falls back to a Wi-Fi backup when no cable is plugged in, so a manual export over Wi-Fi is one double-click. Checked with stand-in tools for all three cases: cable, Wi-Fi only, and no phone.
 
 **Verified:**
 - 23 tests pass on Python 3.13 and 3.9. They include dated versions (take, prune, pick and export), the passcode give-up with its notification, and `auto` running once a day and skipping when the phone isn't reachable or the time is outside the window. Earlier rounds' tests cover the rest.
