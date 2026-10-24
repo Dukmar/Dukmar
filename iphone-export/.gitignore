@@ -1,0 +1,9 @@
+# Never commit personal data: exports and backups stay on the laptop.
+iPhone Export/
+iPhone Backups/
+*.db
+*.sqlite
+*.sqlitedb
+*.storedata
+__pycache__/
+.pytest_cache/
