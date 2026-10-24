@@ -6,6 +6,7 @@
 """
 
 import gzip
+import plistlib
 import zlib
 
 _OBJ_REPLACEMENT = "￼"  # what Notes and Messages put where an inline attachment sits
@@ -103,3 +104,32 @@ def note_text(zdata):
     if text is None:
         return None
     return text.decode("utf-8", errors="replace").replace(_OBJ_REPLACEMENT, "[attachment]")
+
+
+# --------------------------------------------------------------------------------------------- edit history
+
+def edit_history(summary_info):
+    """Earlier versions of an edited iMessage, from message.message_summary_info.
+
+    That column is a binary plist. Its "ec" key maps each message part ("0", "1", ...) to a list of
+    versions, oldest first, each {"t": typedstream text, "d": seconds since 2001}.
+    Returns [(apple_seconds, text), ...] in order, or [] when there's no history.
+    """
+    if not summary_info:
+        return []
+    try:
+        info = plistlib.loads(bytes(summary_info))
+    except Exception:
+        return []
+    edits = info.get("ec") if isinstance(info, dict) else None
+    if not isinstance(edits, dict):
+        return []
+    versions = []
+    for part in sorted(edits, key=lambda k: int(k) if str(k).isdigit() else 0):
+        for event in edits[part] or []:
+            if not isinstance(event, dict):
+                continue
+            text = attributed_body_text(event.get("t"))
+            if text is not None:
+                versions.append((event.get("d"), text.replace(_OBJ_REPLACEMENT, "").strip()))
+    return versions

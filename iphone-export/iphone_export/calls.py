@@ -31,10 +31,11 @@ def _kind(provider, call_type):
         return "FaceTime Video" if call_type == 8 else "FaceTime Audio"
     if provider in ("", "com.apple.Telephony"):
         return "Phone"
-    return provider
+    # Third-party apps report their bundle id, e.g. net.whatsapp.WhatsApp -> WhatsApp
+    return provider.rsplit(".", 1)[-1]
 
 
-def load(db_path, contacts=None, since=None):
+def load(db_path, contacts=None, since=None, until=None):
     conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     try:
@@ -47,10 +48,15 @@ def load(db_path, contacts=None, since=None):
             f"SELECT ZDATE, ZDURATION, ZORIGINATED, ZANSWERED, {c('ZCALLTYPE')}, {c('ZSERVICE_PROVIDER')}, "
             f"ZADDRESS, {c('ZNAME')}, {c('ZLOCATION')} FROM ZCALLRECORD"
         )
-        params = ()
+        clauses, params = [], []
         if since is not None:
-            sql += " WHERE ZDATE >= ?"
-            params = (to_apple_seconds(since),)
+            clauses.append("ZDATE >= ?")
+            params.append(to_apple_seconds(since))
+        if until is not None:
+            clauses.append("ZDATE < ?")
+            params.append(to_apple_seconds(until))
+        if clauses:
+            sql += " WHERE " + " AND ".join(clauses)
         sql += " ORDER BY ZDATE DESC"
         calls = []
         for r in conn.execute(sql, params):

@@ -26,14 +26,32 @@ def _first_present(cols, *names):
     return None
 
 
+def _filled_column(conn, cols, prefix):
+    """Pick the <prefix>N column actually filled in on note rows.
+
+    Newer iOS keeps several same-named columns (ZCREATIONDATE, ZCREATIONDATE1, ZCREATIONDATE3...) and
+    only one holds note dates, so "the first one that exists" can come back blank. Approach from iLEAPP.
+    """
+    candidates = [c for c in cols if c == prefix or (c.startswith(prefix) and c[len(prefix):].isdigit())]
+    best, best_count = None, 0
+    for col in sorted(candidates, key=lambda c: int(c[len(prefix):] or -1), reverse=True):
+        count = conn.execute(
+            f"SELECT COUNT(*) FROM ZICCLOUDSYNCINGOBJECT n JOIN ZICNOTEDATA d ON d.ZNOTE = n.Z_PK "
+            f"WHERE n.{col} IS NOT NULL"
+        ).fetchone()[0]
+        if count > best_count:
+            best, best_count = col, count
+    return best or (candidates[0] if candidates else None)
+
+
 def load(db_path):
     conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
     conn.row_factory = sqlite3.Row
     try:
         cols = {r[1] for r in conn.execute("PRAGMA table_info(ZICCLOUDSYNCINGOBJECT)")}
         # Column names shift between iOS versions; take whichever exists.
-        created = _first_present(cols, "ZCREATIONDATE3", "ZCREATIONDATE1", "ZCREATIONDATE")
-        modified = _first_present(cols, "ZMODIFICATIONDATE1", "ZMODIFICATIONDATE")
+        created = _filled_column(conn, cols, "ZCREATIONDATE")
+        modified = _filled_column(conn, cols, "ZMODIFICATIONDATE")
         locked = _first_present(cols, "ZISPASSWORDPROTECTED")
         deleted = _first_present(cols, "ZMARKEDFORDELETION")
         folder_type = _first_present(cols, "ZFOLDERTYPE")

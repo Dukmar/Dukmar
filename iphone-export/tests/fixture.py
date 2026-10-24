@@ -19,6 +19,7 @@ HERE = Path(__file__).parent
 APPLE_EPOCH = datetime(2001, 1, 1, tzinfo=timezone.utc)
 
 ALISON = "+14165551234"
+ALISON_EMAIL = "alison@icloud.com"
 FRIEND = "friend@example.com"
 STRANGER = "+19055550000"
 LONG_TEXT = "Long message " + "x" * 300  # > 127 bytes forces the 0x81 length form in typedstream
@@ -62,6 +63,14 @@ def _pb_bytes(field, payload):
     return _pb_varint(field << 3 | 2) + _pb_varint(len(payload)) + payload
 
 
+def summary_info(versions):
+    """message_summary_info plist as Messages writes it for an edited message (see decode.edit_history)."""
+    return plistlib.dumps({
+        "ec": {"0": [{"t": typedstream(t), "d": apple_s(dt)} for t, dt in versions]},
+        "otr": {"0": {"lo": 0, "le": len(versions[-1][0])}}, "ust": True,
+    }, fmt=plistlib.FMT_BINARY)
+
+
 def note_blob(text):
     note = _pb_bytes(2, text.encode()) + _pb_bytes(5, b"\x08\x05")  # text + one attribute run
     document = _pb_varint(2 << 3) + _pb_varint(0) + _pb_bytes(3, note)
@@ -75,26 +84,31 @@ def make_sms_db(path):
     conn.executescript((HERE / "messages_schema.sql").read_text())
     conn.executemany("INSERT INTO handle (ROWID, id, service) VALUES (?, ?, ?)", [
         (1, ALISON, "iMessage"), (2, ALISON, "SMS"), (3, FRIEND, "iMessage"), (4, STRANGER, "iMessage"),
+        (5, ALISON_EMAIL, "iMessage"),
     ])
     conn.executemany("INSERT INTO chat (ROWID, guid, chat_identifier, service_name, display_name) VALUES (?,?,?,?,?)", [
         (1, "iMessage;-;" + ALISON, ALISON, "iMessage", ""),
         (2, "SMS;-;" + ALISON, ALISON, "SMS", ""),
         (3, "iMessage;+;chat123", "chat123", "iMessage", "Fantasy League"),
+        (4, "iMessage;-;" + ALISON_EMAIL, ALISON_EMAIL, "iMessage", ""),  # same person, by email
     ])
     conn.executemany("INSERT INTO chat_handle_join (chat_id, handle_id) VALUES (?, ?)",
-                     [(1, 1), (2, 2), (3, 3), (3, 4)])
+                     [(1, 1), (2, 2), (3, 3), (3, 4), (4, 5)])
 
     rows = [
         # rowid, guid, text, attributedBody, handle, service, date, from_me, assoc_type, assoc_guid, extras
         (1, "G1", "Hi from Alison", None, 1, "iMessage", when(20, 14), 0, 0, None, {}),
-        (2, "G2", "Hey! See you at 6 https://example.com/menu", None, 1, "iMessage", when(20, 14, 5), 1, 0, None, {}),
+        (2, "G2", "Hey! See you at 6 https://example.com/menu", None, 1, "iMessage", when(20, 14, 5), 1, 0, None,
+         {"date_delivered": apple_ns(when(20, 14, 5)), "date_read": apple_ns(when(20, 14, 7))}),
         (3, "G3", None, typedstream(LONG_TEXT), 1, "iMessage", when(20, 15), 0, 0, None, {}),
         (4, "G4", None, None, 1, "iMessage", when(20, 15, 1), 0, 2000, "p:0/G2", {}),            # Alison loves G2
         (5, "G5", None, None, 0, "iMessage", when(20, 15, 2), 1, 2001, "p:0/G3", {}),            # I like G3
         (6, "G6", None, None, 0, "iMessage", when(20, 15, 3), 1, 3001, "p:0/G3", {}),            # ...then remove it
         (7, "G7", "￼", None, 1, "iMessage", when(21, 9), 0, 0, None, {}),                    # photo
         (8, "G8", "Old SMS text", None, 2, "SMS", when(1, 8), 0, 0, None, {}),                    # SMS thread
-        (9, "G9", "Edited words", None, 0, "iMessage", when(21, 10), 1, 0, None, {"date_edited": 1}),
+        (9, "G9", "Edited words", None, 0, "iMessage", when(21, 10), 1, 0, None,
+         {"date_edited": apple_ns(when(21, 10, 1)), "message_summary_info": summary_info(
+             [("Edit words v1", when(21, 10)), ("Edited words", when(21, 10, 1))])}),
         (10, "G10", "", None, 0, "iMessage", when(21, 11), 1, 0, None, {"date_retracted": 1}),     # unsent
         (11, "G11", "Draft picks tonight?", None, 3, "iMessage", when(22, 19), 0, 0, None, {}),
         (12, "G12", "In", None, 4, "iMessage", when(22, 19, 1), 0, 0, None, {}),
@@ -103,6 +117,12 @@ def make_sms_db(path):
         (14, "G14", None, None, 4, "iMessage", when(22, 19, 3), 0, 2006, "p:0/G11",
          {"associated_message_emoji": "\U0001F525"}),
         (15, "G15", "Two files", None, 1, "iMessage", when(21, 9, 30), 0, 0, None, {}),
+        (16, "G16", "Sounds good", None, 5, "iMessage", when(21, 12), 0, 0, None, {"thread_originator_guid": "G2"}),
+        (17, "G17", "Oops wrong chat", None, 0, "iMessage", when(21, 13), 1, 0, None, {}),  # in Recently Deleted
+        (18, "G18", "Happy birthday!", None, 0, "iMessage", when(21, 14), 1, 0, None,
+         {"expressive_send_style_id": "com.apple.messages.effect.CKHappyBirthdayEffect"}),
+        (19, "G19", None, None, 1, "iMessage", when(21, 15), 0, 0, None,
+         {"balloon_bundle_id": "com.apple.PassbookUIService.PeerPaymentMessagesExtension"}),
     ]
     for rowid, guid, text, body, handle, service, dt, me, atype, aguid, extras in rows:
         cols = {"ROWID": rowid, "guid": guid, "text": text, "attributedBody": body, "handle_id": handle,
@@ -110,9 +130,12 @@ def make_sms_db(path):
                 "associated_message_type": atype, "associated_message_guid": aguid, **extras}
         conn.execute(f"INSERT INTO message ({', '.join(cols)}) VALUES ({', '.join('?' * len(cols))})",
                      list(cols.values()))
-    chat_of = {1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 2, 9: 1, 10: 1, 11: 3, 12: 3, 13: 3, 14: 3, 15: 1}
+    chat_of = {1: 1, 2: 1, 3: 1, 4: 1, 5: 1, 6: 1, 7: 1, 8: 2, 9: 1, 10: 1, 11: 3, 12: 3, 13: 3, 14: 3, 15: 1,
+               16: 4, 18: 1, 19: 1}
     conn.executemany("INSERT INTO chat_message_join (chat_id, message_id, message_date) VALUES (?, ?, 0)",
                      [(c, m) for m, c in chat_of.items()])
+    conn.execute("INSERT INTO chat_recoverable_message_join (chat_id, message_id, delete_date) VALUES (1, 17, ?)",
+                 (apple_ns(when(23, 8)),))
     conn.executemany(
         "INSERT INTO attachment (ROWID, guid, original_guid, filename, mime_type, transfer_name, total_bytes) "
         "VALUES (?,?,?,?,?,?,?)", [
@@ -131,9 +154,11 @@ def make_contacts_db(path):
     conn.executescript("""
         CREATE TABLE ABPerson (ROWID INTEGER PRIMARY KEY, First TEXT, Last TEXT, Organization TEXT);
         CREATE TABLE ABMultiValue (UID INTEGER PRIMARY KEY, record_id INTEGER, property INTEGER, label INTEGER, value TEXT);
+        CREATE TABLE ABMultiValueLabel (value TEXT);
+        INSERT INTO ABMultiValueLabel (ROWID, value) VALUES (1, '_$!<Mobile>!$_'), (2, '_$!<Home>!$_');
         INSERT INTO ABPerson VALUES (1, 'Alison', 'Robey', NULL), (2, 'Pat', 'Friend', NULL), (3, NULL, NULL, 'Pizza Place');
         INSERT INTO ABMultiValue VALUES (1, 1, 3, 1, '(416) 555-1234'), (2, 2, 4, 1, 'Friend@Example.com'),
-                                        (3, 3, 3, 1, '905-555-7777');
+                                        (3, 3, 3, 1, '905-555-7777'), (4, 1, 4, 2, 'alison@icloud.com');
     """)
     conn.commit()
     conn.close()
@@ -152,6 +177,20 @@ def make_calls_db(path):
         (5, 1, 1, 0, apple_s(datetime(2025, 1, 5, tzinfo=timezone.utc)), 30.0, "+16475550101", "Old Caller",
          "net.whatsapp.WhatsApp", ""),
     ])
+    conn.commit()
+    conn.close()
+
+
+def make_voicemail_db(path):
+    conn = sqlite3.connect(path)
+    conn.execute("""CREATE TABLE voicemail (ROWID INTEGER PRIMARY KEY AUTOINCREMENT, remote_uid INTEGER, date INTEGER,
+        token TEXT, sender TEXT, callback_num TEXT, duration INTEGER, expiration INTEGER, trashed_date INTEGER,
+        flags INTEGER)""")
+    conn.executemany("INSERT INTO voicemail (ROWID, date, sender, callback_num, duration, trashed_date, flags) "
+                     "VALUES (?,?,?,?,?,?,?)", [
+                         (1, int(when(22, 10).timestamp()), ALISON, ALISON, 42, 0, 3),
+                         (2, int(when(19, 10).timestamp()), "+16475550101", None, 5, int(when(20, 1).timestamp()), 75),
+                     ])
     conn.commit()
     conn.close()
 
@@ -194,11 +233,16 @@ def _contents(staging):
     make_contacts_db(staging / "AddressBook.sqlitedb")
     make_calls_db(staging / "CallHistory.storedata")
     make_notes_db(staging / "NoteStore.sqlite")
+    make_voicemail_db(staging / "voicemail.db")
+    transcript = plistlib.dumps({"transcriptionString": "Hey it's Alison, call me back", "confidence": 0.9})
     return [
         ("HomeDomain", "Library/SMS/sms.db", (staging / "sms.db").read_bytes()),
         ("HomeDomain", "Library/AddressBook/AddressBook.sqlitedb", (staging / "AddressBook.sqlitedb").read_bytes()),
         ("HomeDomain", "Library/CallHistoryDB/CallHistory.storedata", (staging / "CallHistory.storedata").read_bytes()),
         ("AppDomainGroup-group.com.apple.notes", "NoteStore.sqlite", (staging / "NoteStore.sqlite").read_bytes()),
+        ("HomeDomain", "Library/Voicemail/voicemail.db", (staging / "voicemail.db").read_bytes()),
+        ("HomeDomain", "Library/Voicemail/1.amr", b"#!AMR\nfake"),
+        ("HomeDomain", "Library/Voicemail/1.transcript", transcript),
         ("MediaDomain", "Library/SMS/Attachments/ab/11/A1/IMG_0001.HEIC", b"fake heic!!!"),
         ("MediaDomain", "Library/SMS/Attachments/cd/22/A2/voice.caf", b"fake caf!"),
         # gone.mov deliberately absent: attachments offloaded to iCloud aren't in backups

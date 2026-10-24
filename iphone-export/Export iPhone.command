@@ -17,9 +17,9 @@ if [ ! -x "$VENV/bin/python" ]; then
 fi
 
 if command -v idevicebackup2 >/dev/null 2>&1 && idevice_id -l 2>/dev/null | grep -q .; then
-  "$VENV/bin/python" -m iphone_export sync --open "$@"
+  "$VENV/bin/python" -m iphone_export sync --open --convert-media "$@"
 else
-  "$VENV/bin/python" -m iphone_export export --open "$@"
+  "$VENV/bin/python" -m iphone_export export --open --convert-media "$@"
 fi
 
 echo

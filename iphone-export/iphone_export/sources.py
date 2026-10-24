@@ -25,6 +25,7 @@ BACKUP_FILES = {
     "calls": ("HomeDomain", "Library/CallHistoryDB/CallHistory.storedata"),
     "contacts": ("HomeDomain", "Library/AddressBook/AddressBook.sqlitedb"),
     "notes": ("AppDomainGroup-group.com.apple.notes", "NoteStore.sqlite"),
+    "voicemail": ("HomeDomain", "Library/Voicemail/voicemail.db"),
 }
 
 HOME = Path.home()
@@ -207,6 +208,17 @@ class BackupSource:
             return False
         return self._extract("MediaDomain", relpath, Path(dest))
 
+    def fetch_voicemail(self, rowid, dest_dir):
+        """Copy voicemail <rowid>.amr into dest_dir; return (path or None, transcript text)."""
+        from .voicemail import read_transcript
+        dest = Path(dest_dir) / f"{rowid}.amr"
+        path = dest if dest.exists() or self._extract("HomeDomain", f"Library/Voicemail/{rowid}.amr", dest) else None
+        transcript = ""
+        tdest = self.workdir / "voicemail" / f"{rowid}.transcript"
+        if self._extract("HomeDomain", f"Library/Voicemail/{rowid}.transcript", tdest):
+            transcript = read_transcript(tdest)
+        return path, transcript
+
 
 class EncryptedBackupSource(BackupSource):
     """An encrypted backup. Needs the backup password (or the key derived from it, which unlocks far faster)."""
@@ -290,6 +302,8 @@ class MacSource:
             )
 
     def fetch(self, key):
+        if key not in MAC_FILES:
+            return None  # voicemail and the iPhone's own address book only exist in phone backups
         return self._copy(MAC_FILES[key], key)
 
     def contacts_dbs(self):
