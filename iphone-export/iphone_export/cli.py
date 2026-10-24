@@ -4,18 +4,22 @@ from __future__ import annotations
 
 import argparse
 import getpass
+import json
 import os
+import queue
 import shutil
 import subprocess
 import sys
+import threading
 import time
 from datetime import datetime
 from pathlib import Path
 
-from . import __version__, calls, contacts, messages, notes, pdf, schedule, sources, voicemail
+from . import __version__, calls, contacts, messages, notes, pdf, schedule, snapshots, sources, voicemail
 from .render import Exporter
 
-DEFAULT_OUT = Path.home() / "Documents" / "iPhone Export"
+# Not ~/Documents: macOS blocks background jobs (the daily run) from Documents without a prompt they can't show.
+DEFAULT_OUT = Path.home() / "iPhone Export"
 KEYCHAIN_SERVICE = "iphone-export"
 WHAT = ("messages", "calls", "voicemail", "notes", "contacts")
 
@@ -56,7 +60,14 @@ def _keychain_delete(account):
 def open_source(args):
     if args.mac:
         return sources.MacSource()
-    if args.backup:
+    if getattr(args, "snapshot", None):
+        roots = [Path(args.backup_root)] if args.backup_root else sources.backup_roots()
+        day = _date(args.snapshot, "--snapshot").date()
+        found = snapshots.pick(roots, day)
+        if not found:
+            raise sources.SourceError(f"No dated backup from {day} or earlier. See them with: list")
+        info = found[1]
+    elif args.backup:
         info = sources.read_backup_info(args.backup)
     else:
         roots = [Path(args.backup_root)] if args.backup_root else None
@@ -108,16 +119,61 @@ def _open_encrypted(info, args):
 # --------------------------------------------------------------------------------------------- commands
 
 def cmd_list(args):
-    roots = [Path(args.backup_root)] if args.backup_root else None
+    roots = [Path(args.backup_root)] if args.backup_root else sources.backup_roots()
     found = sources.find_backups(roots)
     if not found:
         say("No backups found in:")
-        for r in roots or sources.backup_roots():
+        for r in roots:
             say(f"  {r}")
         return 1
     for b in found:
         say(b.describe())
+    snaps = snapshots.all_snapshots(roots)
+    if snaps:
+        say(f"\nDated versions ({len(snaps)}), newest first. Export one with --snapshot YYYY-MM-DD:")
+        for when, info in snaps:
+            say(f"  {when:%Y-%m-%d %H:%M}  {info.device_name}")
     return 0
+
+
+def notify(message, title="iPhone Export"):
+    """A macOS notification, so a scheduled run can say it's waiting on the phone."""
+    if sys.platform == "darwin":
+        def quote(t):  # AppleScript string literal; keep non-ASCII as-is (AppleScript has no \\u escapes)
+            return json.dumps(t, ensure_ascii=False)
+        script = f"display notification {quote(message)} with title {quote(title)}"
+        subprocess.run(["osascript", "-e", script], capture_output=True)
+
+
+def _run_backup(cmd, passcode_wait):
+    """Run idevicebackup2, echoing its output. Since iOS 16.1 the phone asks for its passcode before every
+    backup; when that prompt shows up, notify and give up after passcode_wait minutes. Returns the exit
+    code, or None if the passcode never came."""
+    proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, bufsize=1)
+    lines = queue.Queue()
+    reader = threading.Thread(target=lambda: [lines.put(line) for line in proc.stdout] and None, daemon=True)
+    reader.start()
+    deadline = None
+    while True:
+        try:
+            line = lines.get(timeout=0.5)
+        except queue.Empty:
+            line = None
+        if line is not None:
+            print(line, end="", flush=True)
+            if deadline is None and "passcode" in line.lower():
+                deadline = time.monotonic() + passcode_wait * 60
+                notify("Unlock your iPhone and enter its passcode to start the backup.")
+            continue
+        if proc.poll() is not None and not reader.is_alive():
+            return proc.returncode
+        if deadline is not None and time.monotonic() > deadline:
+            proc.terminate()
+            try:
+                proc.wait(timeout=20)
+            except subprocess.TimeoutExpired:
+                proc.kill()
+            return None
 
 
 def cmd_backup(args):
@@ -127,14 +183,11 @@ def cmd_backup(args):
             "    brew install libimobiledevice\n"
             "or make the backup in Finder (select the iPhone in the sidebar > Back Up Now), then run export.")
         return 1
-    net = ["-n"] if args.wifi else []
-    ids = subprocess.run([shutil.which("idevice_id") or "idevice_id", "-n" if args.wifi else "-l"],
-                         capture_output=True, text=True)
-    udids = [u for u in ids.stdout.split() if u]
+    udids = _devices(args.wifi)
     if not udids:
         if args.wifi:
-            say("No iPhone found on Wi-Fi. It needs to be on the same network, unlocked, and set to sync over "
-                "Wi-Fi once in Finder ('Show this iPhone when on Wi-Fi').")
+            say("No iPhone found on Wi-Fi. It needs to be on the same network and awake, and set up for Wi-Fi once: "
+                "plug it in, select it in Finder, tick 'Show this iPhone when on Wi-Fi', click Apply.")
         else:
             say("No iPhone found. Plug it in with a cable, unlock it, and tap 'Trust This Computer' if asked.")
         return 1
@@ -142,13 +195,32 @@ def cmd_backup(args):
     dest.mkdir(parents=True, exist_ok=True)
     udid = args.udid or udids[0]
     say(f"Backing up {udid} into {dest} (only changes since the last backup are copied).")
-    say("If the phone asks for its passcode, enter it - encrypted backups need that on iOS 13 and later.")
-    result = subprocess.run([tool, *net, "-u", udid, "backup", str(dest)])
-    if result.returncode != 0:
-        say(f"idevicebackup2 stopped with code {result.returncode}.")
-        return result.returncode
+    say("The phone will ask for its passcode (Apple requires it for every backup since iOS 16.1).")
+    net = ["-n"] if args.wifi else []
+    code = _run_backup([tool, *net, "-u", udid, "backup", str(dest)], args.passcode_wait)
+    if code is None:
+        say(f"Nobody entered the passcode within {args.passcode_wait} minutes, so the backup was stopped.")
+        return 3
+    if code != 0:
+        say(f"idevicebackup2 stopped with code {code}.")
+        return code
     args.backup = str(dest / udid)
+    if not args.no_snapshot:
+        try:
+            snap = snapshots.take(dest / udid)
+            gone = snapshots.prune(dest / udid, args.keep_days)
+            say(f"Saved a dated version: {snap.name}" + (f" (removed {len(gone)} older than "
+                                                         f"{args.keep_days} days)" if gone else ""))
+        except snapshots.SnapshotUnsupported as e:
+            say(f"No dated version saved: this drive can't make space-saving clones ({e}). "
+                "Backups on the Mac's own drive (APFS) can.")
     return 0
+
+
+def _devices(wifi):
+    ids = subprocess.run([shutil.which("idevice_id") or "idevice_id", "-n" if wifi else "-l"],
+                         capture_output=True, text=True)
+    return [u for u in ids.stdout.split() if u]
 
 
 def _date(value, flag):
@@ -300,46 +372,98 @@ def cmd_sync(args):
     return cmd_export(args)
 
 
+def _window(text):
+    try:
+        start, end = (datetime.strptime(t.strip(), "%H:%M").time() for t in text.split("-"))
+    except ValueError:
+        raise SystemExit(f"--window needs a range like 18:00-23:00, got {text!r}")
+    return start, end
+
+
+def cmd_auto(args):
+    """What the scheduled job runs: once a day, back up over Wi-Fi when the phone is around, then export.
+    Safe to call every hour; it does nothing once today's backup has worked."""
+    dest = Path(args.dir).expanduser()
+    dest.mkdir(parents=True, exist_ok=True)
+    state = dest / ".last-auto-backup"
+    now = datetime.now()
+    if not args.force:
+        if state.exists() and state.read_text().strip() == now.date().isoformat():
+            say(f"{now:%Y-%m-%d %H:%M} already backed up today")
+            return 0
+        start, end = _window(args.window)
+        if not start <= now.time() <= end:
+            say(f"{now:%Y-%m-%d %H:%M} outside {args.window}, skipping")  # e.g. launchd catching up after sleep
+            return 0
+    lock = dest / ".auto-backup.lock"
+    try:
+        fd = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.close(fd)
+    except FileExistsError:
+        if time.time() - lock.stat().st_mtime < 3 * 3600:
+            say("another run is still going")
+            return 0
+        lock.touch()  # stale lock from a crashed run
+    try:
+        if not _devices(args.wifi):
+            say(f"{now:%Y-%m-%d %H:%M} iPhone not reachable{' on Wi-Fi' if args.wifi else ''}; will try next hour")
+            return 0
+        say(f"{now:%Y-%m-%d %H:%M} starting backup")
+        code = cmd_backup(args)
+        if code == 3:
+            notify("iPhone backup skipped: no passcode entered. It will ask again next hour.")
+            return code
+        if code != 0:
+            notify("iPhone backup failed. Details in ~/Library/Logs/iphone-export.log")
+            return code
+        state.write_text(now.date().isoformat())
+        code = cmd_export(args)
+        notify("iPhone backed up and exported." if code == 0 else
+               "iPhone backed up, but the export failed. Details in ~/Library/Logs/iphone-export.log")
+        return code
+    finally:
+        lock.unlink(missing_ok=True)
+
+
 def cmd_schedule(args):
     if sys.platform != "darwin":
         say("Scheduling uses macOS LaunchAgents, so it only works on a Mac.")
         return 1
     if args.off:
-        say("Daily export removed." if schedule.remove() else "No daily export was set up.")
+        say("Daily backup removed." if schedule.remove() else "No daily backup was set up.")
         return 0
     if args.status:
         plan = schedule.status()
         if not plan:
-            say("No daily export is set up.")
+            say("No daily backup is set up.")
         else:
-            t = plan["StartCalendarInterval"]
-            say(f"Runs daily at {t['Hour']:02d}:{t['Minute']:02d}: {' '.join(plan['ProgramArguments'][1:])}")
+            hours = sorted(t["Hour"] for t in plan["StartCalendarInterval"])
+            say(f"Tries hourly at {', '.join(f'{h:02d}:00' for h in hours)} until one backup works each day.")
+            say(f"Command: {' '.join(plan['ProgramArguments'][1:])}")
             say(f"Log: {schedule.LOG}")
         return 0
     if not shutil.which("idevicebackup2"):
         say("The daily run backs the phone up with idevicebackup2. Install it first: brew install libimobiledevice")
         return 1
-    try:
-        hour, minute = (int(x) for x in args.at.split(":"))
-        assert 0 <= hour < 24 and 0 <= minute < 60
-    except (ValueError, AssertionError):
-        say(f"--at needs a time like 02:30, got {args.at!r}")
-        return 2
-    extra = ["--out", str(Path(args.out).expanduser()), "--dir", str(Path(args.dir).expanduser())]
-    if args.wifi:
-        extra.append("--wifi")
-    if args.no_attachments:
-        extra.append("--no-attachments")
-    if args.convert_media:
-        extra.append("--convert-media")
-    ok, err = schedule.install(hour, minute, extra)
+    start, end = _window(args.window)
+    hours = list(range(start.hour, end.hour + 1)) if start.hour <= end.hour else \
+        list(range(start.hour, 24)) + list(range(0, end.hour + 1))
+    extra = ["--window", args.window, "--out", str(Path(args.out).expanduser()),
+             "--dir", str(Path(args.dir).expanduser()), "--keep-days", str(args.keep_days)]
+    for flag in ("wifi", "no_attachments", "convert_media"):
+        if getattr(args, flag):
+            extra.append("--" + flag.replace("_", "-"))
+    ok, err = schedule.install(hours, extra)
     if not ok:
         say(f"Couldn't register the job with launchd: {err}")
         return 1
-    say(f"Done. Every day at {hour:02d}:{minute:02d} the Mac backs up the iPhone"
-        f"{' over Wi-Fi' if args.wifi else ' (if plugged in)'} and refreshes {args.out}.")
+    say(f"Done. Every day between {args.window} the Mac tries once an hour to back up the iPhone"
+        f"{' over Wi-Fi' if args.wifi else ' (when plugged in)'}, keeps a dated version for {args.keep_days} days, "
+        f"and refreshes {args.out}. After one works it waits until tomorrow.")
+    say("Each backup needs the phone's passcode (an Apple rule since iOS 16.1); the Mac shows a notification "
+        "when the phone is asking.")
     say("Encrypted backup? Run one export by hand first and let it save the unlock key in the Keychain, "
-        "or the scheduled run can't open the backup.")
+        "or the scheduled export can't open it.")
     say(f"Log: {schedule.LOG}   Stop it with: python3 -m iphone_export schedule --off")
     return 0
 
@@ -352,6 +476,7 @@ def build_parser():
 
     def add_export_options(sp):
         sp.add_argument("--backup", help="path to one backup folder (default: the newest backup found)")
+        sp.add_argument("--snapshot", help="export the dated version from this day (or the last one before it)")
         sp.add_argument("--backup-root", help="folder that holds backup folders, if not a standard place")
         sp.add_argument("--mac", action="store_true", help="read this Mac's synced Messages/Notes/calls instead")
         sp.add_argument("--out", default=str(DEFAULT_OUT), help=f"output folder (default: {DEFAULT_OUT})")
@@ -379,6 +504,10 @@ def build_parser():
                         help=f"where idevicebackup2 keeps backups (default: {sources.DEFAULT_TOOL_BACKUP_ROOT})")
         sp.add_argument("--udid", help="which device, if more than one is connected")
         sp.add_argument("--wifi", action="store_true", help="back up over Wi-Fi instead of the cable")
+        sp.add_argument("--no-snapshot", action="store_true", help="don't keep a dated version of this backup")
+        sp.add_argument("--keep-days", type=int, default=30, help="delete dated versions older than this (default 30)")
+        sp.add_argument("--passcode-wait", type=float, default=15,
+                        help="minutes to wait for the passcode on the phone (default 15)")
 
     bp = sub.add_parser("backup", help="back up the iPhone with idevicebackup2")
     add_backup_options(bp)
@@ -387,12 +516,19 @@ def build_parser():
     sp = sub.add_parser("sync", help="backup, then export that backup")
     add_backup_options(sp)
     add_export_options(sp)
-    scp = sub.add_parser("schedule", help="run sync automatically every day (Mac)")
-    scp.add_argument("--at", default="02:30", help="time of day, HH:MM (default 02:30)")
+    ap = sub.add_parser("auto", help="what the daily job runs: one backup + export per day, when possible")
+    add_backup_options(ap)
+    add_export_options(ap)
+    ap.add_argument("--window", default="18:00-23:00", help="only try between these times (default 18:00-23:00)")
+    ap.add_argument("--force", action="store_true", help="run now even if done today or outside the window")
+    scp = sub.add_parser("schedule", help="back up and export automatically every day (Mac)")
+    scp.add_argument("--window", default="18:00-23:00",
+                     help="try once an hour between these times until one backup works (default 18:00-23:00)")
     scp.add_argument("--off", action="store_true", help="remove the daily run")
     scp.add_argument("--status", action="store_true", help="show the current daily run")
     scp.add_argument("--out", default=str(DEFAULT_OUT))
     scp.add_argument("--dir", default=str(sources.DEFAULT_TOOL_BACKUP_ROOT))
+    scp.add_argument("--keep-days", type=int, default=30)
     scp.add_argument("--wifi", action="store_true", help="back up over Wi-Fi, no cable needed")
     scp.add_argument("--no-attachments", action="store_true")
     scp.add_argument("--convert-media", action="store_true")
@@ -402,7 +538,7 @@ def build_parser():
 def main(argv=None):
     args = build_parser().parse_args(argv)
     commands = {"list": cmd_list, "backup": cmd_backup, "export": cmd_export, "sync": cmd_sync,
-                "schedule": cmd_schedule}
+                "auto": cmd_auto, "schedule": cmd_schedule}
     if args.command in commands:
         return commands[args.command](args)
     build_parser().print_help()

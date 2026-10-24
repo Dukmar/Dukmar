@@ -48,35 +48,48 @@ Other changes:
 - `Export iPhone.command` now converts media by default.
 - README rewritten, including a "where the features came from" table.
 
+**Round 3 (v0.3).** Colin: "Nightly run is good. Over wifi. Dated versions of each back up is also good." iMazing's automatic-backup guide (updated 2026-04-22) says "Since iOS 16.1, Apple has implemented an additional security measure requiring you to enter your device passcode" for every backup. So a 2 a.m. unattended run would stall, and I built it the way iMazing handles it:
+- `cli.py` has a new `auto` command, which is what the scheduled job runs. It tries hourly inside a window (default 18:00-23:00), only when the phone is reachable over Wi-Fi, and stops after the first success that day. It uses a lock file so two runs can't overlap.
+- `backup` watches idevicebackup2's output for the passcode prompt, shows a Mac notification, and gives up after `--passcode-wait` minutes (default 15).
+- `schedule` now takes `--window` instead of `--at` and runs `auto`.
+- New `snapshots.py`: after each backup, a dated APFS clone (`cp -c`) goes to `~/iPhone Backups/Snapshots/<UDID>/<date time>/`, pruned after `--keep-days` (default 30, iMazing's default). `list` shows the dated versions and `export --snapshot YYYY-MM-DD` exports one.
+- New `Set Up Daily Backup.command`: a one-time double-click setup that installs libimobiledevice, does the Finder Wi-Fi tick, runs the first cable backup (saving the Keychain key) and sets up the schedule.
+- Default output moved from `~/Documents/iPhone Export` to `~/iPhone Export`, because macOS blocks background jobs from Documents.
+
 **Verified:**
-- 18 tests pass on Python 3.13 and 3.9. They cover plain and encrypted backups, the Mac route, filters, conversion, the disk guard, PDF (real headless Chromium, with "Page 1 of" and the footer read back out of the PDF), the schedule plist, and backup-then-export.
+- 23 tests pass on Python 3.13 and 3.9. They include dated versions (take, prune, pick and export), the passcode give-up with its notification, and `auto` running once a day and skipping when the phone isn't reachable or the time is outside the window. Earlier rounds' tests cover the rest.
+- Round 2 checks: They cover plain and encrypted backups, the Mac route, filters, conversion, the disk guard, PDF (real headless Chromium, with "Page 1 of" and the footer read back out of the PDF), the schedule plist, and backup-then-export.
 - Edit-history decoding matches all 9 real edited-message samples from imessage-exporter.
 - Pages render with no console errors in light and dark mode and fit a 390px-wide screen. Table row heights are uniform, checked with `getBoundingClientRect`.
 
 **Not verified:**
 - No real iPhone backup, real `chat.db`, real voicemail or real Mac.
-- `sips`, `afconvert`, `idevicebackup2` and `launchctl` were tested only with stand-in scripts.
+- `sips`, `afconvert`, `idevicebackup2`, `idevice_id`, `osascript`, `launchctl` and `cp -c` (APFS clones) were tested only with stand-ins.
+- Not verified that idevicebackup2's passcode message contains the word "passcode" on current iOS. The text I matched ("Waiting for passcode to be entered on the device") comes from a Corellium support log. If the Mac never shows the notification, check `~/Library/Logs/iphone-export.log` for the real wording.
 
 ## Open
 - **First real run.** Make a Finder backup, double-click `Export iPhone.command`, and spot-check a few conversations, calls, voicemail and notes against the phone.
 - **Voicemail dates.** iLEAPP doesn't confirm how voicemail dates are stored, so the tool detects the format. Check that the first export's voicemail dates match the phone.
-- **Nightly run.** Do you want it? If so, which time, and Wi-Fi or cable? It's opt-in: `python3 -m iphone_export schedule --at 02:30 --wifi`.
+- **Daily run.** Double-click `Set Up Daily Backup.command` on the Mac. Default window is 18:00-23:00; say if you'd rather a different one. Each backup still needs the passcode typed on the phone (Apple rule, iOS 16.1+).
+- **New repo pending.** GitHub refused to let Claude create `Dukmar/iphone-export` (403, the app can't create repos). Colin needs to create it (private, no README) and give the Claude GitHub app access, then I push with history and remove the folder from this branch.
 - **Own repo?** `Dukmar/Dukmar` is the GitHub profile repo, so a tool folder there is an odd fit. I didn't create a repo without asking.
 - **Encrypted backup?** Is your Finder backup encrypted? It needs to be for call history. The first run asks for the backup password (the one set in Finder, not the phone passcode).
 - **iMazing's backups.** I don't know where iMazing keeps its own backups. If yours are there, pass `--backup <folder>`.
 - **Not built:**
   - WhatsApp chats (iMazing and TouchCopy do them; it's a separate database and a bigger job);
   - drawing stickers, handwriting and Digital Touch;
-  - backup snapshots (iMazing keeps dated versions; idevicebackup2 keeps one).
 
   Say if any of these matter.
 
 ## Needs the laptop
 - Everything above: the iPhone, the cable, Finder backups, Full Disk Access for Terminal, the Keychain prompt, and launchd for the nightly run.
-- Optional: `brew install libimobiledevice` for `sync` and `schedule`; Chrome (or Edge/Brave) for `--pdf`.
+- Daily run: Homebrew, the cable for the first backup, the Finder Wi-Fi tickbox, and the passcode on the phone each day.
+- Optional: Chrome (or Edge/Brave) for `--pdf`.
 
 ## Memory candidates
 - iPhone backups leave call history out unless backup encryption is on. Source: Apple support page 108353, published 2026-09-21.
 - macOS Command Line Tools ships Python 3.9, so scripts meant to double-click on Colin's Mac should run on 3.9 (no `X | None` annotations without `from __future__ import annotations`, no backslashes inside f-string expressions). Source: this session.
 - iLEAPP (github.com/abrignoni/iLEAPP) and imessage-exporter (github.com/ReagentX/imessage-exporter) are good references for iOS database layouts, with real sample data. Source: this session.
-- Colin's goal, verbatim: "I want to create an app or process that will quickly download my Texts from my iPhone. In the past, I've used the app iMazing to get things like my call history, my messages, and my notes saved to my laptop." Follow-up: "You can look at other apps that do similar things and take all the best features from them all to create this type of app." Source: Colin, 2026-10-24.
+- Colin's goal, verbatim: "I want to create an app or process that will quickly download my Texts from my iPhone. In the past, I've used the app iMazing to get things like my call history, my messages, and my notes saved to my laptop." Later: "Yes move it to its own repository." and "Nightly run is good. Over wifi. Dated versions of each back up is also good." Follow-up: "You can look at other apps that do similar things and take all the best features from them all to create this type of app." Source: Colin, 2026-10-24.
+- Since iOS 16.1 every iPhone backup to a computer needs the phone's passcode entered on the phone, scheduled ones included, so any automated backup has to be timed for when Colin has his phone. Source: iMazing's automatic-backup guide (updated 2026-04-22).
+- macOS blocks background jobs (LaunchAgents) from ~/Documents, ~/Desktop and ~/Downloads without a consent prompt they can't show; scheduled outputs go elsewhere in the home folder. Source: this session.

@@ -1,12 +1,12 @@
 # iPhone Export
 
-Saves iPhone texts (iMessage, SMS and RCS, with photos and attachments), call history, voicemail, Apple Notes and contacts to a folder on the Mac. It's a home-made stand-in for iMazing's exports: same source data, no licence, and it can run by itself every night.
+Saves iPhone texts (iMessage, SMS and RCS, with photos and attachments), call history, voicemail, Apple Notes and contacts to a folder on the Mac. It's a home-made stand-in for iMazing's exports: same source data, no licence, and it can back the phone up over Wi-Fi every evening and keep a month of dated versions.
 
-> **Status (2026-10-24):** version 0.2. Tested against a synthetic backup and against real Messages data blobs. It has **not** been run on a real iPhone backup yet. The first real run is the real test.
+> **Status (2026-10-24):** version 0.3. Tested against a synthetic backup and against real Messages data blobs. It has **not** been run on a real iPhone backup yet. The first real run is the real test.
 
 ## What you get
 
-In `~/Documents/iPhone Export/` by default:
+In `~/iPhone Export/` by default. It isn't in Documents, because macOS blocks background jobs like the daily run from writing there.
 
 | File | What's in it |
 | --- | --- |
@@ -49,7 +49,8 @@ I looked at what the paid and open-source tools do and copied the useful parts:
 | Merging threads by contact card | imessage-exporter |
 | Voicemail with audio and transcript | TouchCopy, Decipher TextMessage, iMazing (layout from iLEAPP) |
 | Contacts to vCard and CSV | iMazing |
-| Nightly automatic backup, optionally over Wi-Fi | iMazing |
+| Daily automatic backup over Wi-Fi, with a notification when the phone wants its passcode | iMazing |
+| Dated versions of each backup, kept for a month | iMazing ("snapshots") |
 | Photo gallery across all conversations | iMazing's "Only show attachments" view |
 
 Sources: iMazing's Messages export guide (updated 2026-10-21) and backup guides, the Decipher TextMessage and TouchCopy product pages, imessage-exporter's `docs/features.md`, and iLEAPP's voicemail and notes parsers.
@@ -79,13 +80,35 @@ python3 -m iphone_export sync --open
 
 This keeps its own backup, separate from Finder's. A full backup is as big as the phone's used storage, so if you also keep Finder backups you'll have two copies. Pick one route and stick with it.
 
-### 3. Every night, by itself
+### 3. Every evening over Wi-Fi, by itself
+
+Double-click **`Set Up Daily Backup.command`** once. It:
+
+1. installs `libimobiledevice` with Homebrew if it's missing;
+2. asks you to plug the phone in and tick Finder's **Show this iPhone when on Wi-Fi** (what lets later backups skip the cable);
+3. makes the first backup over the cable, which stores the backup's unlock key in the Keychain if it's encrypted;
+4. sets up the daily run.
+
+After that, every evening between 18:00 and 23:00 the Mac tries once an hour to back up the iPhone over Wi-Fi and refresh the export. Once one works, it waits until the next day.
+
+**Your part each day:** since iOS 16.1, Apple makes the phone ask for its passcode before *every* backup, automatic ones included. iMazing has the same limit. When the phone asks, the Mac shows a notification; enter the passcode on the phone. If nobody does within 15 minutes, the run stops and tries again the next hour. A 2 a.m. run would sit waiting all night, so the window is set for the evening, when the phone is usually nearby.
+
+Other things to know:
+
+- The phone has to be awake and on the same Wi-Fi. If the Mac is asleep through the window, nothing runs that day.
+- To change the hours: `schedule --wifi --window 19:00-22:00`. `schedule --status` shows the plan and `schedule --off` removes it. The log is at `~/Library/Logs/iphone-export.log`.
+- Run it from the folder it will live in. The daily job remembers this folder's location, so move the folder and you'll need to run the setup again.
+
+### Dated versions
+
+After each backup made by this tool (`backup`, `sync` or the daily run), a dated copy is kept in `~/iPhone Backups/Snapshots/<phone id>/<date time>/` for 30 days (`--keep-days` changes that). On the Mac's own drive these are APFS clones: a copy only takes space for what changed since, so a month of them costs about one backup plus a month of changes. A drive that can't clone (some external drives) gets no dated versions rather than a full copy every day.
 
 ```bash
-python3 -m iphone_export schedule --at 02:30 --wifi
+python3 -m iphone_export list                                  # backups and dated versions
+python3 -m iphone_export export --snapshot 2026-10-01 --out ~/Desktop/October-1
 ```
 
-This registers a small macOS LaunchAgent that runs `sync` daily and refreshes the export folder. With `--wifi` the phone doesn't need the cable, but it has to be on the same network, and Finder's **Show this iPhone when on Wi-Fi** must be ticked once. If the backup is encrypted, run one export by hand first and let it save the unlock key, or the nightly run can't open the backup. `schedule --status` shows the plan, `schedule --off` removes it, and the log is at `~/Library/Logs/iphone-export.log`.
+`--snapshot` picks the last version taken on or before that day, which helps when something has since been deleted from the phone.
 
 ### 4. Straight from this Mac (no phone, no backup)
 
@@ -113,10 +136,11 @@ macOS hides both the backups and the Messages database from apps by default. The
 | `--me-name Colin` | your name in place of "Me" |
 | `--no-attachments` | skip copying photos and videos (much faster on a big phone) |
 | `--out ~/Desktop/Texts` | different output folder |
+| `--snapshot 2026-10-01` | export a dated version instead of the latest backup |
 | `--backup /path/to/backup` | a specific backup folder, e.g. one on a USB drive |
 | `--ignore-disk-warning` | copy attachments even when free space looks tight |
 | `--forget-password` | delete the saved unlock key from the Keychain |
-| `list` | show every backup found and its date |
+| `list` | show every backup and dated version found |
 
 Re-running into the same folder rewrites the pages and skips attachments it already copied, so the second run is quick. Copied photos and voice notes carry the date of their message, so Finder and Photos sort them correctly.
 
@@ -145,7 +169,7 @@ python3 -m pip install pytest pycryptodome pypdf iphone_backup_decrypt==0.11.2
 python3 -m pytest
 ```
 
-The tests build a fake backup (plain and encrypted) using Apple's real Messages table layout, export it, and check every output, including the Mac route, PDFs, scheduling and the backup-then-export flow. Media conversion and `idevicebackup2` are exercised with stand-in scripts, because those tools only exist on a Mac. Text and edit-history decoding are checked against blobs from real Messages databases when the [imessage-exporter](https://github.com/ReagentX/imessage-exporter) test data is on disk (set `TYPEDSTREAM_SAMPLES` to its `imessage-database/test_data/typedstream` folder).
+The tests build a fake backup (plain and encrypted) using Apple's real Messages table layout, export it, and check every output, including the Mac route, PDFs, scheduling, dated versions, the passcode wait and the once-a-day logic. Media conversion and `idevicebackup2` are exercised with stand-in scripts, because those tools only exist on a Mac. Text and edit-history decoding are checked against blobs from real Messages databases when the [imessage-exporter](https://github.com/ReagentX/imessage-exporter) test data is on disk (set `TYPEDSTREAM_SAMPLES` to its `imessage-database/test_data/typedstream` folder).
 
 ## Credits
 

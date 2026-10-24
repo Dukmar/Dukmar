@@ -1,5 +1,7 @@
 """Daily automatic backup + export on a Mac, via a per-user LaunchAgent (like iMazing's scheduled backups).
 
+The job runs `iphone_export auto` hourly through a time window; see cli.cmd_auto.
+
 Nothing runs as root and nothing is installed system-wide: one plist in ~/Library/LaunchAgents and a log in
 ~/Library/Logs. `schedule --off` removes it.
 """
@@ -21,14 +23,16 @@ def _launchctl(*args):
     return subprocess.run(["launchctl", *args], capture_output=True, text=True)
 
 
-def install(hour, minute, extra_args, python=None, workdir=None):
+def install(hours, extra_args, python=None, workdir=None):
     python = python or sys.executable
     workdir = workdir or str(Path(__file__).resolve().parent.parent)
     plist = {
         "Label": LABEL,
-        "ProgramArguments": [python, "-m", "iphone_export", "sync", *extra_args],
+        "ProgramArguments": [python, "-m", "iphone_export", "auto", *extra_args],
         "WorkingDirectory": workdir,
-        "StartCalendarInterval": {"Hour": hour, "Minute": minute},
+        # One entry per hour in the window; `auto` exits at once after the day's backup has worked.
+        # If the Mac was asleep, launchd runs a missed slot on wake, and `auto` skips it outside the window.
+        "StartCalendarInterval": [{"Hour": h, "Minute": 0} for h in hours],
         "StandardOutPath": str(LOG),
         "StandardErrorPath": str(LOG),
         "EnvironmentVariables": {"PATH": "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"},
