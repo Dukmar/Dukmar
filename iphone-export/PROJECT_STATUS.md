@@ -1,6 +1,6 @@
 # iPhone Export: status
 
-**Updated:** 2026-10-24 (evening, P Mac)
+**Updated:** 2026-10-25 (P Mac). Round 5 committed as cda2bac on claude/iphone-texts-export, pushed, macOS CI passed.
 
 ## What it is
 A Mac app (`mac-app/`, SwiftUI) on top of a Python engine (`iphone_export/`), which also runs from the command line and the double-click `.command` files. It reads a local iPhone backup, or the Mac's own synced copies, and saves texts, calls, voicemail, notes and contacts as HTML, TXT, CSV, vCard and optional PDF. A home-made stand-in for iMazing's export.
