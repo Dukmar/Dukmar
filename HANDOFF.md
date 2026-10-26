@@ -1,4 +1,4 @@
-# Handoff: iPhone texts export tool (2026-10-24)
+# Handoff: iPhone texts export tool (2026-10-25)
 
 Branch: `claude/iphone-texts-export`. Everything is in `iphone-export/`. The profile `README.md` at the repo root is untouched.
 
@@ -98,12 +98,29 @@ Colin: "Build and install my iPhone Export Mac app ... walk me through its Setup
 - Correction to my own earlier claim: the Mac's history starts March 2023, not May 2019. The Drive folder's older `iMessages/` archive covers Oct 2013 to Apr 2015 (iMazing-style PDFs/CSVs made 2015-04-14).
 - Nothing committed. Changes are in the worktree `~/Projects/Dukmar-iphone-export` (branch `claude/iphone-texts-export`).
 
+**Cloud session wrap-up (2026-10-25).**
+- Pulled the laptop session's round 5 (cda2bac, 57a3981) onto this branch.
+- On the combined code: 31 Python tests pass, 12 Swift tests pass (Linux, Swift 6.1.2). The archive test needs `rsync`, which macOS has; I had to install it in the container.
+- Fixed the Swift test that failed on the P Mac. The cause: building the encrypted fake backup needs pycryptodome and iphone_backup_decrypt, which the Mac's `/usr/bin/python3` doesn't have. The test now checks for them and skips with "set TEST_PYTHON" instead of failing. Checked both ways: it passes with the libraries and skips without them.
+- The standalone copy for the new repo lived only in the cloud container and is gone with it. Rebuild it on the laptop (commands under Open).
+
 ## Open
 - **Commit and push** this session's changes, then bump the version. Every rebuild resets Full Disk Access (ad-hoc signature), so rebuild once and re-toggle.
 - **Login item:** confirm after the next login that the app is in the menu bar with no window, and on Nov 1 that `2026-10` appears locally and in Drive.
 - **Phone backups (calls, voicemail):** free about 250 GB, or add a backup-location setting for the My Book Duo.
-- **Swift test** `testEncryptedBackupAsksForPasswordThenUnlocks` fails on this Mac before and after these changes (fixture setup exits 1). Not investigated.
-- **Voicemail dates**, **new repo**, **not built** (WhatsApp etc.): unchanged from round 4.
+- **Swift test** `testEncryptedBackupAsksForPasswordThenUnlocks`: explained and fixed in the cloud wrap-up. To run it rather than skip it on the Mac: `TEST_PYTHON=~/.iphone-export-venv/bin/python swift test` after `~/.iphone-export-venv/bin/pip install pycryptodome`.
+- **New repo** `Dukmar/iphone-export` (Colin said yes 2026-10-24). Claude's GitHub app can't create repos, but the laptop can, with history:
+  ```bash
+  cd ~/Projects/Dukmar && git switch claude/iphone-texts-export && git pull
+  git subtree split --prefix=iphone-export -b iphone-export-split
+  gh repo create Dukmar/iphone-export --private
+  git push https://github.com/Dukmar/iphone-export.git iphone-export-split:main
+  ```
+  Then, in the new repo:
+  1. Move this `HANDOFF.md` in.
+  2. Copy `.github/workflows/iphone-export-mac.yml` with the `iphone-export/` path prefixes dropped.
+  3. Remove `iphone-export/` from the Dukmar branch.
+- **Voicemail dates**, **not built** (WhatsApp etc.): unchanged from round 4.
 
 ## Needs the laptop
 - Everything above: the iPhone, the cable, Finder backups, Full Disk Access for Terminal, the Keychain prompt, and launchd for the nightly run.

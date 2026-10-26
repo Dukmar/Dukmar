@@ -155,6 +155,11 @@ final class EngineIntegrationTests: XCTestCase {
     }
 
     func testEncryptedBackupAsksForPasswordThenUnlocks() async throws {
+        // Building an encrypted fake backup needs pycryptodome + iphone_backup_decrypt. The Mac's own
+        // /usr/bin/python3 doesn't have them, so point TEST_PYTHON at one that does (CI does).
+        let check = await EngineRunner(location: location)
+            .runCommand(location.python, ["-c", "import Crypto, iphone_backup_decrypt"]) { _ in }
+        try XCTSkipIf(check != 0, "this python3 lacks pycryptodome/iphone_backup_decrypt; set TEST_PYTHON")
         let backup = try await makeBackup(encrypted: true)
         let out = work.appendingPathComponent("out").path
         let runner = EngineRunner(location: location)

@@ -1,6 +1,6 @@
 # iPhone Export: status
 
-**Updated:** 2026-10-25 (P Mac). Round 5 committed as cda2bac on claude/iphone-texts-export, pushed, macOS CI passed.
+**Updated:** 2026-10-25 (cloud wrap-up after round 5). Round 5 is cda2bac on claude/iphone-texts-export; macOS CI passed.
 
 ## What it is
 A Mac app (`mac-app/`, SwiftUI) on top of a Python engine (`iphone_export/`), which also runs from the command line and the double-click `.command` files. It reads a local iPhone backup, or the Mac's own synced copies, and saves texts, calls, voicemail, notes and contacts as HTML, TXT, CSV, vCard and optional PDF. A home-made stand-in for iMazing's export.
@@ -35,14 +35,14 @@ A Mac app (`mac-app/`, SwiftUI) on top of a Python engine (`iphone_export/`), wh
   - the Full Disk Access row no longer shows a tick before the engine has checked.
 - **Real data:** the Mac route ran against Colin's real Messages (Messages in iCloud). 49 months, 36,599 messages, 8.8 GB filed into `~/iPhone Export/Messages by month` and copied to Drive (`Historical Files/iPhone Text Messages/Messages by month`), identical file for file. History on the Mac starts March 2023 (one message from May 2019, a few from 2022).
 - **Phone backup failed** with ErrorCode 105: about 140 GB free on the Mac, about 370 GB of data on the phone. No real phone backup has been read yet.
-- 28 Python tests pass. Swift: 11 of 12; `testEncryptedBackupAsksForPasswordThenUnlocks` fails the same way before and after this session's changes (fixture setup exits 1 on this Mac). Needs `TEST_PYTHON` pointing at a Python with the test dependencies.
+- 31 Python tests and 12 Swift tests pass (cloud, 2026-10-25). The encrypted-backup Swift test now skips with a message when the python running it lacks pycryptodome/iphone_backup_decrypt; on the Mac it used to fail instead. Set `TEST_PYTHON` to run it.
 
 ## Next
 1. **Confirm the login item** after the next login: the menu bar icon is there, no window opened, and on Nov 1 the October folder appears locally and in Drive.
 2. **Phone backup space:** free about 250 GB on the Mac, or add a backup-location setting so backups can go to the My Book Duo (HFS+, so no dated versions there). Only needed for calls and voicemail.
 3. Spot-check the archive against the phone: a few conversations (replies, edits, reactions, a deleted conversation).
-4. Commit this session's changes (uncommitted in `~/Projects/Dukmar-iphone-export`, a worktree of `~/Projects/Dukmar`), bump the version, rebuild, and switch Full Disk Access off and on again.
-5. Move to its own private repo, `Dukmar/iphone-export` (Colin decided this 2026-10-24). That waits on Colin creating the empty repo, because Claude's GitHub app can't create one.
+4. Bump the version (still says 0.4.0), rebuild, and switch Full Disk Access off and on again.
+5. Move to its own private repo, `Dukmar/iphone-export` (Colin decided this 2026-10-24). Do it from the laptop with `git subtree split` + `gh repo create`; the commands are in `HANDOFF.md` under Open.
 
 ## Files
 - `iphone_export/sources.py`: finds backups; plain, encrypted and Mac sources
